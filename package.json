@@ -1,6 +1,6 @@
 {
   "name": "@jaggerxtrm/unified-ai-mcp-tool",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Unified Model Context Protocol server for multiple AI clients (Qwen, Rovo Dev, etc.)",
   "main": "dist/index.js",
   "type": "module",
