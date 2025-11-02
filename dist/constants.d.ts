@@ -48,7 +48,7 @@ export declare const CLI: {
             readonly PROMPT: "-p";
             readonly SANDBOX: "-s";
             readonly HELP: "-help";
-            readonly MODEL: "--model";
+            readonly MODEL: "-m";
         };
     };
 };

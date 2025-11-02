@@ -55,7 +55,7 @@ export const CLI = {
       PROMPT: "-p",
       SANDBOX: "-s",
       HELP: "-help",
-      MODEL: "--model"
+      MODEL: "-m"
     }
   }
 } as const;
