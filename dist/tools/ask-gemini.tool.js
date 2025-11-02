@@ -6,24 +6,24 @@ import { executeAIClient } from "../utils/aiExecutor.js";
  */
 export const askGeminiTool = {
     name: "ask-gemini",
-    description: "Query Google Gemini via the gemini CLI with support for @file/#file syntax, sandbox mode, and model selection.",
+    description: "Query Google Gemini via the gemini CLI with support for @file/#file syntax, sandbox mode, and model selection",
     category: "ai-client",
     zodSchema: z.object({
         prompt: z
             .string()
             .min(1)
-            .describe("The query or instruction for Gemini. Use @filename, #filename, or directory references to include file contents. Example: '@src/ Explain this codebase structure'"),
+            .describe("Query for Gemini. Use @filename or #filename to include files"),
         model: z
             .enum([
             AI_MODELS.GEMINI.PRIMARY,
             AI_MODELS.GEMINI.FLASH
         ])
             .optional()
-            .describe(`Optional model to use (e.g., '${AI_MODELS.GEMINI.PRIMARY}'). If not specified, uses the default model (${AI_MODELS.GEMINI.PRIMARY}).`),
+            .describe(`Model to use (default: ${AI_MODELS.GEMINI.PRIMARY})`),
         sandbox: z
             .boolean()
             .default(false)
-            .describe("Enable sandbox mode (-s flag) for safe code execution"),
+            .describe("Sandbox mode for safe execution"),
     }),
     execute: async (args, onProgress) => {
         const { prompt, model, sandbox } = args;
@@ -41,21 +41,21 @@ export const askGeminiTool = {
     },
     prompt: {
         name: "ask-gemini",
-        description: "Interact with Google Gemini for code analysis, file exploration, and general queries. Supports @file or #file references for including file contents.",
+        description: "Query Google Gemini with @file support",
         arguments: [
             {
                 name: "prompt",
-                description: "Your question or instruction. Use @filename or #filename to reference files.",
+                description: "Query. Use @filename to reference files",
                 required: true
             },
             {
                 name: "model",
-                description: `Optional model selection (${AI_MODELS.GEMINI.PRIMARY}, ${AI_MODELS.GEMINI.FLASH})`,
+                description: `Model (default: ${AI_MODELS.GEMINI.PRIMARY})`,
                 required: false
             },
             {
                 name: "sandbox",
-                description: "Enable sandbox mode for safe code execution",
+                description: "Sandbox mode",
                 required: false
             }
         ]

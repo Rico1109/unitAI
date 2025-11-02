@@ -6,13 +6,13 @@ import { executeAIClient } from "../utils/aiExecutor.js";
  */
 export const askQwenTool = {
     name: "ask-qwen",
-    description: "Query Qwen AI with support for file analysis (@file or #file syntax), codebase exploration, and large context windows. Supports various models and execution modes.",
+    description: "Query Qwen AI with support for file analysis (@file or #file syntax), codebase exploration, and large context windows",
     category: "ai-client",
     zodSchema: z.object({
         prompt: z
             .string()
             .min(1)
-            .describe("The query or instruction for Qwen. Use @filename, #filename, or directory references to include file contents. Example: '@src/ Explain this codebase structure'"),
+            .describe("Query for Qwen. Use @filename or #filename to include files"),
         model: z
             .enum([
             AI_MODELS.QWEN.PRIMARY,
@@ -22,11 +22,11 @@ export const askQwenTool = {
             AI_MODELS.QWEN.PRO
         ])
             .optional()
-            .describe(`Optional model to use (e.g., '${AI_MODELS.QWEN.PRIMARY}'). If not specified, uses the default model (${AI_MODELS.QWEN.PRIMARY}).`),
+            .describe(`Model to use (default: ${AI_MODELS.QWEN.PRIMARY})`),
         sandbox: z
             .boolean()
             .default(false)
-            .describe("Use sandbox mode (-s flag) to safely test code changes, execute scripts, or run potentially risky operations in an isolated environment"),
+            .describe("Use sandbox mode for safe code execution"),
         approvalMode: z
             .enum([
             APPROVAL_MODES.PLAN,
@@ -35,22 +35,14 @@ export const askQwenTool = {
             APPROVAL_MODES.YOLO
         ])
             .optional()
-            .describe("Control tool execution approval: 'plan' (analyze only), 'default' (prompt for approval), 'auto-edit' (auto-approve edits), 'yolo' (auto-approve all)"),
+            .describe("Approval mode: plan/default/auto-edit/yolo"),
         yolo: z
             .boolean()
             .default(false)
-            .describe("Enable YOLO mode to automatically approve all tool calls without prompting (equivalent to approvalMode='yolo')"),
-        allFiles: z
-            .boolean()
-            .default(false)
-            .describe("Include all files in the current directory as context (use with caution for large directories)"),
-        debug: z
-            .boolean()
-            .default(false)
-            .describe("Enable debug mode for more verbose output")
+            .describe("Auto-approve all operations")
     }),
     execute: async (args, onProgress) => {
-        const { prompt, model, sandbox, approvalMode, yolo, allFiles, debug } = args;
+        const { prompt, model, sandbox, approvalMode, yolo } = args;
         // Validate prompt
         if (!prompt || !prompt.trim()) {
             throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
@@ -63,34 +55,32 @@ export const askQwenTool = {
             sandbox,
             approvalMode,
             yolo,
-            allFiles,
-            debug,
             onProgress
         });
         return result;
     },
     prompt: {
         name: "ask-qwen",
-        description: "Interact with Qwen AI for code analysis, file exploration, and general queries. Supports @file or #file references for including file contents.",
+        description: "Query Qwen AI with @file support",
         arguments: [
             {
                 name: "prompt",
-                description: "Your question or instruction. Use @filename or #filename to reference files.",
+                description: "Query. Use @filename to reference files",
                 required: true
             },
             {
                 name: "model",
-                description: `Optional model selection (${AI_MODELS.QWEN.PRIMARY}, ${AI_MODELS.QWEN.TURBO}, etc.)`,
+                description: `Model (default: ${AI_MODELS.QWEN.PRIMARY})`,
                 required: false
             },
             {
                 name: "sandbox",
-                description: "Enable sandbox mode for safe code execution",
+                description: "Sandbox mode",
                 required: false
             },
             {
                 name: "approvalMode",
-                description: "Control approval for tool execution (plan/default/auto-edit/yolo)",
+                description: "Approval mode",
                 required: false
             }
         ]

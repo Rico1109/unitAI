@@ -8,14 +8,14 @@ import type { UnifiedTool } from "./registry.js";
  */
 export const askQwenTool: UnifiedTool = {
   name: "ask-qwen",
-  description: "Query Qwen AI with support for file analysis (@file or #file syntax), codebase exploration, and large context windows. Supports various models and execution modes.",
+  description: "Query Qwen AI with support for file analysis (@file or #file syntax), codebase exploration, and large context windows",
   category: "ai-client",
   zodSchema: z.object({
     prompt: z
       .string()
       .min(1)
       .describe(
-        "The query or instruction for Qwen. Use @filename, #filename, or directory references to include file contents. Example: '@src/ Explain this codebase structure'"
+        "Query for Qwen. Use @filename or #filename to include files"
       ),
     model: z
       .enum([
@@ -27,13 +27,13 @@ export const askQwenTool: UnifiedTool = {
       ])
       .optional()
       .describe(
-        `Optional model to use (e.g., '${AI_MODELS.QWEN.PRIMARY}'). If not specified, uses the default model (${AI_MODELS.QWEN.PRIMARY}).`
+        `Model to use (default: ${AI_MODELS.QWEN.PRIMARY})`
       ),
     sandbox: z
       .boolean()
       .default(false)
       .describe(
-        "Use sandbox mode (-s flag) to safely test code changes, execute scripts, or run potentially risky operations in an isolated environment"
+        "Use sandbox mode for safe code execution"
       ),
     approvalMode: z
       .enum([
@@ -44,27 +44,17 @@ export const askQwenTool: UnifiedTool = {
       ])
       .optional()
       .describe(
-        "Control tool execution approval: 'plan' (analyze only), 'default' (prompt for approval), 'auto-edit' (auto-approve edits), 'yolo' (auto-approve all)"
+        "Approval mode: plan/default/auto-edit/yolo"
       ),
     yolo: z
       .boolean()
       .default(false)
       .describe(
-        "Enable YOLO mode to automatically approve all tool calls without prompting (equivalent to approvalMode='yolo')"
-      ),
-    allFiles: z
-      .boolean()
-      .default(false)
-      .describe(
-        "Include all files in the current directory as context (use with caution for large directories)"
-      ),
-    debug: z
-      .boolean()
-      .default(false)
-      .describe("Enable debug mode for more verbose output")
+        "Auto-approve all operations"
+      )
   }),
   execute: async (args, onProgress) => {
-    const { prompt, model, sandbox, approvalMode, yolo, allFiles, debug } = args;
+    const { prompt, model, sandbox, approvalMode, yolo } = args;
 
     // Validate prompt
     if (!prompt || !prompt.trim()) {
@@ -79,8 +69,6 @@ export const askQwenTool: UnifiedTool = {
       sandbox,
       approvalMode,
       yolo,
-      allFiles,
-      debug,
       onProgress
     });
 
@@ -89,27 +77,27 @@ export const askQwenTool: UnifiedTool = {
   prompt: {
     name: "ask-qwen",
     description:
-      "Interact with Qwen AI for code analysis, file exploration, and general queries. Supports @file or #file references for including file contents.",
+      "Query Qwen AI with @file support",
     arguments: [
       {
         name: "prompt",
         description:
-          "Your question or instruction. Use @filename or #filename to reference files.",
+          "Query. Use @filename to reference files",
         required: true
       },
       {
         name: "model",
-        description: `Optional model selection (${AI_MODELS.QWEN.PRIMARY}, ${AI_MODELS.QWEN.TURBO}, etc.)`,
+        description: `Model (default: ${AI_MODELS.QWEN.PRIMARY})`,
         required: false
       },
       {
         name: "sandbox",
-        description: "Enable sandbox mode for safe code execution",
+        description: "Sandbox mode",
         required: false
       },
       {
         name: "approvalMode",
-        description: "Control approval for tool execution (plan/default/auto-edit/yolo)",
+        description: "Approval mode",
         required: false
       }
     ]

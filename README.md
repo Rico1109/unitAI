@@ -1,276 +1,455 @@
-# Unified AI MCP Tool
-
-Model Context Protocol server for multiple AI clients (Qwen, Rovo Dev, etc.). This tool enables AI assistants like Claude to leverage multiple powerful AI coding assistants through a single MCP interface.
-
-## Features
-
-- **Multiple AI Backends**: Support for both Qwen and Rovo Dev AI clients with automatic switching
-- **Large Context Windows**: Leverage either AI's massive token capacity for analyzing large files and entire codebases
-- **File Analysis**: Use `@filename` or `#filename` syntax to include file contents in your queries
-- **Sandbox Mode**: Safely execute code and run tests in isolated environments (Qwen specific)
-- **Shadow Mode**: Rovo Dev specific safe changes with temporary workspace copies
-- **Multiple Models**: Support for various models in each backend
-- **Flexible Approval Modes**: Control tool execution with plan/default/auto-edit/yolo modes
-- **MCP Protocol**: Seamless integration with MCP-compatible AI assistants
-
-## Strengths by Backend
-
-### Qwen CLI Strengths:
-- Exceptional large context windows (handles very large files)
-- Advanced multi-language code generation
-- Cost-effective model options
-- Built-in sandbox mode for safe code execution
-- Strong code analysis capabilities
-
-### Rovo Dev CLI Strengths:
-- Access to Claude Sonnet and GPT-5 models for advanced reasoning
-- Pre-configured with premium Anthropic models (Sonnet 4, Opus)
-- Atlassian ecosystem integration
-- Built-in project awareness and workspace management
-- Shadow mode for safe changes
-- MCP support built into the tool itself
-- Advanced session management
-
-## Prerequisites
-
-- Node.js v16 or higher
-- For Qwen: `npm install -g @qwen/cli`
-- For Rovo Dev: Install and configure `acli rovodev`
-
-## Installation
-
-### Quick Setup (Easiest - Recommended)
-
-Use Claude Code's built-in MCP installer:
-
-```bash
-claude mcp add unified-ai-mcp -- npx -y @jaggerxtrm/unified-ai-mcp-tool
+```
+   _   _       _  __ _          _      _    _   __  __  ____  ____  
+  | | | |_ __ (_)/ _(_) ___  __| |    / \  (_)  |  \/  |/ ___||  _ \ 
+  | | | | '_ \| | |_| |/ _ \/ _` |   / _ \ | |  | |\/| | |    | |_) |
+  | |_| | | | | |  _| |  __/ (_| |  / ___ \| |  | |  | | |___ |  __/ 
+   \___/|_| |_|_|_| |_|\___|\__,_| /_/   \_\_|  |_|  |_|\____||_|    
+                                                                      
 ```
 
-This single command configures everything automatically!
+<div align="center">
 
-### Via Global Install
+**🚀 One MCP Server. Three AI Powerhouses. Infinite Possibilities.**
 
-Install via npm:
+[![npm version](https://img.shields.io/npm/v/@jaggerxtrm/unified-ai-mcp-tool.svg)](https://www.npmjs.com/package/@jaggerxtrm/unified-ai-mcp-tool)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+
+A unified [Model Context Protocol](https://modelcontextprotocol.io) server that provides seamless access to **Qwen Code**, **Atlassian Rovo Dev**, and **Google Gemini** through a single, elegant interface.
+
+[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Tools](#-available-tools) • [Configuration](#-configuration)
+
+</div>
+
+---
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎯 **Unified Interface**
+Single MCP server for multiple AI backends - no need to manage separate connections
+
+### 📁 **Smart File References**  
+Use `@filename` syntax to include files in your prompts automatically
+
+### 🛡️ **Safety First**
+Sandbox and shadow modes for safe code execution and testing
+
+</td>
+<td width="50%">
+
+### 🔄 **Session Management**
+Restore previous conversations and maintain context across sessions
+
+### ⚡ **Optimized Performance**
+~50% token reduction through intelligent optimization
+
+### 🎨 **Rich Progress Tracking**
+Real-time feedback on long-running operations
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🚀 Installation
+
+### Global Installation (Recommended)
 
 ```bash
 npm install -g @jaggerxtrm/unified-ai-mcp-tool
 ```
 
-Then add to Claude Code MCP settings (`~/.config/claude/mcp_settings.json`):
+### Local Installation
+
+```bash
+npm install @jaggerxtrm/unified-ai-mcp-tool
+```
+
+### From Source
+
+```bash
+git clone https://github.com/jaggerxtrm/unified-ai-mcp-tool.git
+cd unified-ai-mcp-tool
+npm install
+npm run build
+```
+
+---
+
+## 🎯 Quick Start
+
+### 1. Add to MCP Configuration
+
+**For Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
-    "unified-ai-mcp": {
+    "unified-ai": {
       "command": "unified-ai-mcp-tool"
     }
   }
 }
 ```
 
-### Via npx (Manual Configuration)
-
-Manually configure to use npx without installing:
+**For Custom MCP Clients:**
 
 ```json
 {
   "mcpServers": {
-    "unified-ai-mcp": {
-      "command": "npx",
-      "args": ["-y", "@jaggerxtrm/unified-ai-mcp-tool"]
+    "unified-ai": {
+      "command": "node",
+      "args": ["/path/to/unified-ai-mcp-tool/dist/index.js"]
     }
   }
 }
 ```
 
-## Available Tools
+### 2. Start Using
 
-### ask-qwen
+Once configured, you can use any of the three AI tools through your MCP client:
 
-The main tool for interacting with Qwen AI.
+```
+# Query Qwen about your codebase
+@src/ Explain the architecture of this project
+
+# Ask Rovo Dev to refactor code safely
+@utils/helper.ts Refactor this with shadow mode
+
+# Get Gemini to review documentation
+@README.md Is this documentation clear and complete?
+```
+
+---
+
+## 🛠️ Available Tools
+
+### 🤖 ask-qwen
+
+Query Qwen AI with support for file analysis, codebase exploration, and large context windows.
+
+<details>
+<summary><b>Parameters & Examples</b></summary>
 
 **Parameters:**
-- `prompt` (required): Your question or instruction
-  - Use `@filename` or `#filename` to include a file's contents
-  - Use `@directory` to include all files in a directory
-- `model` (optional): Model to use (qwen3-coder-plus, qwen3-coder-turbo, etc.)
-- `sandbox` (optional): Enable sandbox mode for safe code execution
-- `approvalMode` (optional): Control tool execution approval
-  - `plan`: Analyze tool calls without executing
-  - `default`: Prompt for approval (default behavior)
-  - `auto-edit`: Auto-approve file edits
-  - `yolo`: Auto-approve all tool calls
-- `yolo` (optional): Shortcut for approvalMode='yolo'
-- `allFiles` (optional): Include all files in current directory as context
-- `debug` (optional): Enable debug mode
+- `prompt` *(required)*: Query for Qwen. Use `@filename` or `#filename` to include files
+- `model` *(optional)*: Model to use (default: `qwen3-coder-plus`)
+  - `qwen3-coder-plus` - Best balance
+  - `qwen3-coder-turbo` - Faster
+  - `qwen3-coder-pro` - Highest quality
+  - `qwen3-coder` - Base model
+  - `qwen3-coder-fallback` - Fallback
+- `sandbox` *(optional)*: Use sandbox mode for safe code execution
+- `approvalMode` *(optional)*: Approval mode: `plan`/`default`/`auto-edit`/`yolo`
+- `yolo` *(optional)*: Auto-approve all operations
 
 **Examples:**
-```javascript
-// Analyze a specific file with Qwen
-{
-  "prompt": "@src/main.ts Explain what this code does",
-  "model": "qwen3-coder-plus",
-  "approvalMode": "auto-edit"
-}
 
-// Use Qwen with sandbox mode
+```json
 {
-  "prompt": "Fix the bug in this function",
-  "sandbox": true,
-  "model": "qwen3-coder-turbo"
+  "prompt": "@src/ Explain this codebase structure",
+  "model": "qwen3-coder-plus"
 }
 ```
 
-### ask-rovodev
+```json
+{
+  "prompt": "Create a sorting algorithm and test it",
+  "sandbox": true,
+  "yolo": true
+}
+```
 
-The main tool for interacting with Rovo Dev AI.
+</details>
+
+---
+
+### 🏢 ask-rovodev
+
+Query Atlassian Rovo Dev AI with shadow mode and session management.
+
+<details>
+<summary><b>Parameters & Examples</b></summary>
 
 **Parameters:**
-- `prompt` (required): Your question or instruction
-  - Use `@filename` or `#filename` to include a file's contents
-  - Use `@directory` to include all files in a directory
-- `model` (optional): Model to use (configured in Rovo Dev)
-- `approvalMode` (optional): Control tool execution approval
-  - `plan`: Analyze tool calls without executing
-  - `default`: Prompt for approval (default behavior)
-  - `auto-edit`: Auto-approve file edits
-  - `yolo`: Auto-approve all tool calls
-- `yolo` (optional): Shortcut for approvalMode='yolo'
-- `allFiles` (optional): Include all files in current directory as context
-- `debug` (optional): Enable debug mode
-- `shadow` (optional): Enable shadow mode for safe changes
-- `verbose` (optional): Enable verbose tool output
-- `restore` (optional): Continue last session instead of starting new
-- `codeMode` (optional): Enable code-specific analysis
-- `reviewMode` (optional): Enable detailed code review
-- `optimize` (optional): Request optimization suggestions
-- `explain` (optional): Request detailed explanations
+- `prompt` *(required)*: Query for Rovodev. Use `@filename` to reference files
+- `yolo` *(optional)*: Auto-approve all operations
+- `shadow` *(optional)*: Shadow mode for safe changes
+- `verbose` *(optional)*: Verbose output
+- `restore` *(optional)*: Continue last session
 
 **Examples:**
-```javascript
-// Analyze with Rovo Dev and shadow mode
-{
-  "prompt": "@src/main.ts Review this code for security issues",
-  "shadow": true,
-  "reviewMode": true
-}
 
-// Use Rovo Dev with optimization suggestions
+```json
 {
-  "prompt": "How can I optimize this algorithm?",
-  "optimize": true,
-  "explain": true,
+  "prompt": "@package.json Analyze dependencies",
   "verbose": true
 }
 ```
 
-### ping
+```json
+{
+  "prompt": "@src/utils/ Refactor these utilities",
+  "shadow": true,
+  "yolo": true
+}
+```
 
-Simple echo test to verify the connection.
+</details>
+
+---
+
+### 🌟 ask-gemini
+
+Query Google Gemini with file analysis support.
+
+<details>
+<summary><b>Parameters & Examples</b></summary>
 
 **Parameters:**
-- `prompt` (optional): Message to echo (defaults to "Unified AI Pong!")
+- `prompt` *(required)*: Query. Use `@filename` to reference files
+- `model` *(optional)*: Model (default: `gemini-2.5-pro`)
+  - `gemini-2.5-pro` - Most capable
+  - `gemini-2.5-flash` - Faster, cost-effective
+- `sandbox` *(optional)*: Sandbox mode
 
-### qwen-help
+**Examples:**
 
-Display Qwen CLI help information.
+```json
+{
+  "prompt": "@README.md Improve this documentation",
+  "model": "gemini-2.5-flash"
+}
+```
 
-**Parameters:** None
+```json
+{
+  "prompt": "@tests/ Review test coverage",
+  "model": "gemini-2.5-pro"
+}
+```
 
-### rovodev-help
+</details>
 
-Display Rovodev CLI help information.
+---
 
-**Parameters:** None
+## 📚 File Reference Syntax
 
-## Configuration
+All `ask-*` tools support powerful file references:
 
-Each backend uses its own configuration:
-- **Qwen models**: Primary: qwen3-coder-plus, Fallback: qwen3-coder-turbo (used if primary hits quota limits)
-- **Rovo Dev models**: Uses model configured in ~/.rovodev/config.yml (typically Claude models)
+| Syntax | Description | Example |
+|--------|-------------|---------|
+| `@filename` | Include specific file | `@src/index.ts` |
+| `#filename` | Alternative syntax | `#package.json` |
+| `@directory/` | Include directory | `@src/utils/` |
+| Multiple refs | Reference many files | `@file1.ts @file2.ts` |
 
-## Usage with Claude Code
+**Example:**
+```
+@src/index.ts @src/tools/ Explain how the tool registration works
+```
 
-Once installed as an MCP server, Claude Code will automatically discover and make available all the tools provided by this unified tool:
+---
 
-- `ask-qwen`: Direct access to Qwen AI with parameters optimized for its strengths
-- `ask-rovodev`: Direct access to Rovo Dev AI with parameters optimized for its strengths
-- `qwen-help` and `rovodev-help`: Get help for either backend
-- `ping`: Test the connection
+## 🔧 Configuration
 
-You can use these tools directly in Claude by referencing the specific tool names and parameters as documented above. For example:
-- Use `ask-qwen` when you need large context windows or sandbox mode
-- Use `ask-rovodev` when you need Atlassian integration or shadow mode
+### Execution Modes
 
-## Project Structure
+#### 🛡️ Sandbox Mode (Qwen, Gemini)
+Safe environment for code execution:
+```json
+{
+  "prompt": "Create and test a new feature",
+  "sandbox": true
+}
+```
+
+#### 👻 Shadow Mode (Rovo Dev)
+Work on temporary workspace copy:
+```json
+{
+  "prompt": "Refactor this module",
+  "shadow": true
+}
+```
+
+#### ✅ Approval Modes (Qwen)
+Control operation approval:
+- `plan` - Analysis only
+- `default` - Prompt each time
+- `auto-edit` - Auto-approve edits
+- `yolo` - Auto-approve all
+
+---
+
+## 📋 Prerequisites
+
+### Required CLIs
+
+<table>
+<tr>
+<th>AI Tool</th>
+<th>CLI Installation</th>
+<th>Verification</th>
+</tr>
+<tr>
+<td><strong>Qwen Code</strong></td>
+<td>
+
+```bash
+pip install qwen-code-cli
+```
+
+</td>
+<td>
+
+```bash
+qwen --version
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>Rovo Dev</strong></td>
+<td>
+
+```bash
+npm install -g @atlassian/acli
+```
+
+</td>
+<td>
+
+```bash
+acli rovodev --help
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>Gemini</strong></td>
+<td>
+
+```bash
+npm install -g @google/generative-ai-cli
+```
+
+</td>
+<td>
+
+```bash
+gemini --version
+```
+
+</td>
+</tr>
+</table>
+
+> **Note:** You only need to install the CLIs for the AI tools you plan to use.
+
+---
+
+## 🏗️ Development
+
+```bash
+# Clone repository
+git clone https://github.com/jaggerxtrm/unified-ai-mcp-tool.git
+cd unified-ai-mcp-tool
+
+# Install dependencies
+npm install
+
+# Build TypeScript
+npm run build
+
+# Run in development
+npm run dev
+
+# Type checking
+npm run lint
+
+# Production start
+npm start
+```
+
+### Project Structure
 
 ```
 unified-ai-mcp-tool/
 ├── src/
-│   ├── index.ts              # MCP server entry point
-│   ├── constants.ts          # Configuration and constants
-│   ├── tools/
-│   │   ├── registry.ts       # Tool registration system
-│   │   ├── ask-qwen.tool.ts  # Qwen AI interaction tool
-│   │   ├── ask-rovodev.tool.ts # Rovo Dev interaction tool
-│   │   ├── simple-tools.ts   # Utility tools (ping, help)
-│   │   └── index.ts          # Tool exports
-│   └── utils/
-│       ├── commandExecutor.ts # Command execution utility
-│       ├── aiExecutor.ts      # Unified AI CLI wrapper
-│       └── logger.ts          # Logging utility
+│   ├── tools/              # Tool definitions
+│   │   ├── ask-qwen.tool.ts
+│   │   ├── ask-rovodev.tool.ts
+│   │   ├── ask-gemini.tool.ts
+│   │   ├── registry.ts     # Tool registry
+│   │   └── index.ts
+│   ├── utils/              # Utilities
+│   │   ├── aiExecutor.ts   # CLI execution
+│   │   ├── commandExecutor.ts
+│   │   └── logger.ts
+│   ├── constants.ts        # Configuration
+│   └── index.ts            # MCP server
+├── dist/                   # Compiled output
 ├── package.json
-├── tsconfig.json
-└── README.md
+└── tsconfig.json
 ```
 
-## How It Works
+---
 
-1. The MCP server listens for tool calls via stdio transport
-2. When a tool is called, the server validates the arguments using Zod schemas
-3. For backend-specific tools, prompts are passed to the appropriate CLI with appropriate flags
-4. File references (`@filename` or `#filename`) are handled by the respective AI tool's built-in file processing
-5. Output is captured and returned to the MCP client
-6. If quota limits are hit for Qwen, the server automatically falls back to the turbo model
+## 📊 Performance
 
-## Troubleshooting
+### Token Optimization
 
-### "Qwen CLI not found"
+The Unified AI MCP has been optimized to reduce token waste:
 
-Make sure the Qwen CLI is installed and available in your PATH:
-```bash
-npm install -g @qwen/cli
-# or follow instructions at https://github.com/QwenLM/qwen-code
-```
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **Tools** | 7 | 3 | 57% reduction |
+| **Token Usage** | ~10k | ~5k | 50% reduction |
+| **Context Saved** | - | ~10-15 files | Per conversation |
 
-### "acli rovodev not found"
+See [improvements.md](./improvements.md) for detailed optimization information.
 
-Make sure the Rovo Dev CLI is installed and available in your PATH:
-```bash
-# Follow Rovo Dev installation instructions
-```
+---
 
-### "Command timed out"
+## 🤝 Contributing
 
-For very large files or codebases, the analysis may take longer than the default 10-minute timeout. Consider:
-- Using `.gitignore` to exclude unnecessary files
-- Breaking down large queries into smaller chunks
-- Using `approvalMode: "plan"` to analyze without executing
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### "Invalid tool arguments"
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Check that your arguments match the tool schema. Use the `qwen-help` or `rovodev-help` tools to see available options.
+---
 
-## License
+## 📄 License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+---
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+## 🔗 Links
 
-## Credits
+- 📦 [npm Package](https://www.npmjs.com/package/@jaggerxtrm/unified-ai-mcp-tool)
+- 🐙 [GitHub Repository](https://github.com/jaggerxtrm/unified-ai-mcp-tool)
+- 📖 [Model Context Protocol](https://modelcontextprotocol.io)
+- 🤖 [Qwen Code](https://github.com/QwenLM/qwen-code)
+- 🏢 [Atlassian Rovo Dev](https://developer.atlassian.com/rovodev/)
+- 🌟 [Google Gemini](https://ai.google.dev/)
 
-Based on architectural patterns from [qwen-mcp-tool](https://github.com/QwenLM/qwen-code) and extended for multiple AI backends.
-Built for use with both [Qwen Code](https://github.com/QwenLM/qwen-code) and [Atlassian Rovo Dev](https://developer.atlassian.com/rovodev/).
+---
+
+<div align="center">
+
+**Made with ❤️ by developers, for developers**
+
+⭐ Star this repo if you find it useful!
+
+</div>
