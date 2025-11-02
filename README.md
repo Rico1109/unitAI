@@ -79,6 +79,11 @@ npm install
 npm run build
 ```
 
+### UPDATING
+```bash
+npm update -g @jaggerxtrm/unified-ai-mcp-tool
+```
+
 ---
 
 ## 🎯 Quick Start
