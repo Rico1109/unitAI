@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "unified-ai-mcp": {
+      "command": "unified-ai-mcp-tool",
+      "env": {}
+    }
+  }
+}
