@@ -1,6 +1,6 @@
 {
   "name": "@jaggerxtrm/unified-ai-mcp-tool",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Unified Model Context Protocol server for multiple AI clients (Qwen, Rovo Dev, Gemini etc.)",
   "main": "dist/index.js",
   "type": "module",
@@ -26,12 +26,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0",
+    "@modelcontextprotocol/sdk": "^1.21.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.0.0",
     "typescript": "^5.0.0"
   },
   "engines": {
