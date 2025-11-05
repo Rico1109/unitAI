@@ -58,6 +58,12 @@ Real-time feedback on long-running operations
 
 ## 🚀 Installation
 
+### Claude Desktop (Quickest)
+
+```bash
+claude mcp add unified-ai -- npx -y @jaggerxtrm/unified-ai-mcp-tool
+```
+
 ### Global Installation (Recommended)
 
 ```bash
@@ -422,6 +428,20 @@ See [improvements.md](./improvements.md) for detailed optimization information.
 
 ---
 
+## 🚀 Future Developments
+
+### Combined Workflow Tools
+
+To streamline common tasks, we are planning to introduce dedicated tools that combine the power of the existing `ask-*` tools into single-action commands.
+
+-   **`validate`**: A tool to automatically check the last commit and its diffs for correctness, ensuring code quality and integrity with a single command.
+-   **`search-library`**: A powerful tool that leverages external knowledge bases like Context7 or DeepWiki to find up-to-date libraries, best practices, and documentation for any given task.
+-   **`init-session`**: A utility to run a series of diagnostic checks to ensure all integrated tools and functionalities (like git and memory access) are working as expected.
+
+*Note: For workflows requiring shell access or file system modifications, tools like `ask-qwen` and `ask-gemini` would likely require the `--yolo` parameter to grant necessary permissions.*
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -452,8 +472,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-
-**Made with ❤️ by developers, for developers**
 
 ⭐ Star this repo if you find it useful!
 

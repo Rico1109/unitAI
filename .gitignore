@@ -5,3 +5,5 @@ yarn.lock
 .env
 # Build artifacts
 /dist/
+.cursor/
+.claude/
