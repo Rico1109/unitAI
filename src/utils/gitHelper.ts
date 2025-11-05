@@ -184,6 +184,48 @@ export async function isFileTracked(filePath: string): Promise<boolean> {
 }
 
 /**
+ * Ottiene gli ultimi N commits con i loro diffs completi
+ */
+export async function getRecentCommitsWithDiffs(count: number = 10): Promise<GitCommitInfo[]> {
+  if (!await isGitRepository()) {
+    throw new Error("Directory corrente non è un repository Git");
+  }
+
+  try {
+    // Ottieni gli hash degli ultimi N commits
+    const logOutput = await runGitCommand(["log", "--format=%H", `-${count}`]);
+    const hashes = logOutput.trim().split("\n").filter(line => line.trim());
+
+    // Per ogni hash, ottieni le informazioni complete
+    const commits: GitCommitInfo[] = [];
+    for (const hash of hashes) {
+      const commitInfo = await getGitCommitInfo(hash);
+      commits.push(commitInfo);
+    }
+
+    return commits;
+  } catch (error) {
+    logger.error(`Errore nel recupero degli ultimi ${count} commits:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Estrae il range di date da un array di commits
+ */
+export function getDateRangeFromCommits(commits: GitCommitInfo[]): { oldest: string; newest: string } | null {
+  if (commits.length === 0) {
+    return null;
+  }
+
+  // I commit sono già ordinati dal più recente al più vecchio
+  const newest = commits[0].date;
+  const oldest = commits[commits.length - 1].date;
+
+  return { oldest, newest };
+}
+
+/**
  * Verifica la disponibilità dei comandi CLI necessari
  */
 export async function checkCLIAvailability(): Promise<Record<string, boolean>> {

@@ -258,12 +258,13 @@ Intelligent workflows that orchestrate multiple AI backends for complex tasks li
 
 **Parameters:**
 - `workflow` *(required)*: Workflow to execute
-  - `init-session` - Initialize session with Git and CLI checks
+  - `init-session` - AI-powered session initialization with commit analysis
   - `parallel-review` - Parallel code review with Gemini + Rovodev
-  - `validate-last-commit` - Validate last commit with Gemini + Qwen
-  - `pre-commit-validate` - Multi-stage pre-commit validation
-  - `bug-hunt` - Comprehensive bug analysis workflow
+  - `validate-last-commit` - Validate commits with Gemini + Qwen analysis
 - `params` *(optional)*: Workflow-specific parameters
+
+**Available Workflows:** 3 implemented (init-session, parallel-review, validate-last-commit)
+**Coming Soon:** pre-commit-validate, bug-hunt
 
 **Examples:**
 
@@ -300,14 +301,22 @@ Intelligent workflows that orchestrate multiple AI backends for complex tasks li
 
 ### 🚀 init-session
 
-Initialize your development session by analyzing Git repository and checking CLI availability.
+**AI-powered session initialization** that analyzes your Git repository and provides an intelligent summary of recent work.
 
 **What it does:**
-- Checks if current directory is a Git repository
-- Shows recent commits and current branch
-- Lists staged and modified files
+- Collects last **10 commits** with full diffs
+- **AI analysis with Rovodev** to synthesize:
+  - Feature changes and new functionality
+  - Bug fixes and their root causes
+  - Refactoring and architectural improvements
+  - Current work status (in-progress, completed, next steps)
+- Extracts date range from commits
+- **Suggests memory searches** based on commit date range
+- Shows current branch, staged and modified files
 - Verifies availability of Qwen, Gemini, and Rovo Dev CLIs
 - Provides session information (timestamp, timezone, working directory)
+
+**No parameters required** - fully automated.
 
 **Example:**
 ```json
@@ -315,6 +324,14 @@ Initialize your development session by analyzing Git repository and checking CLI
   "workflow": "init-session"
 }
 ```
+
+**Output includes:**
+- Repository info and recent commits summary
+- **AI Analysis of Recent Work** (synthesized by Rovodev)
+- **Relevant Memories** section with suggested search command
+- Detailed repository status and branch info
+- CLI availability check
+- Session metadata
 
 ### 👥 parallel-review
 
@@ -617,9 +634,13 @@ See [improvements.md](./improvements.md) for detailed optimization information.
 
 ## 🚀 Future Developments
 
-### Additional Smart Workflows
+### Recent Enhancements (v1.1.0)
 
-We've successfully implemented the first phase of smart workflows and are planning to expand with additional capabilities:
+-   **`init-session`**: Enhanced with AI analysis! Now uses Rovodev to analyze the last 10 commits and provide an intelligent summary of recent work, including feature changes, bug fixes, and refactoring efforts.
+
+### Additional Smart Workflows (Planned)
+
+We're planning to expand with additional workflow capabilities:
 
 -   **`pre-commit-validate`**: Multi-stage validation pipeline for staged files, checking for common issues, secrets, and test coverage
 -   **`bug-hunt`**: Comprehensive bug analysis workflow that combines error pattern analysis with codebase similarity search
