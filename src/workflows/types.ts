@@ -1,9 +1,22 @@
 import { z } from "zod";
+import { AutonomyLevel } from "../utils/permissionManager.js";
 
 /**
  * Tipo di callback per progresso dell'esecuzione
  */
 export type ProgressCallback = (message: string) => void;
+
+/**
+ * Parametri base per tutti i workflow
+ * Include il livello di autonomia per il sistema di permessi
+ */
+export interface BaseWorkflowParams {
+  /**
+   * Livello di autonomia per le operazioni del workflow
+   * @default AutonomyLevel.READ_ONLY
+   */
+  autonomyLevel?: AutonomyLevel;
+}
 
 /**
  * Interfaccia base per la definizione di un workflow
@@ -36,7 +49,7 @@ export type ValidationDepth = "quick" | "thorough" | "paranoid";
 /**
  * Parametri per il workflow parallel-review
  */
-export interface ParallelReviewParams {
+export interface ParallelReviewParams extends BaseWorkflowParams {
   files: string[];
   focus?: ReviewFocus;
 }
@@ -44,21 +57,21 @@ export interface ParallelReviewParams {
 /**
  * Parametri per il workflow pre-commit-validate
  */
-export interface PreCommitValidateParams {
+export interface PreCommitValidateParams extends BaseWorkflowParams {
   depth?: ValidationDepth;
 }
 
 /**
  * Parametri per il workflow validate-last-commit
  */
-export interface ValidateLastCommitParams {
+export interface ValidateLastCommitParams extends BaseWorkflowParams {
   commit_ref?: string;
 }
 
 /**
  * Parametri per il workflow bug-hunt
  */
-export interface BugHuntParams {
+export interface BugHuntParams extends BaseWorkflowParams {
   symptoms: string;
   suspected_files?: string[];
 }

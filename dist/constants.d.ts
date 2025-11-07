@@ -97,4 +97,30 @@ export type RovodevModel = typeof AI_MODELS.ROVODEV[keyof typeof AI_MODELS.ROVOD
 export type GeminiModel = typeof AI_MODELS.GEMINI[keyof typeof AI_MODELS.GEMINI];
 export type ApprovalMode = typeof APPROVAL_MODES[keyof typeof APPROVAL_MODES];
 export type BackendType = typeof BACKENDS[keyof typeof BACKENDS];
+/**
+ * Agent role descriptions and configurations
+ *
+ * Defines the specialization and preferred backend for each agent type
+ */
+export declare const AGENT_ROLES: {
+    readonly ARCHITECT: {
+        readonly name: "ArchitectAgent";
+        readonly backend: "gemini";
+        readonly specialization: "High-level system design, architecture analysis, and strategic planning";
+        readonly description: "Uses Gemini for deep architectural reasoning, security analysis, and long-term design decisions";
+    };
+    readonly IMPLEMENTER: {
+        readonly name: "ImplementerAgent";
+        readonly backend: "rovodev";
+        readonly fallbackBackend: "gemini";
+        readonly specialization: "Precise code implementation with production-quality standards";
+        readonly description: "Uses Rovodev for generating production-ready code with proper error handling and best practices";
+    };
+    readonly TESTER: {
+        readonly name: "TesterAgent";
+        readonly backend: "qwen";
+        readonly specialization: "Fast test generation and validation";
+        readonly description: "Uses Qwen for rapid test case generation with high coverage and edge case detection";
+    };
+};
 //# sourceMappingURL=constants.d.ts.map

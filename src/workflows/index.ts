@@ -13,6 +13,7 @@ import { parallelReviewWorkflow } from "./parallel-review.workflow.js";
 // import { preCommitValidateWorkflow } from "./pre-commit-validate.workflow.js";
 import { initSessionWorkflow } from "./init-session.workflow.js";
 import { validateLastCommitWorkflow } from "./validate-last-commit.workflow.js";
+import { featureDesignWorkflow } from "./feature-design.workflow.js";
 // import { bugHuntWorkflow } from "./bug-hunt.workflow.js";
 
 /**
@@ -78,9 +79,10 @@ export async function executeWorkflow(
 export const smartWorkflowsSchema = z.object({
   workflow: z.enum([
     "parallel-review",
-    "pre-commit-validate", 
+    "pre-commit-validate",
     "init-session",
     "validate-last-commit",
+    "feature-design",
     "bug-hunt"
   ]).describe("Workflow da eseguire"),
   params: z.record(z.any()).optional().describe("Parametri specifici del workflow")
@@ -107,7 +109,19 @@ export const workflowSchemas = {
     commit_ref: z.string().optional().default("HEAD")
       .describe("Riferimento al commit da validare")
   }),
-  
+
+  "feature-design": z.object({
+    featureDescription: z.string().describe("Descrizione della feature da implementare"),
+    targetFiles: z.array(z.string()).describe("File da creare o modificare"),
+    context: z.string().optional().describe("Contesto addizionale sul progetto"),
+    architecturalFocus: z.enum(["design", "refactoring", "optimization", "security", "scalability"])
+      .optional().default("design").describe("Focus dell'analisi architetturale"),
+    implementationApproach: z.enum(["incremental", "full-rewrite", "minimal"])
+      .optional().default("incremental").describe("Approccio implementativo"),
+    testType: z.enum(["unit", "integration", "e2e"])
+      .optional().default("unit").describe("Tipo di test da generare")
+  }),
+
   "bug-hunt": z.object({
     symptoms: z.string().describe("Descrizione dei sintomi del problema"),
     suspected_files: z.array(z.string()).optional()
@@ -125,8 +139,9 @@ export function initializeWorkflowRegistry(): void {
   // registerWorkflow("pre-commit-validate", preCommitValidateWorkflow);
   registerWorkflow("init-session", initSessionWorkflow);
   registerWorkflow("validate-last-commit", validateLastCommitWorkflow);
+  registerWorkflow("feature-design", featureDesignWorkflow);
   // registerWorkflow("bug-hunt", bugHuntWorkflow);
-  
+
   console.log("Registro workflow inizializzato");
 }
 

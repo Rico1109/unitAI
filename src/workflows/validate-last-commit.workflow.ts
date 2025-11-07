@@ -13,7 +13,9 @@ import type {
  */
 const validateLastCommitSchema = z.object({
   commit_ref: z.string().optional().default("HEAD")
-    .describe("Riferimento al commit da validare")
+    .describe("Riferimento al commit da validare"),
+  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
+    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)")
 });
 
 /**

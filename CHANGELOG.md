@@ -2,6 +2,79 @@
 
 All notable changes to the Unified AI MCP Tool project.
 
+## [1.1.1] - 2025-11-07
+
+### 🚀 Phase 2: Specialized Agent Interfaces (UNIFIED_AUTONOMOUS_SYSTEM_PLAN)
+
+#### ✨ Added - Agent System
+- **BaseAgent**: Abstract base class with Template Method pattern
+  - Execution flow with retry logic and fallback backend support
+  - Progress reporting and metadata collection
+  - Input validation hooks
+
+- **ArchitectAgent**: High-level system design and architecture analysis
+  - Backend: Gemini (no fallback - deep reasoning required)
+  - Focus areas: design, refactoring, optimization, security, scalability
+  - Outputs: analysis, recommendations, implementation plan, risks, complexity estimates
+
+- **ImplementerAgent**: Production-ready code generation
+  - Backend: Rovodev (fallback: Gemini)
+  - Approaches: incremental, full-rewrite, minimal
+  - Outputs: summary, changed files, code snippets, test suggestions, next steps
+
+- **TesterAgent**: Fast test generation and validation
+  - Backend: Qwen (no fallback - optimized for speed)
+  - Test types: unit, integration, e2e
+  - Outputs: test code, test count, estimated coverage, recommendations
+
+#### 🏭 Added - Agent Factory
+- **AgentFactory**: Centralized agent creation and management
+  - Factory methods: `createArchitect()`, `createImplementer()`, `createTester()`
+  - Dynamic creation: `createAgent(AgentType)`
+  - Metadata registry: `getAvailableAgents()`, `getAgentByName()`
+
+#### 🔧 Added - Workflow Integration
+- **Agent Helpers** in `src/workflows/utils.ts`:
+  - `createAgentConfig()`: Convert workflow params to AgentConfig
+  - `formatAgentResults()`: Format agent output for display
+
+- **Feature Design Workflow**: End-to-end orchestration example
+  - Phase 1: Architectural design (ArchitectAgent)
+  - Phase 2: Code implementation (ImplementerAgent)
+  - Phase 3: Test generation (TesterAgent)
+  - Comprehensive error handling and progress reporting
+
+#### ✅ Added - Integration Testing
+- Created `scripts/test-agents.ts`: Comprehensive smoke tests
+  - Factory instantiation tests (5 tests)
+  - Agent registry tests (4 tests)
+  - Agent configuration tests (2 tests)
+  - Input validation tests (3 tests)
+  - Backend configuration tests (3 tests)
+  - **Result**: 17/17 tests passed (100% success rate)
+
+#### 📝 Technical Implementation
+- Agent types defined in `src/agents/types.ts` (340 lines)
+- Base agent in `src/agents/base/BaseAgent.ts` (255 lines)
+- Three specialized agents (260-300 lines each)
+- Factory with dynamic creation in `src/agents/index.ts` (160 lines)
+- Feature design workflow in `src/workflows/feature-design.workflow.ts` (200+ lines)
+
+#### 🎯 Architecture Highlights
+- Template Method pattern for consistent agent behavior
+- Retry logic with backend fallback
+- Type-safe generic interfaces: `IAgent<TInput, TOutput>`
+- Structured output parsing with fallback to raw output
+- Progress callback system for real-time updates
+- Comprehensive metadata collection
+
+#### 🔗 Integration with Phase 1
+- Agents receive `autonomyLevel` through `AgentConfig`
+- Ready for permission checks via `PermissionManager`
+- Workflow parameters support `autonomyLevel` field
+
+### 📚 Previous Changes
+
 ## [0.2.1] - 2024-11-02
 
 ### 🎉 Major Optimization Release

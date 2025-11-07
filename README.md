@@ -249,6 +249,150 @@ Query Google Gemini with file analysis support.
 
 ---
 
+## 🤖 Agent System (NEW in v1.1.1)
+
+The Unified AI MCP Tool now includes a powerful **Agent System** that provides specialized, domain-focused AI agents for common development tasks. Each agent encapsulates a specific AI backend optimized for its purpose.
+
+### 🏛️ ArchitectAgent
+
+**High-level system design and architecture analysis using Gemini**
+
+Specializes in:
+- System architecture design and patterns
+- Security analysis (OWASP, threat modeling)
+- Refactoring strategies
+- Performance optimization
+- Scalability planning
+
+**Example Usage:**
+```typescript
+import { AgentFactory } from "unified-ai-mcp-tool";
+
+const architect = AgentFactory.createArchitect();
+const result = await architect.execute({
+  task: "Analyze the architecture of our authentication system",
+  files: ["src/auth/", "src/middleware/auth.ts"],
+  focus: "security"
+}, {
+  autonomyLevel: "low",
+  onProgress: (msg) => console.log(msg)
+});
+
+console.log(result.output.analysis);
+console.log(result.output.recommendations);
+```
+
+**Backend:** Gemini 2.5 Pro (no fallback - requires deep reasoning)
+
+### 💻 ImplementerAgent
+
+**Production-ready code generation using Rovodev with Gemini fallback**
+
+Specializes in:
+- Production-quality code generation
+- Bug fixing and modifications
+- Incremental implementation
+- Code quality and best practices
+
+**Example Usage:**
+```typescript
+const implementer = AgentFactory.createImplementer();
+const result = await implementer.execute({
+  task: "Add rate limiting to the API endpoints",
+  targetFiles: ["src/api/routes.ts", "src/middleware/"],
+  approach: "incremental"
+}, {
+  autonomyLevel: "medium",
+  onProgress: (msg) => console.log(msg)
+});
+
+result.output.codeSnippets.forEach(snippet => {
+  console.log(`File: ${snippet.file}`);
+  console.log(snippet.code);
+});
+```
+
+**Backend:** Rovodev (fallback: Gemini 2.5 Pro)
+
+### 🧪 TesterAgent
+
+**Fast test generation and validation using Qwen**
+
+Specializes in:
+- Unit test generation
+- Integration test creation
+- Test coverage analysis
+- Edge case detection
+
+**Example Usage:**
+```typescript
+const tester = AgentFactory.createTester();
+const result = await tester.execute({
+  targetCode: readFileSync("src/utils/parser.ts", "utf-8"),
+  testType: "unit",
+  framework: "jest",
+  coverageGoal: 85
+}, {
+  autonomyLevel: "low",
+  onProgress: (msg) => console.log(msg)
+});
+
+console.log(result.output.testCode);
+console.log(`Coverage: ${result.output.estimatedCoverage}%`);
+console.log(`Tests: ${result.output.testCount}`);
+```
+
+**Backend:** Qwen (no fallback - optimized for speed)
+
+### 🏭 AgentFactory
+
+Create agents dynamically:
+
+```typescript
+import { AgentFactory, AgentType } from "unified-ai-mcp-tool";
+
+// Specific agent creation
+const architect = AgentFactory.createArchitect();
+const implementer = AgentFactory.createImplementer();
+const tester = AgentFactory.createTester();
+
+// Dynamic creation by type
+const agent = AgentFactory.createAgent(AgentType.ARCHITECT);
+
+// Get available agents
+const agents = AgentFactory.getAvailableAgents();
+agents.forEach(a => {
+  console.log(`${a.name}: ${a.specialization}`);
+});
+
+// Find agent by name
+const agent = AgentFactory.getAgentByName("ArchitectAgent");
+```
+
+### 🎯 Feature Design Workflow
+
+The **feature-design** workflow orchestrates all three agents for end-to-end feature development:
+
+1. **ArchitectAgent** - Designs architecture and approach
+2. **ImplementerAgent** - Generates production-ready code
+3. **TesterAgent** - Creates comprehensive tests
+
+**Example:**
+```json
+{
+  "workflow": "feature-design",
+  "params": {
+    "featureDescription": "Add user authentication with JWT tokens",
+    "targetFiles": ["src/auth/", "src/middleware/auth.ts"],
+    "architecturalFocus": "security",
+    "implementationApproach": "incremental",
+    "testType": "integration"
+  }
+}
+```
+
+---
+
 ### 🔄 smart-workflows
 
 Intelligent workflows that orchestrate multiple AI backends for complex tasks like parallel code review, pre-commit validation, and bug hunting.
@@ -261,9 +405,10 @@ Intelligent workflows that orchestrate multiple AI backends for complex tasks li
   - `init-session` - AI-powered session initialization with commit analysis
   - `parallel-review` - Parallel code review with Gemini + Rovodev
   - `validate-last-commit` - Validate commits with Gemini + Qwen analysis
+  - `feature-design` - End-to-end feature development with all three agents
 - `params` *(optional)*: Workflow-specific parameters
 
-**Available Workflows:** 3 implemented (init-session, parallel-review, validate-last-commit)
+**Available Workflows:** 4 implemented (init-session, parallel-review, validate-last-commit, feature-design)
 **Coming Soon:** pre-commit-validate, bug-hunt
 
 **Examples:**

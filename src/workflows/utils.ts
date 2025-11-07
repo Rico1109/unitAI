@@ -1,10 +1,16 @@
 import { executeAIClient } from "../utils/aiExecutor.js";
 import { BACKENDS } from "../constants.js";
-import type { 
-  ProgressCallback, 
-  AIAnalysisResult, 
-  ParallelAnalysisResult, 
-  ReviewFocus 
+import {
+  createPermissionManager,
+  getDefaultAutonomyLevel,
+  type PermissionManager
+} from "../utils/permissionManager.js";
+import type {
+  ProgressCallback,
+  AIAnalysisResult,
+  ParallelAnalysisResult,
+  ReviewFocus,
+  BaseWorkflowParams
 } from "./types.js";
 
 /**
@@ -250,4 +256,139 @@ export function extractFileName(filePath: string): string {
 export function isFileType(filePath: string, extensions: string[]): boolean {
   const ext = filePath.split(".").pop()?.toLowerCase();
   return ext ? extensions.includes(ext) : false;
+}
+
+/**
+ * Crea un PermissionManager dai parametri del workflow
+ *
+ * Estrae l'autonomyLevel dai parametri (se presente) e crea un PermissionManager
+ * con il livello appropriato. Se non specificato, usa il livello di default (READ_ONLY).
+ *
+ * @param params - Parametri del workflow che estendono BaseWorkflowParams
+ * @returns PermissionManager configurato con il livello di autonomia appropriato
+ *
+ * @example
+ * ```typescript
+ * async function myWorkflow(params: MyWorkflowParams) {
+ *   const permissions = createWorkflowPermissionManager(params);
+ *
+ *   // Verifica permessi prima di operazioni rischiose
+ *   if (permissions.git.canCommit()) {
+ *     // Esegui commit
+ *   }
+ *
+ *   // Oppure assert che lancia errore se non permesso
+ *   permissions.git.assertPush("pushing to remote");
+ * }
+ * ```
+ */
+export function createWorkflowPermissionManager(
+  params: BaseWorkflowParams
+): PermissionManager {
+  const level = params.autonomyLevel || getDefaultAutonomyLevel();
+  return createPermissionManager(level);
+}
+
+// ============================================================================
+// Agent Integration Helpers
+// ============================================================================
+
+/**
+ * Crea un AgentConfig dai parametri del workflow
+ *
+ * Converte i parametri di un workflow in una configurazione Agent-compatible,
+ * gestendo autonomy level e progress callback.
+ *
+ * @param params - Parametri del workflow che estendono BaseWorkflowParams
+ * @param onProgress - Callback opzionale per report di progresso
+ * @returns AgentConfig pronto per l'uso con gli agent
+ *
+ * @example
+ * ```typescript
+ * import { AgentFactory } from "../agents/index.js";
+ *
+ * async function myWorkflow(params: MyWorkflowParams) {
+ *   const config = createAgentConfig(params, (msg) => console.log(msg));
+ *   const architect = AgentFactory.createArchitect();
+ *
+ *   const result = await architect.execute({
+ *     task: "Analyze system architecture",
+ *     files: params.files
+ *   }, config);
+ * }
+ * ```
+ */
+export function createAgentConfig(
+  params: BaseWorkflowParams,
+  onProgress?: ProgressCallback
+): import("../agents/types.js").AgentConfig {
+  const level = params.autonomyLevel || getDefaultAutonomyLevel();
+
+  return {
+    autonomyLevel: level,
+    onProgress,
+    timeout: 300000 // 5 minutes default timeout
+  };
+}
+
+/**
+ * Formatta i risultati di un agent per la visualizzazione
+ *
+ * Converte l'output strutturato di un agent in un formato leggibile
+ * per l'utente, includendo metadata e gestione degli errori.
+ *
+ * @param result - Risultato dell'esecuzione di un agent
+ * @param agentName - Nome dell'agent (per il titolo)
+ * @returns Stringa formattata pronta per la visualizzazione
+ *
+ * @example
+ * ```typescript
+ * const result = await architect.execute(input, config);
+ * const formatted = formatAgentResults(result, "ArchitectAgent");
+ * console.log(formatted);
+ * ```
+ */
+export function formatAgentResults<T>(
+  result: import("../agents/types.js").AgentResult<T>,
+  agentName: string
+): string {
+  let output = `# ${agentName} Results\n\n`;
+
+  // Status badge
+  const statusBadge = result.success ? "✅ SUCCESS" : "❌ FAILED";
+  output += `**Status:** ${statusBadge}\n\n`;
+
+  // Metadata
+  if (result.metadata) {
+    output += "## Metadata\n\n";
+    output += `- **Backend:** ${result.metadata.backend}\n`;
+    output += `- **Execution Time:** ${result.metadata.executionTime}ms\n`;
+    output += `- **Autonomy Level:** ${result.metadata.autonomyLevel}\n`;
+
+    // Add any additional metadata
+    Object.entries(result.metadata).forEach(([key, value]) => {
+      if (!["backend", "executionTime", "autonomyLevel"].includes(key)) {
+        output += `- **${key}:** ${JSON.stringify(value)}\n`;
+      }
+    });
+    output += "\n";
+  }
+
+  // Error handling
+  if (!result.success && result.error) {
+    output += "## Error\n\n";
+    output += `\`\`\`\n${result.error}\n\`\`\`\n\n`;
+  }
+
+  // Output (serialize as JSON for complex types)
+  output += "## Output\n\n";
+  if (typeof result.output === "string") {
+    output += result.output;
+  } else {
+    output += "```json\n";
+    output += JSON.stringify(result.output, null, 2);
+    output += "\n```\n";
+  }
+
+  return output;
 }

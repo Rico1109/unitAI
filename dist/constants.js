@@ -96,4 +96,30 @@ export const BACKENDS = {
     ROVODEV: "rovodev",
     GEMINI: "gemini"
 };
+/**
+ * Agent role descriptions and configurations
+ *
+ * Defines the specialization and preferred backend for each agent type
+ */
+export const AGENT_ROLES = {
+    ARCHITECT: {
+        name: "ArchitectAgent",
+        backend: BACKENDS.GEMINI,
+        specialization: "High-level system design, architecture analysis, and strategic planning",
+        description: "Uses Gemini for deep architectural reasoning, security analysis, and long-term design decisions"
+    },
+    IMPLEMENTER: {
+        name: "ImplementerAgent",
+        backend: BACKENDS.ROVODEV,
+        fallbackBackend: BACKENDS.GEMINI,
+        specialization: "Precise code implementation with production-quality standards",
+        description: "Uses Rovodev for generating production-ready code with proper error handling and best practices"
+    },
+    TESTER: {
+        name: "TesterAgent",
+        backend: BACKENDS.QWEN,
+        specialization: "Fast test generation and validation",
+        description: "Uses Qwen for rapid test case generation with high coverage and edge case detection"
+    }
+};
 //# sourceMappingURL=constants.js.map

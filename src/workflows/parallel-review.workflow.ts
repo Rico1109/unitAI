@@ -14,7 +14,9 @@ import type {
 const parallelReviewSchema = z.object({
   files: z.array(z.string()).describe("File da analizzare"),
   focus: z.enum(["architecture", "security", "performance", "quality", "all"])
-    .optional().default("all").describe("Area di focus dell'analisi")
+    .optional().default("all").describe("Area di focus dell'analisi"),
+  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
+    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)")
 });
 
 /**

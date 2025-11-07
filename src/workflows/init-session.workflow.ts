@@ -8,7 +8,10 @@ import type { WorkflowDefinition, ProgressCallback, GitCommitInfo } from "./type
 /**
  * Schema Zod per il workflow init-session
  */
-const initSessionSchema = z.object({});
+const initSessionSchema = z.object({
+  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
+    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)")
+});
 
 /**
  * Genera query semantiche per la ricerca nelle memorie basate sull'analisi AI
