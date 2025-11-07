@@ -32,8 +32,12 @@ export async function executeCommand(
 
     const child = spawn(command, args, {
       shell: false,
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"]  // Changed from "ignore" to "pipe" for stdin
     });
+
+    // Close stdin immediately - we don't need to send input
+    // This prevents child processes from hanging waiting for input
+    child.stdin?.end();
 
     // Progress monitoring
     if (onProgress) {

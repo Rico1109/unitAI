@@ -7,3 +7,6 @@ yarn.lock
 /dist/
 .cursor/
 .claude/
+
+# Debug files
+gemini-error.json
