@@ -1,461 +1,155 @@
-# Smart Workflows Implementation Plan
+# Piano di Sviluppo: Unified AI MCP Tool - Potenziamento per Claude Code
 
-**Created:** 2025-11-05
-**Status:** Planning
-**Version:** 1.0
-**Supersedes:** None
+**Versione:** 1.0
+**Data:** 2025-11-06
 
----
-
-## Executive Summary
-
-This document outlines the implementation plan for adding intelligent multi-step workflows to the Unified AI MCP Tool. These workflows orchestrate multiple AI backends (Qwen, Gemini, Rovodev) to accomplish complex tasks like parallel code review, pre-commit validation, and bug hunting.
-
-**Key Decision:** Use **lazy loading architecture** to minimize token overhead while providing comprehensive workflow functionality.
+Questo documento delinea la visione strategica, l'architettura e il piano di sviluppo per il `unified-ai-mcp-tool`, concepito come un'estensione di orchestrazione intelligente per il tool CLI `claude-code`.
 
 ---
 
-## Problem Statement
+## 1. Visione Strategica
 
-### Current State
-- 3 powerful AI tools: `ask-qwen`, `ask-gemini`, `ask-rovodev`
-- Each tool must be called separately by the user
-- Common workflows require manual orchestration
-- Token overhead: ~503 tokens per MCP request
-
-### User Pain Points
-1. **Manual Orchestration**: Users must manually run parallel analyses with both Gemini and Qwen
-2. **Repetitive Prompts**: Same prompt patterns used repeatedly (e.g., "analyze for security, performance, quality")
-3. **No Validation Workflows**: No built-in pre-commit validation or session initialization
-4. **Context Switching**: Users must remember which AI is best for which task
-
-### Desired State
-- Smart workflows that combine multiple AI backends automatically
-- Pre-configured prompt templates for common tasks
-- Minimal token overhead to maintain efficient context usage
-- Easy to add new workflows without affecting existing tools
+L'obiettivo è trasformare `claude-code` da un potente strumento CLI a un **orchestratore di agenti AI semi-autonomo**. Il `unified-ai-mcp-tool` funge da "sistema nervoso" e "braccio operativo", permettendo a Claude di delegare compiti complessi a un ecosistema di AI specializzate e strumenti di contesto, per poi riprendere il controllo per la validazione e l'implementazione finale.
 
 ---
 
-## Proposed Solution: Lazy Loading Architecture
+## 2. Architettura del Sistema
 
-### Core Concept
-
-**One MCP tool** (`smart-workflows`) that routes to **multiple workflow implementations**.
+Proponiamo un'architettura a più livelli che astrae la complessità e massimizza l'efficienza.
 
 ```
-Claude MCP Request
-       ↓
-smart-workflows tool (router)
-       ↓
-Workflow Registry (dispatcher)
-       ↓
-Individual Workflow Implementation
-       ↓
-Orchestrates ask-qwen, ask-gemini, ask-rovodev
-```
-
-### Token Overhead Analysis
-
-| Approach | Per-Request Overhead | Implementation Size |
-|----------|---------------------|---------------------|
-| **Current (3 tools)** | 503 tokens | 1,094 lines |
-| **Direct (5 new tools)** | +910 tokens = 1,413 total (+181%) | +1,340 lines |
-| **Lazy Loading (1 new tool)** | +250 tokens = 753 total (+50%) | +1,200 lines |
-| **Hybrid (2 + 1 bundled)** | +620 tokens = 1,123 total (+123%) | +1,000 lines |
-
-**Decision**: Implement **Lazy Loading** approach for optimal token efficiency.
-
----
-
-## Architecture Design
-
-### Directory Structure
-
-```
-src/
-├── tools/
-│   ├── ask-qwen.tool.ts              # Existing
-│   ├── ask-gemini.tool.ts            # Existing
-│   ├── ask-rovodev.tool.ts           # Existing
-│   ├── smart-workflows.tool.ts       # NEW: Single MCP tool (router)
-│   ├── registry.ts
-│   └── index.ts
-├── workflows/                         # NEW: Workflow implementations
-│   ├── parallel-review.workflow.ts   # NEW
-│   ├── pre-commit-validate.workflow.ts # NEW
-│   ├── init-session.workflow.ts      # NEW
-│   ├── validate-last-commit.workflow.ts # NEW
-│   ├── bug-hunt.workflow.ts          # NEW
-│   ├── types.ts                       # NEW: Shared types
-│   ├── utils.ts                       # NEW: Shared utilities
-│   └── index.ts                       # NEW: Workflow registry
-└── utils/
-    ├── aiExecutor.ts                  # Existing (used by workflows)
-    ├── commandExecutor.ts             # Existing
-    ├── logger.ts                      # Existing
-    └── gitHelper.ts                   # NEW: Git operations helper
-```
-
-### Component Responsibilities
-
-#### 1. `smart-workflows.tool.ts` (Router)
-- Single MCP tool exposed to Claude
-- Minimal schema: workflow name + generic params
-- Routes requests to workflow registry
-- Handles progress callbacks
-- **Size**: ~100 lines, ~250 tokens in MCP schema
-
-#### 2. `workflows/index.ts` (Registry)
-- Central registry of all workflows
-- Type-safe workflow execution
-- Parameter validation via Zod schemas
-- **Size**: ~100 lines
-
-#### 3. Individual Workflow Files
-- Self-contained workflow implementations
-- Own Zod schema for parameters
-- Execute function that orchestrates AI tools
-- **Size**: ~200-300 lines each
-
-#### 4. `workflows/utils.ts` (Shared Logic)
-- Prompt template builders
-- Result synthesis functions
-- Common workflow patterns
-- **Size**: ~150 lines
-
-#### 5. `utils/gitHelper.ts` (Git Operations)
-- Git status, log, diff operations
-- Staged files detection
-- Commit information retrieval
-- **Size**: ~100 lines
-
----
-
-## Workflows to Implement
-
-### Priority Tier 1 (High Impact)
-
-#### 1. **parallel-review**
-- **Purpose**: Run Gemini + Qwen analysis in parallel for comprehensive code review
-- **Parameters**:
-  - `files`: string[] - Files to review
-  - `focus`: "architecture" | "security" | "performance" | "quality" | "all"
-- **Workflow**:
-  1. Build specialized prompts for each AI based on focus area
-  2. Execute Gemini and Qwen in parallel with Promise.all()
-  3. Aggregate results with synthesis
-  4. Return unified report
-- **Token Overhead**: Included in 250-token router
-- **Implementation**: ~250 lines
-
-#### 2. **pre-commit-validate**
-- **Purpose**: Multi-stage validation before committing (from CLAUDE.MD section 9)
-- **Parameters**:
-  - `depth`: "quick" | "thorough" | "paranoid" (optional, default: "thorough")
-- **Workflow**:
-  1. Auto-detect staged files via `git diff --cached`
-  2. Run parallel Gemini + Qwen review on changes
-  3. Check for common issues (secrets, console.logs, TODOs, large files)
-  4. Verify tests exist for modified code
-  5. Return pass/fail with actionable suggestions
-- **Token Overhead**: Included in 250-token router
-- **Implementation**: ~300 lines
-
-#### 3. **init-session**
-- **Purpose**: Session initialization from CLAUDE.MD section 1
-- **Parameters**: None (fully automated)
-- **Workflow**:
-  1. Run `git log --oneline -5`
-  2. Run `git diff HEAD~3..HEAD --stat`
-  3. Run `git status && git branch -vv`
-  4. Check CLI availability (qwen, gemini, acli)
-  5. Return formatted summary
-- **Token Overhead**: Included in 250-token router
-- **Implementation**: ~250 lines
-
-#### 4. **validate-last-commit**
-- **Purpose**: Validate the last git commit (mentioned in README.md)
-- **Parameters**:
-  - `commit_ref`: string (optional, default: "HEAD")
-- **Workflow**:
-  1. Get `git show <commit_ref>`
-  2. Run parallel Gemini + Qwen analysis
-  3. Check for: breaking changes, best practices, issues
-  4. Return verdict with suggestions
-- **Token Overhead**: Included in 250-token router
-- **Implementation**: ~220 lines
-
-#### 5. **bug-hunt**
-- **Purpose**: Comprehensive bug analysis workflow (from CLAUDE.MD)
-- **Parameters**:
-  - `symptoms`: string - Error message or behavior description
-  - `suspected_files`: string[] (optional)
-- **Workflow**:
-  1. Analyze error patterns with Qwen (quick scan)
-  2. Deep analysis with Gemini (architectural perspective)
-  3. Check for common issues (race conditions, null checks, async errors)
-  4. Search for similar patterns in codebase
-  5. Suggest fixes with priority ranking
-- **Token Overhead**: Included in 250-token router
-- **Implementation**: ~320 lines
-
----
-
-## Implementation Phases
-
-### Phase 1: Foundation (Week 1)
-**Goal**: Set up architecture and infrastructure
-
-- [ ] Create `workflows/` directory structure
-- [ ] Implement `workflows/types.ts` with shared types
-- [ ] Implement `workflows/utils.ts` with common functions
-- [ ] Implement `utils/gitHelper.ts` for git operations
-- [ ] Create `smart-workflows.tool.ts` router with minimal schema
-- [ ] Set up workflow registry in `workflows/index.ts`
-- [ ] Write unit tests for utilities
-
-**Deliverables**:
-- Infrastructure ready for workflow implementations
-- ~200 lines of foundation code
-- Test coverage for utilities
-
-### Phase 2: Core Workflows (Week 1-2)
-**Goal**: Implement the 3 most valuable workflows
-
-- [ ] Implement `parallel-review.workflow.ts`
-  - Prompt templates for both AIs
-  - Result synthesis logic
-  - Focus area routing
-- [ ] Implement `init-session.workflow.ts`
-  - Git command orchestration
-  - CLI availability checks
-  - Formatted output
-- [ ] Implement `validate-last-commit.workflow.ts`
-  - Git show parsing
-  - Parallel analysis
-  - Verdict generation
-- [ ] Register workflows in registry
-- [ ] Integration testing with real AI calls
-- [ ] Update README.md with workflow documentation
-
-**Deliverables**:
-- 3 working workflows (~700 lines)
-- Integration tests
-- User documentation
-
-### Phase 3: Advanced Workflows (Week 2)
-**Goal**: Implement validation and debugging workflows
-
-- [ ] Implement `pre-commit-validate.workflow.ts`
-  - Staged file detection
-  - Multi-stage validation pipeline
-  - Issue detection (secrets, TODOs, etc.)
-- [ ] Implement `bug-hunt.workflow.ts`
-  - Error pattern analysis
-  - Similarity search
-  - Priority-based suggestions
-- [ ] End-to-end testing with real scenarios
-- [ ] Performance optimization
-- [ ] Error handling improvements
-
-**Deliverables**:
-- 5 complete workflows (~1,200 lines total)
-- Comprehensive test coverage
-- Performance benchmarks
-
-### Phase 4: Polish & Release (Week 3)
-**Goal**: Production readiness
-
-- [ ] Code review and refactoring
-- [ ] Documentation completion
-  - API documentation
-  - Workflow usage examples
-  - Best practices guide
-- [ ] TypeScript strict mode compliance
-- [ ] Error message improvements
-- [ ] Logging and debugging enhancements
-- [ ] Version bump and changelog
-- [ ] NPM publish
-
-**Deliverables**:
-- Production-ready release
-- Complete documentation
-- Published to npm
-
----
-
-## Technical Specifications
-
-### Workflow Interface
-
-```typescript
-// workflows/types.ts
-export interface WorkflowDefinition<TParams = any> {
-  description: string;
-  schema: z.ZodSchema<TParams>;
-  execute: (params: TParams, onProgress?: ProgressCallback) => Promise<string>;
-}
-
-export type ProgressCallback = (message: string) => void;
-
-export interface WorkflowResult {
-  success: boolean;
-  output: string;
-  metadata?: Record<string, any>;
-}
-```
-
-### Router Schema
-
-```typescript
-// smart-workflows.tool.ts
-zodSchema: z.object({
-  workflow: z.enum([
-    "parallel-review",
-    "pre-commit-validate",
-    "init-session",
-    "validate-last-commit",
-    "bug-hunt"
-  ]).describe("Workflow to execute"),
-  params: z.record(z.any()).optional().describe("Workflow-specific parameters")
-})
-```
-
-### Example Usage
-
-```json
-{
-  "workflow": "parallel-review",
-  "params": {
-    "files": ["src/index.ts", "src/tools/registry.ts"],
-    "focus": "security"
-  }
-}
++------------------------------------------------+
+| Livello 1: Interfaccia Utente (Claude Code CLI)|
+| (Input manuale, validazione finale)            |
++----------------------+-------------------------+
+                       |
++----------------------v-------------------------+
+| Livello 2: Automazione (Hook + Skill Claude)   |
+| (Intercetta l'intento, attiva la skill giusta) |
++----------------------+-------------------------+
+                       |
++----------------------v-------------------------+
+| Livello 3: Esecuzione (Skill -> unified-ai-mcp-tool) |
+| (Chiama il nostro tool con parametri specifici)|
++----------------------+-------------------------+
+                       |
++----------------------v-------------------------+
+| Livello 4: Orchestrazione (Smart Workflows)    |
+| (Seleziona strategie, permessi, AI e tool)     |
++------------------------------------------------+
 ```
 
 ---
 
-## Testing Strategy
+## 3. Componenti Fondamentali e Loro Ruolo
 
-### Unit Tests
-- Workflow utilities (prompt builders, result synthesis)
-- Git helper functions
-- Parameter validation
+### Client AI (Gli "Operai Specializzati")
+- **`ask_gemini`**: Il "peso massimo". Ideale per analisi architetturali complesse, sicurezza, performance e refactoring su larga scala.
+- **`ask_rovodev`**: Il "chirurgo". Preciso e affidabile per code quality, bug hunting e suggerimenti di codice mirati.
+- **`ask_qwen`**: L'"esploratore rapido". Veloce ed economico per analisi preliminari, ricerche di codice e compiti a basso rischio.
 
-### Integration Tests
-- Each workflow with mocked AI responses
-- Router dispatch logic
-- Error handling paths
-
-### End-to-End Tests
-- Real workflow execution (manual/semi-automated)
-- Performance benchmarks
-- Token usage measurement
-
-### Test Coverage Goals
-- Utilities: 90%+
-- Workflows: 80%+
-- Router: 95%+
+### Strumenti di Contesto (La "Ricerca e Sviluppo")
+- **`claude-context`**: Il "navigatore di codebase". Essenziale per la ricerca semantica *interna* al progetto. Risponde a "dove?" e "cosa è correlato?".
+- **`context7`**: L'"esperto di API esterne". Fornisce documentazione API aggiornata per librerie di terze parti.
+- **`deepwiki`**: Il "ricercatore architetturale". Fornisce insight strategici su repository open-source esterni.
+- **`open-memory`**: La "memoria a lungo termine". Rende il sistema capace di apprendere, salvando e recuperando decisioni e risultati tra le sessioni.
 
 ---
 
-## Risk Analysis & Mitigation
+## 4. Principi di Integrazione e Autonomia (Il "Sistema Nervoso")
 
-### Risk 1: Token Overhead Higher Than Expected
-**Probability**: Low
-**Impact**: Medium
-**Mitigation**:
-- Start with minimal schema (generic params)
-- Monitor actual token usage in production
-- Can switch to discriminated union if needed (+150 tokens)
+Questa sezione descrive i meccanismi chiave che permetteranno a Claude Code di interagire con il `unified-ai-mcp-tool` in modo efficiente, proattivo e sicuro.
 
-### Risk 2: Workflow Complexity Increases Maintenance
-**Probability**: Medium
-**Impact**: Medium
-**Mitigation**:
-- Keep workflows independent and self-contained
-- Extract common logic to shared utilities
-- Comprehensive documentation for each workflow
-- Unit tests for all utilities
+### 1. Skill Claude con Progressive Disclosure
 
-### Risk 3: AI Response Variability Breaks Synthesis
-**Probability**: Medium
-**Impact**: Low
-**Mitigation**:
-- Design synthesis logic to be resilient to format variations
-- Include metadata about which AI provided which insights
-- Fallback to raw concatenation if synthesis fails
-- Log failures for improvement
+La nostra interfaccia per Claude sarà una "Skill". La scoperta chiave dalla nostra analisi è che le skill monolitiche sono inefficienti. Adotteremo quindi un'architettura di **"Progressive Disclosure" (Rivelazione Progressiva)** a 3 livelli per massimizzare l'efficienza dei token e la reattività.
 
-### Risk 4: Git Operations Fail in Edge Cases
-**Probability**: Low
-**Impact**: High
-**Mitigation**:
-- Extensive error handling in gitHelper
-- Graceful degradation (e.g., skip git checks if repo not found)
-- Clear error messages to users
-- Test on various git states (detached HEAD, merge conflicts, etc.)
+- **Livello 1: Metadati (Sempre Visibili)**
+  - **Cosa**: Solo il frontmatter YAML del file `SKILL.md`, contenente `name` e `description`.
+  - **Scopo**: La `description` è fondamentale. Deve essere scritta in modo tale da permettere a Claude di capire autonomamente quando la nostra skill è rilevante per la richiesta dell'utente, senza bisogno di caricarne il contenuto.
 
----
+- **Livello 2: Mappa di Navigazione (`SKILL.md`)**
+  - **Cosa**: Il corpo del file `SKILL.md`, mantenuto volutamente snello (sotto le 200-300 righe).
+  - **Scopo**: Non contiene l'intera logica, ma agisce come una "mappa". Elenca le capacità (i nostri `smart-workflows`), ne descrive lo scopo ad alto livello e fornisce la sintassi di base, puntando a file di riferimento esterni per i dettagli.
 
-## Success Metrics
+- **Livello 3: Riferimenti Specifici (`ref/*.md`)**
+  - **Cosa**: Una serie di file Markdown più piccoli e focalizzati (es. `ref/parallel-review.md`, `ref/init-session.md`).
+  - **Scopo**: Contengono i dettagli granulari: tutti i parametri di un workflow, le `strategy` disponibili, esempi d'uso. Claude viene istruito dalla "mappa" a leggere questi file solo quando ha bisogno di eseguire un task specifico, caricando nel contesto solo le informazioni strettamente necessarie.
 
-### Performance Metrics
-- **Token Overhead**: ≤ 300 tokens (target: 250)
-- **Response Time**: < 60s for parallel-review on 3 files
-- **Success Rate**: > 95% for workflow execution
+- **Azione Concreta**: Creare la directory `.claude/skills/unified-mcp/` con un `SKILL.md` principale e una sottodirectory `ref/` contenente la documentazione dettagliata per ogni workflow.
 
-### Usage Metrics
-- **Adoption Rate**: Track workflow usage vs direct tool usage
-- **Most Used Workflows**: Identify which workflows provide most value
-- **Error Rate**: < 2% for workflow failures
+### 2. Hook e Attivazione Automatica (`skill-rules.json`)
 
-### Quality Metrics
-- **Test Coverage**: > 85% overall
-- **Bug Reports**: Track and resolve within 48 hours
-- **User Feedback**: Positive feedback on workflow usefulness
+Gli Hook sono il motore dell'automazione. Ci permettono di trasformare Claude da un esecutore passivo a un partner proattivo. Useremo due tipi principali di hook:
 
----
+- **Hook Proattivo (`UserPromptSubmit`)**:
+  - **Quando**: Si attiva *prima* che Claude elabori il prompt dell'utente.
+  - **Scopo**: È il nostro "intercettore di intenti". Lo useremo per analizzare il testo del prompt. Se l'utente scrive "fai una review di questo file", l'hook lo rileva.
+  - **Meccanismo**: L'hook consulta un file di configurazione centrale, `skill-rules.json`. Questo file JSON mappa pattern di testo, regex o percorsi di file a specifiche skill da attivare. Trovata una corrispondenza, l'hook inietta nel contesto di Claude un suggerimento per usare la nostra skill con i parametri già pronti.
 
-## Future Enhancements
+- **Hook di Validazione (`Stop` o `PostToolUse`)**:
+  - **Quando**: Si attiva *dopo* che il nostro `smart-workflow` ha terminato la sua esecuzione.
+  - **Scopo**: È il nostro "controllore di qualità". Può eseguire azioni automatiche per validare il lavoro svolto, come lanciare un `npm run build` per verificare che non ci siano errori di compilazione, o eseguire un linter.
+  - **Meccanismo**: Se la validazione fallisce, l'hook può notificare l'utente o, in scenari più avanzati, innescare un workflow di auto-correzione.
 
-### Post-MVP Features
-1. **Workflow Chaining**: Allow workflows to call other workflows
-2. **Custom Workflows**: User-defined workflows via configuration
-3. **Caching**: Cache AI responses for repeated analyses
-4. **Webhook Integration**: Trigger workflows on git hooks
-5. **Report Generation**: Export workflow results as markdown/HTML
+- **Azione Concreta**: Progettare e creare un `skill-rules.json` che definisca i trigger per i nostri workflow. Implementare uno script per l'hook `UserPromptSubmit` che usi queste regole per suggerire l'attivazione del `smart-workflows` tool.
 
-### Additional Workflows (Tier 2)
-- `find-duplicates`: Code duplication detection
-- `refactor-suggest`: Structured refactoring suggestions
-- `generate-tests`: Auto-generate test cases
-- `architecture-map`: Visualize codebase architecture
-- `security-audit`: Comprehensive security review
+### 3. Modello di Permessi Granulare (`--autonomy-level`)
+
+Per consentire un'autonomia sicura, adotteremo un modello di permessi a più livelli ispirato a `droid exec`, controllato da un flag `--autonomy-level` passato ai nostri `smart-workflows`.
+
+- **Concetto**: Ogni workflow, prima di eseguire un'operazione potenzialmente rischiosa (scrivere un file, eseguire `git commit`), controllerà il livello di autonomia con cui è stato invocato.
+
+- **Livelli di Autonomia Dettagliati**:
+  - **`read-only` (Default)**: Il livello più sicuro.
+    - **Permette**: Lettura di file, `git status`, `git diff`, `git log`, `npm list`.
+    - **Esempio d'uso**: Un'analisi preliminare del codice che non modifica nulla.
+  - **`low`**: Permette modifiche sicure e locali ai file.
+    - **Permette**: Tutto ciò che è `read-only` + scrittura/modifica di file all'interno della directory del progetto, formattazione del codice.
+    - **Esempio d'uso**: Un workflow che aggiunge commenti al codice o corregge semplici typo.
+  - **`medium`**: Abilita operazioni di sviluppo comuni con impatto locale.
+    - **Permette**: Tutto ciò che è `low` + `npm install`, `pip install`, `git commit`, `git checkout`, `git branch`.
+    - **Esempio d'uso**: Un workflow di refactoring che installa una nuova libreria e committa le modifiche su un nuovo branch.
+  - **`high`**: Consente operazioni con impatto esterno e potenziale rischio.
+    - **Permette**: Tutto ciò che è `medium` + `git push`, esposizione di porte, chiamate a API esterne che modificano stato.
+    - **Esempio d'uso**: Un workflow di CI/CD che esegue il deploy automatico su un ambiente di staging dopo aver superato i test.
+
+- **Azione Concreta**: Implementare una funzione di validazione (`checkPermission(level, requiredLevel)`) all'interno del nostro `commandExecutor` o in un utility condivisa. Ogni comando rischioso dovrà invocare questa funzione prima di procedere.
 
 ---
 
-## Appendix
+## 5. Idee Avanzate per il Futuro (La "Prossima Generazione")
 
-### Token Calculation Methodology
-Tokens estimated using: `characters / 4` (rough approximation)
-- Measured on actual MCP tool schemas from current implementation
-- Conservative estimates to avoid underestimation
+### 1. Workflow di Auto-Correzione (Self-Healing)
+- **Concetto**: Il sistema monitora i propri risultati e tenta di correggere autonomamente i fallimenti (es. errori di build post-refactoring).
+- **Implementazione**: Tramite Hook `Stop` o `PostToolUse` che rilevano exit code di errore e lanciano workflow correttivi.
 
-### References
-- CLAUDE.MD: Workflow patterns and best practices
-- README.md: Existing tool documentation
-- improvements.md: Token optimization lessons learned
-- MCP SDK Documentation: Tool schema specifications
+### 2. Generazione Dinamica di Workflow
+- **Concetto**: Un'AI "master" genera al volo piani di esecuzione (workflow temporanei) per richieste utente complesse e non standard.
+- **Implementazione**: Richiede un "meta-workflow" (`execute-dynamic-plan`) capace di interpretare ed eseguire una sequenza di comandi generata da un'altra AI.
+
+### 3. Esecuzione Proattiva e Opportunistica
+- **Concetto**: Il sistema agisce come un "guardiano", eseguendo periodicamente (es. via CI/CD) workflow di analisi per trovare "code smells", vulnerabilità o altre opportunità di miglioramento.
+- **Implementazione**: Integrazione con sistemi esterni come GitHub Actions e creazione di workflow specifici (`codebase-health-check`).
+
+### 4. Dibattito e Sintesi Multi-Agente
+- **Concetto**: Per decisioni critiche, il sistema orchestra un "dibattito" tra i modelli AI, facendoli criticare e migliorare a vicenda le rispettive analisi prima di produrre una sintesi finale.
+- **Implementazione**: Un nuovo `smart-workflow` sequenziale che gestisce il flusso di una conversazione tra modelli AI.
 
 ---
 
-## Approval & Sign-off
+## 6. Piano d'Azione Immediato
 
-**Prepared by**: Claude (AI Assistant)
-**Review Required**: Repository Owner
-**Estimated Effort**: 3 weeks (1 developer)
-**Priority**: High (adds significant value with minimal overhead)
+Per iniziare a concretizzare questa visione, i prossimi passi sono:
 
-**Decision**: Awaiting approval to proceed with implementation.
+#### Passo 1: Implementare la Selezione Dinamica dei Modelli
+- **Obiettivo**: Finalizzare l'approccio ibrido (`strategy` + `backends`) nel workflow `parallel-review` e generalizzarlo agli altri.
+- **Stato**: Bozza concettuale già definita.
+
+#### Passo 2: Progettare il Modello di Permessi
+- **Obiettivo**: Definire formalmente i livelli di autonomia (`read-only`, `low`, `medium`, `high`) e progettare come i workflow verificheranno questi permessi.
+- **Stato**: Idea concettuale basata su `droid exec`.
+
+#### Passo 3: Creare la Bozza della Skill Claude
+- **Obiettivo**: Scrivere la prima versione del file `SKILL.md` per il nostro tool, seguendo il principio di "Progressive Disclosure".
+- **Stato**: Da iniziare.
