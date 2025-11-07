@@ -210,15 +210,17 @@ Token usati: ~1500 vs ~8000 con Read tradizionale
 
 Questo è il "sistema nervoso" che connette l'intento dell'utente all'azione autonoma.
 
-- **Skill con Progressive Disclosure**: La nostra interfaccia per Claude sarà una "Skill" progettata per la massima efficienza. Il file `SKILL.md` principale sarà una "mappa di navigazione" snella (<300 righe) che punta a file di riferimento dettagliati (`ref/*.md`), caricati solo quando necessario.
+**Skills** e **Hooks** sono i meccanismi di automazione di Claude Code che trasformano le intenzioni dell'utente in azioni autonome:
 
-- **Hook per Automazione e Validazione**:
-  - **`UserPromptSubmit` (Hook Proattivo)**: Intercetta l'intento dell'utente prima che Claude agisca. Consulta un file `skill-rules.json` per mappare l'intento (es. "review this code") a una chiamata al nostro `smart-workflows` tool, preparando già i parametri.
-  - **`Stop` / `PostToolUse` (Hook di Validazione)**: Si attiva *dopo* l'esecuzione di un workflow per validarne il risultato (es. eseguendo una build) e, in caso di fallimento, può innescare un workflow di auto-correzione.
+- **Skills (Dichiarativo)**: File markdown (`SKILL.md`) che Claude legge all'avvio, contenenti istruzioni specializzate. Seguono il pattern "Progressive Disclosure" dove il file principale è conciso (<500 righe) e punta a documentazione dettagliata (`ref/*.md`) caricata on-demand.
+
+- **Hooks (Procedurale)**: Script JavaScript/TypeScript che si attivano automaticamente su eventi specifici del workflow (es. `UserPromptSubmit`, `PostToolUse`, `SessionStart`, `Stop`). Possono intercettare l'intento dell'utente, validare risultati e innescare workflow di auto-correzione.
+
+**Per dettagli completi su architettura, esempi pratici e best practices**, vedi: [`docs/CLAUDE_SKILLS_HOOKS_GUIDE.md`](./CLAUDE_SKILLS_HOOKS_GUIDE.md)
 
 ---
 
-## 3.5. Ecosistema MCP Integrato: Sinergia degli Strumenti
+## 3.6. Ecosistema MCP Integrato: Sinergia degli Strumenti
 
 Il sistema orchestrato sfrutta **7 MCP servers** integrati che lavorano in sinergia, ognuno specializzato in un dominio specifico.
 
@@ -578,7 +580,7 @@ La recursion non è solo una feature tecnica - è il **cambio di paradigma** che
 
 ### Fase 2: Integrazione e Automazione
 - **Task 2.1**: Sviluppare gli script per gli **Hook** `UserPromptSubmit` e `PostToolUse`.
-- **Task 2.2**: Creare il file di configurazione **`skill-rules.json`** con le prime regole di attivazione automatica.
+- **Task 2.2**: Implementare **pattern matching per intent detection** negli hook, seguendo gli esempi in `CLAUDE_SKILLS_HOOKS_GUIDE.md`.
 - **Task 2.3**: Definire le interfacce per gli **Agenti Specializzati** (`Architect`, `Implementer`, `Tester`) all'interno dei `smart-workflows`.
 - **Task 2.4**: **Implementare ImplementerAgent con Serena Integration**
   - Workflow pattern: claude-context (find) → Serena (analyze symbols) → Serena (edit)
@@ -660,7 +662,7 @@ Questa sezione contiene i link diretti alle documentazioni e alle risorse che ha
 - **Reddit - Progressive Disclosure Deep Dive**: [https://www.reddit.com/r/ClaudeAI/comments/1opxgq4/i_was_wrong_about_agent_skills_and_how_i_refactor/](https://www.reddit.com/r/ClaudeAI/comments/1opxgq4/i_was_wrong_about_agent_skills_and_how_i_refactor/)
 - **Reddit - Advanced Agent Usage Tips**: [https://www.reddit.com/r/ClaudeAI/comments/1oivjvm/claude_code_is_a_beast_tips_from_6_months_of/](https://www.reddit.com/r/ClaudeAI/comments/1oivjvm/claude_code_is_a_beast_tips_from_6_months_of/)
 - **GitHub - Esempio di Progressive Disclosure**: [https://github.com/wshobson/agents](https://github.com/wshobson/agents)
-- **GitHub - Esempio di `skill-rules.json`**: [https://github.com/diet103/claude-code-infrastructure-showcase](https://github.com/diet103/claude-code-infrastructure-showcase)
+- **GitHub - Hook Examples**: [https://github.com/diet103/claude-code-infrastructure-showcase](https://github.com/diet103/claude-code-infrastructure-showcase)
 
 ### Tool e Tecnologie Chiave
 - **Factory Droid (Autonomy Levels)**: [https://docs.factory.ai/cli/droid-exec/overview#droid-exec-headless-cli](https://docs.factory.ai/cli/droid-exec/overview#droid-exec-headless-cli)
