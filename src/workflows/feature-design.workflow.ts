@@ -248,6 +248,7 @@ async function executeFeatureDesign(
  * Definizione del workflow feature-design
  */
 export const featureDesignWorkflow: WorkflowDefinition = {
+  name: 'feature-design',
   description: "Orchestrates ArchitectAgent, ImplementerAgent, and TesterAgent to design, implement, and test a new feature end-to-end",
   schema: featureDesignSchema,
   execute: executeFeatureDesign

@@ -170,6 +170,7 @@ L'analisi potrebbe essere incompleta. Si consiglia di risolvere i problemi e rip
  * Definizione del workflow parallel-review
  */
 export const parallelReviewWorkflow: WorkflowDefinition = {
+  name: 'parallel-review',
   description: "Esegue un'analisi parallela del codice utilizzando Gemini e Rovodev per fornire una revisione completa e multi-prospettiva",
   schema: parallelReviewSchema,
   execute: executeParallelReview

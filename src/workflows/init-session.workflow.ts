@@ -290,6 +290,7 @@ ${errorMsg}
  * Definizione del workflow init-session
  */
 export const initSessionWorkflow: WorkflowDefinition = {
+  name: 'init-session',
   description: "Inizializza la sessione corrente analizzando il repository Git e verificando la disponibilità delle CLI",
   schema: initSessionSchema,
   execute: executeInitSession

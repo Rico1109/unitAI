@@ -22,6 +22,7 @@ export interface BaseWorkflowParams {
  * Interfaccia base per la definizione di un workflow
  */
 export interface WorkflowDefinition<TParams = any> {
+  name: string;
   description: string;
   schema: z.ZodSchema<TParams>;
   execute: (params: TParams, onProgress?: ProgressCallback) => Promise<string>;
@@ -58,7 +59,7 @@ export interface ParallelReviewParams extends BaseWorkflowParams {
  * Parametri per il workflow pre-commit-validate
  */
 export interface PreCommitValidateParams extends BaseWorkflowParams {
-  depth?: ValidationDepth;
+  depth: ValidationDepth;
 }
 
 /**

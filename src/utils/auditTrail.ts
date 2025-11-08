@@ -431,3 +431,27 @@ export class AuditTrail {
  * Singleton instance
  */
 export const auditTrail = new AuditTrail();
+
+/**
+ * Helper function to log audit entries
+ */
+export async function logAudit(params: {
+  operation: string;
+  autonomyLevel: string;
+  details: string;
+  target?: string;
+  workflowName?: string;
+  workflowId?: string;
+}): Promise<void> {
+  auditTrail.record({
+    workflowName: params.workflowName || 'workflow',
+    workflowId: params.workflowId,
+    autonomyLevel: params.autonomyLevel as AutonomyLevel,
+    operation: params.operation as OperationType,
+    target: params.target || params.details.substring(0, 100),
+    approved: true,
+    executedBy: 'system',
+    outcome: 'success',
+    metadata: { details: params.details }
+  });
+}

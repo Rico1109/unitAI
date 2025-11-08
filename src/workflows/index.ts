@@ -10,11 +10,11 @@ import type {
 
 // Import delle definizioni dei workflow
 import { parallelReviewWorkflow } from "./parallel-review.workflow.js";
-// import { preCommitValidateWorkflow } from "./pre-commit-validate.workflow.js";
+import { preCommitValidateWorkflow } from "./pre-commit-validate.workflow.js";
 import { initSessionWorkflow } from "./init-session.workflow.js";
 import { validateLastCommitWorkflow } from "./validate-last-commit.workflow.js";
 import { featureDesignWorkflow } from "./feature-design.workflow.js";
-// import { bugHuntWorkflow } from "./bug-hunt.workflow.js";
+import { bugHuntWorkflow } from "./bug-hunt.workflow.js";
 
 /**
  * Registro di tutti i workflow disponibili
@@ -136,11 +136,11 @@ export const workflowSchemas = {
 export function initializeWorkflowRegistry(): void {
   // I workflow saranno registrati qui quando implementati
   registerWorkflow("parallel-review", parallelReviewWorkflow);
-  // registerWorkflow("pre-commit-validate", preCommitValidateWorkflow);
+  registerWorkflow("pre-commit-validate", preCommitValidateWorkflow);
   registerWorkflow("init-session", initSessionWorkflow);
   registerWorkflow("validate-last-commit", validateLastCommitWorkflow);
   registerWorkflow("feature-design", featureDesignWorkflow);
-  // registerWorkflow("bug-hunt", bugHuntWorkflow);
+  registerWorkflow("bug-hunt", bugHuntWorkflow);
 
   console.log("Registro workflow inizializzato");
 }

@@ -213,6 +213,7 @@ Per dettagli specifici, consulta le analisi individuali sopra.
  * Definizione del workflow validate-last-commit
  */
 export const validateLastCommitWorkflow: WorkflowDefinition = {
+  name: 'validate-last-commit',
   description: "Valida un commit Git specifico utilizzando analisi parallela con Gemini e Qwen per identificare problemi e breaking changes",
   schema: validateLastCommitSchema,
   execute: executeValidateLastCommit

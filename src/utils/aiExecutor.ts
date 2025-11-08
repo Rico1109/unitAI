@@ -1,4 +1,7 @@
 import { CLI, AI_MODELS, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../constants.js";
+
+// Re-export BACKENDS for convenience
+export { BACKENDS };
 import { executeCommand } from "./commandExecutor.js";
 import { logger } from "./logger.js";
 import type { QwenModel, RovodevModel, ApprovalMode, GeminiModel } from "../constants.js";

@@ -105,6 +105,9 @@ export const BACKENDS = {
   GEMINI: "gemini"
 } as const;
 
+// Export BACKENDS values for easier importing
+export { BACKENDS as default };
+
 export type QwenModel = typeof AI_MODELS.QWEN[keyof typeof AI_MODELS.QWEN];
 export type RovodevModel = typeof AI_MODELS.ROVODEV[keyof typeof AI_MODELS.ROVODEV];
 export type GeminiModel = typeof AI_MODELS.GEMINI[keyof typeof AI_MODELS.GEMINI];
