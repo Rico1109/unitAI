@@ -29,7 +29,6 @@ export declare const CLI: {
     };
     readonly FLAGS: {
         readonly QWEN: {
-            readonly PROMPT: "-p";
             readonly MODEL: "--model";
             readonly SANDBOX: "--sandbox";
             readonly APPROVAL_MODE: "--approval-mode";
@@ -45,7 +44,6 @@ export declare const CLI: {
             readonly CONFIG_FILE: "--config-file";
         };
         readonly GEMINI: {
-            readonly PROMPT: "-p";
             readonly SANDBOX: "-s";
             readonly HELP: "-help";
             readonly MODEL: "-m";

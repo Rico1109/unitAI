@@ -30,7 +30,6 @@ export const CLI = {
     FLAGS: {
         // Qwen specific flags
         QWEN: {
-            PROMPT: "-p",
             MODEL: "--model",
             SANDBOX: "--sandbox",
             APPROVAL_MODE: "--approval-mode",
@@ -49,7 +48,6 @@ export const CLI = {
         },
         // Gemini specific flags (based on gemini CLI help)
         GEMINI: {
-            PROMPT: "-p",
             SANDBOX: "-s",
             HELP: "-help",
             MODEL: "-m"
