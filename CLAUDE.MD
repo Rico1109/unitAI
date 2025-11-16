@@ -104,6 +104,28 @@ Custom exploration? → Tool direct (Serena/claude-context/ask-*)
 - mcp__context7__resolve-library-id "library"
 - mcp__context7__get-library-docs "/org/project" --topic "topic" --tokens 5000
 
+**3.6) AGENTS** (.claude/agents/ - Task tool delegation)
+
+**When:** Complex multi-phase tasks needing specialized orchestration (NOT for simple queries)
+
+| Agent | Use Case | Key Feature |
+|-------|----------|-------------|
+| `gemini-codebase-analyzer` | Large codebase analysis, bug hunting | Parallel gemini+qwen, Serena integration |
+| `implementation-validator` | Pre-commit validation, impact analysis | Aggressive Serena (75-95% token savings) |
+| `infrastructure-analyzer` | Pipeline review, system architecture | 5-phase methodology + Context7 |
+| `rovodev-task-handler` | Production code generation, refactoring | Haiku model (70% cost savings) |
+| `triple-validator` | High-risk architectural decisions | Parallel 3-model validation (60-70% time savings) |
+
+**Invocation:**
+```typescript
+Task({ subagent_type: "AGENT_NAME", prompt: "task description" })
+```
+
+**Decision:**
+- Multi-phase complex task (architecture, high-risk refactor)? → Agent
+- Simple query/analysis? → Tool direct (Serena/ask-*)
+- See: docs/AGENT_MIGRATION_GUIDE.md
+
 ## 4) FILE SIZE DECISION TREE
 - <300 LOC → Read tool ok
 - 300–500 LOC → Serena (get_symbols_overview + find_symbol) for targeted reads
@@ -196,6 +218,7 @@ mcp__unified-ai-mcp__smart-workflows({
 | **Bug hunting** | bug-hunt workflow | Root cause analysis |
 | **Code review** | parallel-review workflow | Gemini+Rovodev parallel |
 | **Feature design** | feature-design workflow | Multi-agent orchestration |
+| **Complex multi-phase** | Task agents (5 types) | Specialized orchestration; parallel validation; 50-95% savings |
 | **Codebase search** | claude-context | Semantic; finds ALL related code |
 | **Custom AI analysis** | ask-gemini/qwen/rovodev | Parallel for best results |
 | **Simple non-code** | Read | Only if <300 LOC |
@@ -203,9 +226,10 @@ mcp__unified-ai-mcp__smart-workflows({
 **Decision Rules:**
 1. Code file? → **Serena** (no exceptions)
 2. Standard process (commit/bug/review/feature)? → **smart-workflows**
-3. Need to find related code? → **claude-context**
-4. Custom analysis? → **ask-*** (parallel)
-5. Simple config file? → Read ok
+3. Complex multi-phase (architecture/high-risk)? → **Task agents**
+4. Need to find related code? → **claude-context**
+5. Custom analysis? → **ask-*** (parallel)
+6. Simple config file? → Read ok
 
 ## 13) AUTONOMOUS TOKEN-AWARE ENFORCEMENT
 
@@ -244,4 +268,4 @@ Hook detects patterns → suggests workflow (ask user confirmation before execut
 
 ---
 
-**Last Updated**: 2025-11-09 19:00 UTC
+**Last Updated**: 2025-11-16 14:00 UTC
