@@ -7,7 +7,7 @@
         "@zilliz/claude-context-mcp@latest"
       ],
       "env": {
-        "OPENAI_API_KEY": "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",
+        "OPENAI_API_KEY": "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",
         "MILVUS_TOKEN": "552edc860fe0eca5f5a6cc87ad5425e57270067cce63afb81de3da07f206401f4c9a128a5eb92899c110639ca31e16951c48dbd3"
       }
     },
@@ -66,7 +66,7 @@
         "OM_PORT": "8080",
         "OM_MODE": "langgraph",
         "OM_EMBEDDINGS": "openai",
-        "OPENAI_API_KEY": "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"
+        "OPENAI_API_KEY": "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"
       }
     }
   }
