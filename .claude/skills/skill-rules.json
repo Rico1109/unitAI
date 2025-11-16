@@ -147,138 +147,59 @@
                 ]
             }
         },
-        "second-guessing-verification": {
+        "code-validation": {
             "type": "domain",
             "enforcement": "suggest",
             "priority": "high",
-            "description": "Reminds Claude to use MCP tools for thorough validation and second-guessing before proceeding with important changes. Use when planning complex implementations, architectural changes, bug fixes, or before committing significant code changes.",
-            "promptTriggers": {
-                "keywords": [
-                    "plan",
-                    "implement",
-                    "solution",
-                    "architecture",
-                    "bug fix",
-                    "refactor",
-                    "feature",
-                    "design",
-                    "approach",
-                    "strategy",
-                    "verification",
-                    "validate",
-                    "second guess"
-                ],
-                "intentPatterns": [
-                    "(plan|design|create|implement).*?(solution|approach|strategy)",
-                    "(how should|what is the best|should I).*?(approach|design|plan)",
-                    "(validate|check|review).*?(plan|solution|approach)"
-                ]
-            },
-            "fileTriggers": {
-                "pathPatterns": [
-                    "**/design/**",
-                    "**/plans/**",
-                    "**/architecture/**",
-                    "**/*.py",
-                    "**/*.md"
-                ],
-                "contentPatterns": [
-                    "class ",
-                    "def ",
-                    "function ",
-                    "implementation",
-                    "design",
-                    "architecture",
-                    "solution"
-                ]
-            }
-        },
-        "pre-commit-ai-review": {
-            "type": "domain",
-            "enforcement": "suggest",
-            "priority": "critical",
-            "description": "Ensures high code quality and architectural consistency by requiring AI-powered code review before committing important changes. Use before any commit that affects core functionality, architecture, or has broad impact on the system.",
+            "description": "Guides verification and validation workflows before commits, memory additions, or implementing plans. Ensures code quality, functionality, and completeness using Serena, claude-context, and AI tools. Use when making significant changes, before git commits, or before openmemory-add-memory.",
             "promptTriggers": {
                 "keywords": [
                     "commit",
-                    "git commit",
-                    "important change",
-                    "significant change",
-                    "core functionality",
-                    "architectural change",
-                    "code review",
-                    "refactor",
-                    "feature implementation",
-                    "bug fix"
+                    "validate",
+                    "verify",
+                    "review",
+                    "memory",
+                    "openmemory",
+                    "pre-commit",
+                    "check changes",
+                    "before commit",
+                    "plan review",
+                    "second guess",
+                    "implementation",
+                    "feature complete",
+                    "ready to commit"
                 ],
                 "intentPatterns": [
-                    "(commit|make).*?(change|update|fix|feature)",
-                    "(before.*?commit|need to.*?commit)",
-                    "(review.*?changes|check.*?before commit)"
+                    "(commit|make|save).*?(change|update|fix|feature)",
+                    "(before.*?commit|ready.*?commit|pre-commit)",
+                    "(validate|verify|check|review).*?(changes|code|implementation|plan)",
+                    "(add|save|store).*?memory",
+                    "(plan|design|implement).*?(validation|verification)",
+                    "(second.*?guess|alternative|should I).*?(approach|plan|implementation)"
                 ]
             },
             "fileTriggers": {
                 "pathPatterns": [
+                    "**/*.ts",
+                    "**/*.js",
+                    "**/*.tsx",
+                    "**/*.jsx",
                     "**/*.py",
                     "**/src/**",
                     "**/api/**",
-                    "**/shared/**",
-                    "**/models/**",
-                    "**/routes/**",
                     "**/services/**",
+                    "**/workflows/**",
                     "**/utils/**"
                 ],
                 "contentPatterns": [
-                    "import.*?sys",
-                    "def ",
+                    "function ",
                     "class ",
-                    "async def",
-                    "try:",
-                    "raise ",
-                    "Exception"
-                ]
-            }
-        },
-        "pre-memory-commit-verification": {
-            "type": "domain",
-            "enforcement": "suggest",
-            "priority": "critical",
-            "description": "Ensures that before adding memories or making commits, Claude verifies that code is functional, plans are completed, and there's explicit confirmation. Use before any openmemory-add-memory or git commit operation.",
-            "promptTriggers": {
-                "keywords": [
-                    "memory",
-                    "openmemory",
-                    "add memory",
-                    "commit",
-                    "git commit",
-                    "save",
-                    "preserve",
-                    "final",
-                    "done",
-                    "completed",
-                    "confirmation",
-                    "verify"
-                ],
-                "intentPatterns": [
-                    "(add|save|store|record).*?memory",
-                    "(commit|push|save).*?change",
-                    "(final|done|completed).*?(memory|commit)",
-                    "(verify|confirm|ensure).*?(complete|working|done)"
-                ]
-            },
-            "fileTriggers": {
-                "pathPatterns": [
-                    "**/*.py",
-                    "**/*.md",
-                    "**/src/**",
-                    "**/tests/**"
-                ],
-                "contentPatterns": [
-                    "^.*?function.*?\\(.*?\\):$",
-                    "^.*?class.*?:$",
-                    "def test_",
-                    "# @skip-validation",
-                    "# TODO"
+                    "def ",
+                    "async ",
+                    "export ",
+                    "implementation",
+                    "feature",
+                    "refactor"
                 ]
             }
         },

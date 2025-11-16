@@ -7,146 +7,91 @@ description: Use this skill when restarting work after a stop or interruption. T
 
 ## Purpose
 
-This skill helps Claude effectively resume work after an interruption or stop by:
-1. Assessing the current situation
-2. Understanding what occurred before the stop
-3. Seeking appropriate assistance to continue
-4. Determining the best path forward
+Help Claude effectively resume work after interruptions by assessing the situation, understanding what occurred, and seeking appropriate MCP tool assistance to continue.
 
 ## When to Use This Skill
 
-- When resuming work after an interruption
-- After Claude was stopped mid-task
-- When returning to a task after a break
-- When there's uncertainty about current state
-- When encountering problems that caused a previous stop
-- When asked to continue work that was previously interrupted
+- Resuming work after interruption or stop
+- Returning to a task after a break
+- Uncertainty about current state
+- Encountering problems that caused previous stop
+- Asked to continue previously interrupted work
 
-## Assessment Process
+## Resumption Process
 
-### 1. Situation Assessment
-When resuming work, first assess:
-
-```
-# Determine current state:
-"What was the last action taken?"
-"What was the problem being solved?"
-"What stage was the process at before stopping?"
-"What is the desired end state?"
-```
-
-### 2. Current State Verification
-```
-# Check current environment:
+### 1. Assess Current Situation
+```bash
+# Check current state
 git status
 git log --oneline -5
-# Check for any system changes since stopping
-# Verify that necessary services are running
+
+# Understand context:
+# - What was the last action taken?
+# - What problem was being solved?
+# - What is the desired end state?
 ```
 
-### 3. Problem Understanding
-```
-# Understand the issue that caused the stop:
-"What problem was encountered?"
-"What error occurred?"
-"What was blocking progress?"
-```
+### 2. Seek MCP Tool Assistance
 
-## MCP Tool Integration for Resumption
+**For technical issues**:
+```bash
+# Quick issue resolution
+mcp__unified-ai-mcp__ask-qwen --prompt "I was working on [task] and encountered [problem]. How should I proceed?"
 
-### 1. Seek Guidance from AI Tools
-When resuming after a stop, ask for help:
-
-```
-# For Qwen:
-"I was working on [brief description of task] and encountered [problem/issue]. How should I proceed to resolve this and continue with the original task?"
-
-# For Gemini:
-"Help me resume work on [task]. I encountered [issue] and need guidance on how to resolve it and continue effectively."
-
-# For Rovodev:
-"Analyze the current state of [task/implementation] and suggest how to resolve [issue] to continue with [original goal]."
+# Deep problem analysis
+mcp__unified-ai-mcp__ask-gemini --prompt "Help me resume work on [task]. I encountered [issue] and need guidance."
 ```
 
-### 2. Use claude-context for Context
+**For code context**:
+```bash
+# Find relevant code
+mcp__claude-context__search_code "[key component]" --path /project/path
+
+# Navigate symbols (TypeScript/JavaScript)
+mcp__serena__get_symbols_overview --relative_path "src/file.ts"
 ```
-# If continuing work on code:
-mcp__claude-context__search_code "[key component or function name]" --path /home/dawid/Projects/unified-ai-mcp-tool
-# To understand where to resume in the codebase
-```
 
-## Resumption Workflow
+### 3. Continue Work
 
-### Step 1: Self-Assessment
-1. Determine the original task
-2. Identify where work stopped
-3. Understand the problem or interruption
-4. Assess current state of code/files
-
-### Step 2: Seek Assistance
-1. Ask AI tools for guidance on resolving the issue
-2. Clarify the best approach to continue
-3. Verify understanding of the problem
-4. Get suggestions for moving forward
-
-### Step 3: Plan Next Steps
-1. Based on AI guidance, create a plan to resolve the issue
-2. Determine if the original approach needs modification
-3. Identify any new information that affects the task
-4. Plan verification steps for the solution
-
-### Step 4: Execute and Verify
-1. Implement the solution to overcome the stopping point
-2. Verify the issue is resolved
-3. Continue with the original task
+Based on MCP tool guidance:
+1. Resolve the blocking issue
+2. Verify the solution works
+3. Continue with original task
 4. Validate progress
 
-## Key Phrases for Resumption
+## Key Questions to Ask
 
-When resuming work, use these approaches:
-
-**Understanding the problem:**
+**Understanding the Problem:**
 - "How do I resolve [specific issue]?"
 - "What should I do differently to continue?"
-- "Help me understand why [problem] occurred and how to fix it."
+- "Why did [problem] occur and how to fix it?"
 
-**Seeking guidance:**
-- "I need assistance with resuming [task]."
+**Seeking Guidance:**
 - "What's the best way to continue after [issue]?"
-- "How should I approach [task] given [problem that occurred]?"
+- "How should I approach [task] given [problem]?"
 
-**Confirming understanding:**
-- "Let me confirm my approach to resolving [issue]..."
+**Confirming Approach:**
 - "Is this the best way to continue [task]?"
+- "Let me verify my approach to resolving [issue]..."
 
-## Handling Different Types of Stops
+## Handling Common Scenarios
 
-### Technical Issues
-- Focus on resolving the technical problem first
-- Use appropriate MCP tools for debugging (Qwen, Rovodev)
-- Verify the solution before continuing original task
+**Technical errors**: Use Qwen/Rovodev for debugging, verify solution before continuing
 
-### Design/Architecture Decisions
-- Seek guidance on the best approach
-- Use multiple AI tools to get different perspectives
-- Validate the chosen approach before proceeding
+**Architectural decisions**: Get multiple AI perspectives (Gemini + Qwen), validate approach
 
-### Unclear Requirements
-- Ask AI tools to clarify or provide suggestions
-- Use claude-context to find similar implementations for guidance
-- Establish clear requirements before continuing
+**Unclear requirements**: Ask AI tools to clarify, find similar implementations with claude-context
 
-## Integration with Workflow
+## Autonomous Decision Making
 
-This skill should be used immediately when:
-- Returning to a stopped task
-- Uncertainty exists about current state
-- Encountering the same issue that caused a previous stop
-- Needing guidance on how to proceed after an interruption
+Let Claude judge the appropriate level of assistance needed:
+- Simple resumptions may only need quick status check
+- Complex issues benefit from comprehensive MCP tool guidance
+- Critical stops should use multiple AI perspectives
 
-The skill emphasizes seeking assistance from MCP tools to understand the best way forward rather than assuming what to do next.
+Trust your judgment on which tools are needed for the specific context.
 
 ---
 
-**Skill Status**: COMPLETE ✅
-**Line Count**: < 500 ✅
+**Skill Status**: Active
+**Best Practice**: Assess first, seek assistance, then continue
