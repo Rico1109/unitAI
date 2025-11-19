@@ -15,6 +15,10 @@ import { initSessionWorkflow } from "./init-session.workflow.js";
 import { validateLastCommitWorkflow } from "./validate-last-commit.workflow.js";
 import { featureDesignWorkflow } from "./feature-design.workflow.js";
 import { bugHuntWorkflow } from "./bug-hunt.workflow.js";
+import { triangulatedReviewWorkflow } from "./triangulated-review.workflow.js";
+import { autoRemediationWorkflow } from "./auto-remediation.workflow.js";
+import { refactorSprintWorkflow } from "./refactor-sprint.workflow.js";
+import { openspecDrivenDevelopmentWorkflow } from "./openspec-driven-development.workflow.js";
 
 /**
  * Registro di tutti i workflow disponibili
@@ -83,7 +87,11 @@ export const smartWorkflowsSchema = z.object({
     "init-session",
     "validate-last-commit",
     "feature-design",
-    "bug-hunt"
+    "bug-hunt",
+    "triangulated-review",
+    "auto-remediation",
+    "refactor-sprint",
+    "openspec-driven-development"
   ]).describe("Workflow da eseguire"),
   params: z.record(z.any()).optional().describe("Parametri specifici del workflow")
 });
@@ -126,6 +134,35 @@ export const workflowSchemas = {
     symptoms: z.string().describe("Descrizione dei sintomi del problema"),
     suspected_files: z.array(z.string()).optional()
       .describe("File sospetti da analizzare")
+  }),
+  "triangulated-review": z.object({
+    files: z.array(z.string()).describe("File da analizzare"),
+    goal: z.enum(["bugfix", "refactor"]).optional().default("refactor")
+      .describe("Obiettivo principale della revisione"),
+    autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
+      .optional()
+  }),
+  "auto-remediation": z.object({
+    symptoms: z.string().describe("Descrizione del bug da correggere"),
+    maxActions: z.number().int().min(1).max(10).optional()
+      .describe("Numero massimo di step nel piano"),
+    autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional()
+  }),
+  "refactor-sprint": z.object({
+    targetFiles: z.array(z.string()).describe("File da refactorizzare"),
+    scope: z.string().describe("Descrizione dello scope"),
+    depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
+    autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional()
+  }),
+  "openspec-driven-development": z.object({
+    featureDescription: z.string().describe("Descrizione della feature da implementare"),
+    projectInitialized: z.boolean().optional().default(false).describe("Se OpenSpec è già inizializzato"),
+    aiTools: z.array(z.string()).optional().describe("AI tools da configurare"),
+    changeType: z.enum(["feature", "bugfix", "improvement", "refactor"]).optional().default("feature"),
+    targetFiles: z.array(z.string()).optional().describe("File coinvolti nell'implementazione"),
+    implementationApproach: z.enum(["incremental", "full-rewrite", "minimal"]).optional().default("incremental"),
+    autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional().default("low"),
+    validationBackends: z.array(z.enum(["ask-gemini", "cursor-agent", "droid"])).optional().describe("Backend per validazione AI")
   })
 };
 
@@ -141,6 +178,10 @@ export function initializeWorkflowRegistry(): void {
   registerWorkflow("validate-last-commit", validateLastCommitWorkflow);
   registerWorkflow("feature-design", featureDesignWorkflow);
   registerWorkflow("bug-hunt", bugHuntWorkflow);
+  registerWorkflow("triangulated-review", triangulatedReviewWorkflow);
+  registerWorkflow("auto-remediation", autoRemediationWorkflow);
+  registerWorkflow("refactor-sprint", refactorSprintWorkflow);
+  registerWorkflow("openspec-driven-development", openspecDrivenDevelopmentWorkflow);
 
   // Removed console.log - corrupts MCP JSON protocol
   // Use logger.debug() if logging needed
