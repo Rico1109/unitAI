@@ -24,7 +24,7 @@
     },
     "unified-ai-mcp": {
       "type": "stdio",
-      "command": "node",
+      "command": "/home/dawid/.nvm/versions/node/v22.21.0/bin/node",
       "args": [
         "/home/dawid/Projects/unified-ai-mcp-tool/dist/index.js"
       ],
