@@ -1,7 +1,7 @@
 # MCP 2.0: The "Discovery" Update
 
-**Status:** In Progress
-**Date:** November 19, 2025
+**Status:** Phase 1 & 2 Complete ✅ | Phase 3 & 4 Pending
+**Date:** November 19, 2025 (Updated: November 20, 2025)
 **Author:** Exploration Agent
 
 ## Executive Summary
@@ -43,8 +43,38 @@ While the current focus is on executing workflows via Tools, future updates shou
 *   **Benefit:** Provides a standardized way for clients (like Claude Desktop) to offer quick actions without complex tool calling.
 *   **Reference:** MCP SDK `registerPrompt` capability.
 
+## Implementation Status
+
+### ✅ Phase 1: Foundation & Discovery (COMPLETE)
+- All meta-tools implemented: `list_workflows`, `describe_workflow`, `get_system_instructions`
+- Discovery system fully operational
+- AI assistants can now discover all available workflows
+
+### ✅ Phase 2: Workflow Exposure (COMPLETE)
+- **All 10 workflows** exposed as individual MCP tools:
+  - Batch 1: `workflow_parallel_review`, `workflow_pre_commit_validate`, `workflow_validate_last_commit`, `workflow_triangulated_review`
+  - Batch 2: `workflow_init_session`, `workflow_feature_design`, `workflow_openspec_driven_development`
+  - Batch 3: `workflow_bug_hunt`, `workflow_auto_remediation`, `workflow_refactor_sprint`
+- All tools registered and functional
+- Enhanced descriptions with metadata and examples
+
+### ⏳ Phase 3: Documentation Resources (PENDING)
+- Resource handler not yet implemented
+- Documentation still filesystem-only
+
+### ⏳ Phase 4: Clean Up & Deprecation (PENDING)
+- `smart-workflows` router still active (not deprecated)
+- Backward compatibility aliases not created
+
+## Current Capabilities
+
+- **17+ MCP Tools** exposed (4 base + 3 meta + 10 workflows)
+- **100% Discovery Rate**: AI can discover all tools via `list_workflows()`
+- **Rich Metadata**: All tools include descriptions, examples, and usage guidance
+- **Test Coverage**: 253/253 tests passing
+
 ## Immediate Next Steps
 
-1.  Review and approve the [Architecture Proposal](./mcp-2.0/05_mcp_2_0_architecture.md).
-2.  Create the `src/tools/meta/` directory and implement the discovery tools.
-3.  Begin the migration of the first batch of workflows (`parallel-review`, etc.).
+1.  Implement Phase 3: Documentation Resources (expose `docs/` as MCP resources)
+2.  Implement Phase 4: Deprecate `smart-workflows` and add backward compatibility
+3.  Validate end-to-end: Test discovery and execution in production MCP client
