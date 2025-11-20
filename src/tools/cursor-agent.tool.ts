@@ -26,10 +26,6 @@ const cursorAgentSchema = z.object({
     .enum(["text", "json"])
     .default("text")
     .describe("Formato dell'output (text/json)"),
-  projectRoot: z
-    .string()
-    .optional()
-    .describe("Directory di lavoro da passare come --cwd"),
   files: z
     .array(z.string())
     .optional()
@@ -37,11 +33,7 @@ const cursorAgentSchema = z.object({
   autoApprove: z
     .boolean()
     .default(false)
-    .describe("Abilita --auto-approve per esecuzioni completamente autonome"),
-  autonomyLevel: z
-    .nativeEnum(AutonomyLevel)
-    .optional()
-    .describe("Livello di autonomia da comunicare al CLI (metadata)")
+    .describe("Abilita --force per esecuzioni completamente autonome (allows file writes)")
 });
 
 export type CursorAgentParams = z.infer<typeof cursorAgentSchema>;
@@ -56,10 +48,8 @@ export const cursorAgentTool: UnifiedTool = {
       prompt,
       model,
       outputFormat,
-      projectRoot,
       files,
-      autoApprove,
-      autonomyLevel
+      autoApprove
     } = args;
 
     if (!prompt || !prompt.trim()) {
@@ -71,10 +61,8 @@ export const cursorAgentTool: UnifiedTool = {
       prompt,
       model,
       outputFormat,
-      projectRoot,
       attachments: files,
       autoApprove,
-      autonomyLevel,
       onProgress
     });
   },

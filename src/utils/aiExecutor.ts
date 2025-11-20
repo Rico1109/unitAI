@@ -98,7 +98,13 @@ export async function executeCursorAgentCLI(
 
   const args: string[] = [];
 
-  args.push(CLI.FLAGS.CURSOR.PROMPT, prompt);
+  // cursor-agent requires --print for headless/scripting mode
+  args.push(CLI.FLAGS.CURSOR.PRINT);
+
+  // Force mode allows file edits (equivalent to auto-approve)
+  if (autoApprove) {
+    args.push(CLI.FLAGS.CURSOR.FORCE);
+  }
 
   if (model) {
     args.push(CLI.FLAGS.CURSOR.MODEL, model);
@@ -108,24 +114,14 @@ export async function executeCursorAgentCLI(
     args.push(CLI.FLAGS.CURSOR.OUTPUT, outputFormat);
   }
 
-  const cwd = projectRoot || process.cwd();
-  if (cwd) {
-    args.push(CLI.FLAGS.CURSOR.CWD, cwd);
-  }
-
-  if (autoApprove) {
-    args.push(CLI.FLAGS.CURSOR.AUTO_APPROVE);
-  }
-
-  if (autonomyLevel) {
-    args.push(CLI.FLAGS.CURSOR.AUTONOMY, autonomyLevel);
-  }
-
   if (attachments.length > 0) {
     attachments.forEach(file => {
       args.push(CLI.FLAGS.CURSOR.FILE, file);
     });
   }
+
+  // Prompt is the last positional argument
+  args.push(prompt);
 
   logger.info(`Executing Cursor Agent CLI with model: ${model}`);
 

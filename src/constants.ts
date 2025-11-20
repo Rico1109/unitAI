@@ -40,10 +40,9 @@ export const CLI = {
       PROMPT: "-p",
       MODEL: "--model",
       OUTPUT: "--output-format",
-      CWD: "--cwd",
-      AUTO_APPROVE: "--auto-approve",
-      FILE: "--file",
-      AUTONOMY: "--autonomy-level"
+      PRINT: "--print",
+      FORCE: "--force",
+      FILE: "--file"
     },
     DROID: {
       EXEC: "exec",
