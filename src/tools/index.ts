@@ -23,7 +23,10 @@ import {
   workflowParallelReviewTool,
   workflowPreCommitValidateTool,
   workflowValidateLastCommitTool,
-  workflowTriangulatedReviewTool
+  workflowTriangulatedReviewTool,
+  workflowInitSessionTool,
+  workflowFeatureDesignTool,
+  workflowOpenspecDrivenDevelopmentTool
 } from "./workflows/index.js";
 import { initializeWorkflowRegistry } from "../workflows/index.js";
 
@@ -43,6 +46,11 @@ registerTool(workflowParallelReviewTool);
 registerTool(workflowPreCommitValidateTool);
 registerTool(workflowValidateLastCommitTool);
 registerTool(workflowTriangulatedReviewTool);
+
+// Register Workflow tools (Phase 2 Batch 2)
+registerTool(workflowInitSessionTool);
+registerTool(workflowFeatureDesignTool);
+registerTool(workflowOpenspecDrivenDevelopmentTool);
 
 // Register OpenSpec tools
 registerTool(openspecInitTool);
@@ -74,7 +82,10 @@ export {
   workflowParallelReviewTool,
   workflowPreCommitValidateTool,
   workflowValidateLastCommitTool,
-  workflowTriangulatedReviewTool
+  workflowTriangulatedReviewTool,
+  workflowInitSessionTool,
+  workflowFeatureDesignTool,
+  workflowOpenspecDrivenDevelopmentTool
 } from "./workflows/index.js";
 
 // Export OpenSpec tools

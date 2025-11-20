@@ -35,9 +35,16 @@ This folder contains the detailed analysis and planning documents:
 7.  **[Validation Plan](./mcp-2.0/07_validation_plan.md)**:
     How we will prove it works.
 
+## Future Work
+
+### MCP Prompts Integration
+While the current focus is on executing workflows via Tools, future updates should consider exposing simpler, reusable interaction patterns as **MCP Prompts**.
+*   **Example:** "Explain this code" or "Generate unit tests for this file".
+*   **Benefit:** Provides a standardized way for clients (like Claude Desktop) to offer quick actions without complex tool calling.
+*   **Reference:** MCP SDK `registerPrompt` capability.
+
 ## Immediate Next Steps
 
 1.  Review and approve the [Architecture Proposal](./mcp-2.0/05_mcp_2_0_architecture.md).
 2.  Create the `src/tools/meta/` directory and implement the discovery tools.
 3.  Begin the migration of the first batch of workflows (`parallel-review`, etc.).
-
