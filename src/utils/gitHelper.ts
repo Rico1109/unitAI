@@ -245,19 +245,18 @@ export function getDateRangeFromCommits(commits: GitCommitInfo[]): { oldest: str
  * Verifica la disponibilità dei comandi CLI necessari
  */
 export async function checkCLIAvailability(): Promise<Record<string, boolean>> {
-  // Map of backend identifiers to CLI command names
+  // Map of display names to CLI command names
+  // Keys match what init-session display code expects
   const backendToCommand: Record<string, string> = {
-    "ask-gemini": "gemini",
-    "ask-cursor": "cursor-agent",
-    "ask-droid": "droid"
+    "gemini": "gemini",
+    "cursor-agent": "cursor",
+    "droid": "droid"
   };
-  
+
   const availability: Record<string, boolean> = {};
 
   for (const [backend, cmd] of Object.entries(backendToCommand)) {
     try {
-      // For droid and cursor-agent, we might need to check differently if they are not in PATH
-      // But assuming they are available as commands or via npx/scripts
       await executeCommand(cmd, ["--version"]);
       availability[backend] = true;
     } catch {
