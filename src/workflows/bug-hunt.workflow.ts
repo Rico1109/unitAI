@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { WorkflowDefinition, ProgressCallback } from './types.js';
 import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
 import { formatWorkflowOutput } from './utils.js';
+import { selectParallelBackends, createTaskCharacteristics } from './modelSelector.js';
 import { logAudit } from '../utils/auditTrail.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -154,25 +155,32 @@ List only file paths, one per line, in order of likelihood.`
     .filter(f => existsSync(f))
     .map(f => ({ path: f, content: readFileSync(f, 'utf-8') }));
 
-  const runGemini = !backendOverrides || backendOverrides.includes(BACKENDS.GEMINI);
-  const runCursor = !backendOverrides || backendOverrides.includes(BACKENDS.CURSOR);
-  const runDroid = !backendOverrides || backendOverrides.includes(BACKENDS.DROID);
+  // Dynamic Backend Selection
+  const task = createTaskCharacteristics('bug-hunt');
+  const selectedBackends = backendOverrides && backendOverrides.length > 0
+    ? backendOverrides
+    : selectParallelBackends(task, 3); // Try to get up to 3 backends
 
-  let geminiAnalysis = runGemini ? '' : 'Analisi Gemini disabilitata via backendOverrides.';
+  const runGemini = selectedBackends.includes(BACKENDS.GEMINI);
+  const runCursor = selectedBackends.includes(BACKENDS.CURSOR);
+  const runDroid = selectedBackends.includes(BACKENDS.DROID);
+  const runRovodev = selectedBackends.includes(BACKENDS.ROVODEV);
+  const runQwen = selectedBackends.includes(BACKENDS.QWEN);
+
+  let geminiAnalysis = '';
+  let qwenAnalysis = '';
 
   const analysisTasks: Promise<void>[] = [];
 
+  // Primary Analysis (Gemini or Qwen)
   if (runGemini) {
     analysisTasks.push(
       executeAIClient({
         backend: BACKENDS.GEMINI,
         prompt: `Analyze these files for the reported bug.
-
 Symptoms: ${symptoms}
-
 Files:
 ${fileContents.map(f => `\n--- ${f.path} ---\n${f.content}`).join('\n')}
-
 Provide:
 1. Root cause analysis
 2. Affected code sections
@@ -185,9 +193,25 @@ Provide:
         geminiAnalysis = `Impossibile completare l'analisi con Gemini: ${errorMsg}`;
       })
     );
+  } else if (runQwen) {
+    // Fallback/Alternative to Gemini
+    analysisTasks.push(
+      executeAIClient({
+        backend: BACKENDS.QWEN,
+        prompt: `Analyze these files for the reported bug.
+Symptoms: ${symptoms}
+Files:
+${fileContents.map(f => `\n--- ${f.path} ---\n${f.content}`).join('\n')}
+Provide root cause analysis and potential side effects.`,
+        outputFormat: 'text'
+      }).then(result => {
+        qwenAnalysis = result;
+      }).catch(error => {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        qwenAnalysis = `Impossibile completare l'analisi con Qwen: ${errorMsg}`;
+      })
+    );
   }
-
-
 
   await Promise.all(analysisTasks);
 
@@ -198,12 +222,9 @@ Provide:
       cursorHypothesis = await executeAIClient({
         backend: BACKENDS.CURSOR,
         prompt: `Agisci come investigatore del codice. Hai i seguenti sintomi e file analizzati.
-
 Symptoms: ${symptoms}
-
 Files principali:
 ${filesToAnalyze.join("\n")}
-
 Genera:
 1. 3-5 ipotesi ordinate per probabilità
 2. Evidenze richieste per confermarle
@@ -218,19 +239,17 @@ Genera:
     }
   }
 
-  let droidPlan = '';
+  let remediationPlan = '';
+  // Use Droid OR Rovodev for remediation
   if (runDroid) {
     onProgress?.('🤖 Preparazione piano di remediation con Droid...');
     try {
-      droidPlan = await executeAIClient({
+      remediationPlan = await executeAIClient({
         backend: BACKENDS.DROID,
         prompt: `Crea un piano operativo per risolvere i bug descritti.
-
 Symptoms: ${symptoms}
-
 Files:
 ${filesToAnalyze.join("\n")}
-
 Output richiesto:
 - Step di remediation (max 5) con priorità
 - Verifiche automatiche per ciascun step
@@ -241,7 +260,22 @@ Output richiesto:
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      droidPlan = `Impossibile generare fix plan con Droid: ${errorMsg}`;
+      remediationPlan = `Impossibile generare fix plan con Droid: ${errorMsg}`;
+    }
+  } else if (runRovodev) {
+    onProgress?.('🤖 Preparazione piano di remediation con Rovodev...');
+    try {
+      remediationPlan = await executeAIClient({
+        backend: BACKENDS.ROVODEV,
+        prompt: `Crea un piano operativo per risolvere i bug descritti.
+  Symptoms: ${symptoms}
+  Files:
+  ${filesToAnalyze.join("\n")}`,
+        autoApprove: true // Yolo mode for planning
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      remediationPlan = `Impossibile generare fix plan con Rovodev: ${errorMsg}`;
     }
   }
 
@@ -285,12 +319,10 @@ ${filesToAnalyze.join('\n')}
 
 ---
 
-## Root Cause Analysis (Gemini)
-${geminiAnalysis}
+## Root Cause Analysis (Gemini/Qwen)
+${geminiAnalysis || qwenAnalysis}
 
 ---
-
-
 
 ${cursorHypothesis ? `---
 
@@ -298,10 +330,10 @@ ${cursorHypothesis ? `---
 ${cursorHypothesis}
 ` : ''}
 
-${droidPlan ? `---
+${remediationPlan ? `---
 
-## Autonomous Fix Plan (Droid)
-${droidPlan}
+## Autonomous Fix Plan (Droid/Rovodev)
+${remediationPlan}
 ` : ''}
 
 ${relatedFilesAnalysis}

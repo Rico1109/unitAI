@@ -12,6 +12,7 @@
 import { z } from 'zod';
 import type { WorkflowDefinition, ProgressCallback } from './types.js';
 import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
+import { selectOptimalBackend, createTaskCharacteristics } from './modelSelector.js';
 import { getStagedDiff } from '../utils/gitHelper.js';
 import { formatWorkflowOutput } from './utils.js';
 import { logAudit } from '../utils/auditTrail.js';
@@ -69,10 +70,15 @@ Produci un piano strutturato con:
 3. Verifiche automatiche suggerite
 4. Rischi residui`;
 
+  const task = createTaskCharacteristics('implementation');
+  task.requiresCodeGeneration = true;
+  const backend = selectOptimalBackend(task);
+
   return executeAIClient({
-    backend: BACKENDS.DROID,
+    backend,
     prompt,
-    auto: "low",
+    auto: backend === BACKENDS.DROID ? "low" : undefined,
+    autoApprove: backend === BACKENDS.ROVODEV ? true : undefined,
     outputFormat: "text"
   });
 }
@@ -113,8 +119,12 @@ Format as JSON:
   "findings": [{"type": string, "severity": string, "line": string, "recommendation": string}]
 }`;
 
+  const task = createTaskCharacteristics('security');
+  task.domain = 'security';
+  const backend = selectOptimalBackend(task);
+
   return await executeAIClient({
-    backend: BACKENDS.GEMINI,
+    backend,
     prompt
   });
 }
@@ -151,8 +161,11 @@ Respond with JSON:
   "positives": [string]
 }`;
 
+  const task = createTaskCharacteristics('review');
+  const backend = selectOptimalBackend(task);
+
   return await executeAIClient({
-    backend: BACKENDS.GEMINI,
+    backend,
     prompt
   });
 }
@@ -184,8 +197,12 @@ Respond with JSON:
   "mitigationStrategies": [string]
 }`;
 
+  const task = createTaskCharacteristics('architecture');
+  task.requiresArchitecturalThinking = true;
+  const backend = selectOptimalBackend(task);
+
   return await executeAIClient({
-    backend: BACKENDS.GEMINI,
+    backend,
     prompt
   });
 }
@@ -309,14 +326,14 @@ export async function executePreCommitValidate(
     try {
       const remediationPlan = await generateAutonomousRemediationPlan(stagedDiff, params.depth);
       remediationSection = `
-## Autonomous Remediation Plan (Droid)
+## Autonomous Remediation Plan (Droid/Rovodev)
 
 ${remediationPlan}
 `;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       remediationSection = `
-## Autonomous Remediation Plan (Droid)
+## Autonomous Remediation Plan (Droid/Rovodev)
 
 Impossibile generare il piano: ${errorMsg}
 `;

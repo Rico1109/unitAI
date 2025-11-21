@@ -24,6 +24,11 @@ export interface AgentConfig {
   onProgress?: (message: string) => void;
 
   /**
+   * Optional backend override
+   */
+  backendOverride?: string;
+
+  /**
    * Optional timeout in milliseconds
    */
   timeout?: number;

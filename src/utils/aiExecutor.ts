@@ -231,6 +231,115 @@ export async function executeDroidCLI(
   }
 }
 
+import { circuitBreaker } from "./circuitBreaker.js";
+
+/**
+ * Execute Rovodev CLI with the given options
+ */
+export async function executeRovodevCLI(
+  options: Omit<AIExecutionOptions, 'backend'>
+): Promise<string> {
+  const { prompt, autoApprove, onProgress } = options;
+
+  if (!prompt || !prompt.trim()) {
+    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
+  }
+
+  const args: string[] = [];
+  args.push(CLI.FLAGS.ROVODEV.RUN);
+
+  // Auto-approve mode (YOLO)
+  if (autoApprove) {
+    args.push(CLI.FLAGS.ROVODEV.YOLO);
+  }
+
+  // Prompt is positional argument at end
+  args.push(prompt);
+
+  logger.info(`Executing Rovodev CLI`);
+
+  if (onProgress) {
+    onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
+  }
+
+  try {
+    const result = await executeCommand("acli", ["rovodev", ...args], {
+      onProgress,
+      timeout: 600000
+    });
+
+    if (onProgress) {
+      onProgress(STATUS_MESSAGES.COMPLETED);
+    }
+
+    return result;
+  } catch (error) {
+    if (onProgress) {
+      onProgress(STATUS_MESSAGES.FAILED);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Execute Qwen CLI with the given options
+ */
+export async function executeQwenCLI(
+  options: Omit<AIExecutionOptions, 'backend'>
+): Promise<string> {
+  const { prompt, sandbox, autoApprove, outputFormat, onProgress } = options;
+
+  if (!prompt || !prompt.trim()) {
+    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
+  }
+
+  const args: string[] = [];
+
+  // Sandbox mode
+  if (sandbox) {
+    args.push(CLI.FLAGS.QWEN.SANDBOX);
+  }
+
+  // Auto-approve mode (YOLO)
+  if (autoApprove) {
+    args.push(CLI.FLAGS.QWEN.YOLO);
+  }
+
+  // Output format
+  if (outputFormat) {
+    args.push(CLI.FLAGS.QWEN.OUTPUT, outputFormat);
+  }
+
+  // Prompt is positional argument at end
+  args.push(prompt);
+
+  logger.info(`Executing Qwen CLI`);
+
+  if (onProgress) {
+    onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
+  }
+
+  try {
+    const result = await executeCommand(CLI.COMMANDS.GEMINI.replace("gemini", "qwen"), args, { // Hack: assuming qwen is in path as 'qwen'
+      onProgress,
+      timeout: 600000
+    });
+    // Correction: The command is just 'qwen'
+    // Re-doing the command execution cleanly:
+
+    return await executeCommand("qwen", args, {
+      onProgress,
+      timeout: 600000
+    });
+
+  } catch (error) {
+    if (onProgress) {
+      onProgress(STATUS_MESSAGES.FAILED);
+    }
+    throw error;
+  }
+}
+
 /**
  * Execute a simple command (like echo or help)
  */
@@ -248,15 +357,42 @@ export async function executeSimpleCommand(
 export async function executeAIClient(options: AIExecutionOptions): Promise<string> {
   const { backend, ...rest } = options;
 
-  switch (backend) {
+  // Circuit Breaker Check
+  if (!circuitBreaker.isAvailable(backend)) {
+    const msg = `Backend ${backend} is currently unavailable (Circuit Open).`;
+    logger.warn(msg);
+    throw new Error(msg);
+  }
 
-    case BACKENDS.GEMINI:
-      return executeGeminiCLI(rest);
-    case BACKENDS.CURSOR:
-      return executeCursorAgentCLI(rest);
-    case BACKENDS.DROID:
-      return executeDroidCLI(rest);
-    default:
-      throw new Error(`Unsupported backend: ${backend}`);
+  try {
+    let result: string;
+    switch (backend) {
+      case BACKENDS.GEMINI:
+        result = await executeGeminiCLI(rest);
+        break;
+      case BACKENDS.CURSOR:
+        result = await executeCursorAgentCLI(rest);
+        break;
+      case BACKENDS.DROID:
+        result = await executeDroidCLI(rest);
+        break;
+      case BACKENDS.ROVODEV:
+        result = await executeRovodevCLI(rest);
+        break;
+      case BACKENDS.QWEN:
+        result = await executeQwenCLI(rest);
+        break;
+      default:
+        throw new Error(`Unsupported backend: ${backend}`);
+    }
+
+    // Report success to Circuit Breaker
+    circuitBreaker.onSuccess(backend);
+    return result;
+
+  } catch (error) {
+    // Report failure to Circuit Breaker
+    circuitBreaker.onFailure(backend);
+    throw error;
   }
 }

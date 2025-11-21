@@ -8,6 +8,7 @@ import type {
   ParallelReviewParams,
   ReviewFocus
 } from "./types.js";
+import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
 
 /**
  * Schema Zod per il workflow parallel-review
@@ -95,18 +96,44 @@ Come Factory Droid, agisci come verificatore autonomo:
 - Elenca check-list di convalida finale
 `;
 
+      case BACKENDS.ROVODEV:
+        return `${basePrompt}
+
+Come Rovo Dev, agisci come implementatore pratico:
+- Fornisci snippet di codice pronti all'uso
+- Identifica dipendenze mancanti
+- Suggerisci miglioramenti immediati
+`;
+
+      case BACKENDS.QWEN:
+        return `${basePrompt}
+
+Come Qwen, fornisci un'analisi logica e strutturata:
+- Verifica la coerenza del codice
+- Identifica edge cases non gestiti
+- Suggerisci ottimizzazioni algoritmiche
+`;
+
       default:
         return basePrompt;
     }
   };
 
   // Esecuzione dell'analisi parallela
-  const defaultBackends = strategy === "double-check"
-    ? [BACKENDS.GEMINI, BACKENDS.CURSOR, BACKENDS.DROID]
-    : [BACKENDS.GEMINI, BACKENDS.CURSOR];
-  const backendsToUse = backendOverrides && backendOverrides.length > 0
-    ? backendOverrides
-    : defaultBackends;
+  let backendsToUse: string[] = [];
+
+  if (backendOverrides && backendOverrides.length > 0) {
+    backendsToUse = backendOverrides;
+  } else {
+    // Dynamic selection
+    const task = createTaskCharacteristics('review');
+    // Map focus to task characteristics
+    if (focus === 'architecture') task.requiresArchitecturalThinking = true;
+    if (focus === 'security') task.domain = 'security';
+
+    const count = strategy === "double-check" ? 3 : 2;
+    backendsToUse = selectParallelBackends(task, count);
+  }
 
   logger.step('parallel-analysis-start', 'Starting parallel analysis', {
     backends: backendsToUse
@@ -132,6 +159,17 @@ Come Factory Droid, agisci come verificatore autonomo:
             attachments,
             auto: strategy === "double-check" ? "medium" : "low",
             outputFormat: "text"
+          };
+        }
+        if (backend === BACKENDS.ROVODEV) {
+          return {
+            autoApprove: strategy === "double-check" // Maps to --yolo
+          };
+        }
+        if (backend === BACKENDS.QWEN) {
+          return {
+            outputFormat: "text",
+            autoApprove: strategy === "double-check" // Maps to -y
           };
         }
         return {};

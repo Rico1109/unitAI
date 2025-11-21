@@ -7,6 +7,7 @@ import type {
   ProgressCallback,
   ValidateLastCommitParams
 } from "./types.js";
+import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
 
 /**
  * Schema Zod per il workflow validate-last-commit
@@ -93,15 +94,47 @@ Come Cursor Agent, fornisci un'analisi tecnica con focus su:
 - Conformità con le convenzioni del linguaggio
 `;
 
+      case BACKENDS.DROID:
+        return `${basePrompt}
+
+Come Factory Droid, verifica l'implementazione pratica:
+- Correttezza della logica di business
+- Gestione degli errori
+- Conformità agli standard di progetto
+`;
+
+      case BACKENDS.ROVODEV:
+        return `${basePrompt}
+
+Come Rovo Dev, analizza l'impatto operativo:
+- Dipendenze introdotte
+- Complessità di deployment
+- Rischi di regressione
+`;
+
+      case BACKENDS.QWEN:
+        return `${basePrompt}
+
+Come Qwen, fornisci un'analisi logica:
+- Coerenza con i requisiti
+- Edge cases mancanti
+- Ottimizzazioni possibili
+`;
+
       default:
         return basePrompt;
     }
   };
 
   // Esecuzione dell'analisi parallela
-  onProgress?.("Avvio analisi parallela con Gemini e Cursor...");
+  onProgress?.("Avvio analisi parallela...");
+
+  const task = createTaskCharacteristics('review');
+  task.requiresArchitecturalThinking = true; // Commit validation often needs architectural context
+  const backendsToUse = selectParallelBackends(task, 2);
+
   const analysisResult = await runParallelAnalysis(
-    [BACKENDS.GEMINI, BACKENDS.CURSOR],
+    backendsToUse,
     promptBuilder,
     onProgress
   );

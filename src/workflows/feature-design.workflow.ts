@@ -3,6 +3,7 @@ import { AgentFactory } from "../agents/index.js";
 import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/permissionManager.js";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
+import { selectOptimalBackend, createTaskCharacteristics } from "./modelSelector.js";
 import type {
   WorkflowDefinition,
   ProgressCallback
@@ -95,6 +96,11 @@ export async function executeFeatureDesign(
   try {
     onProgress?.("📐 Phase 1: Architectural Analysis and Design");
 
+    // Dynamic Backend Selection for Architecture
+    const archTask = createTaskCharacteristics('architecture');
+    archTask.requiresArchitecturalThinking = true;
+    const archBackend = selectOptimalBackend(archTask);
+
     const architect = AgentFactory.createArchitect();
     const architectResult = await architect.execute(
       {
@@ -103,7 +109,7 @@ export async function executeFeatureDesign(
         files: targetFiles,
         focus: architecturalFocus
       },
-      agentConfig
+      { ...agentConfig, backendOverride: archBackend }
     );
 
     // Format and append architect results
@@ -137,6 +143,11 @@ export async function executeFeatureDesign(
   try {
     onProgress?.("💻 Phase 2: Code Implementation");
 
+    // Dynamic Backend Selection for Implementation
+    const implTask = createTaskCharacteristics('implementation');
+    implTask.requiresCodeGeneration = true;
+    const implBackend = selectOptimalBackend(implTask);
+
     const implementer = AgentFactory.createImplementer();
     let implementerResult = await implementer.execute(
       {
@@ -145,7 +156,7 @@ export async function executeFeatureDesign(
         codeContext: context,
         approach: implementationApproach
       },
-      agentConfig
+      { ...agentConfig, backendOverride: implBackend }
     );
 
     // Format and append implementer results
@@ -202,6 +213,11 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
   try {
     onProgress?.("🧪 Phase 3: Test Generation");
 
+    // Dynamic Backend Selection for Testing
+    const testTask = createTaskCharacteristics('testing');
+    testTask.requiresSpeed = true; // Testing usually benefits from speed
+    const testBackend = selectOptimalBackend(testTask);
+
     const tester = AgentFactory.createTester();
     const testerResult = await tester.execute(
       {
@@ -210,7 +226,7 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
         framework: "jest",
         coverageGoal: 80
       },
-      agentConfig
+      { ...agentConfig, backendOverride: testBackend }
     );
 
     // Format and append tester results

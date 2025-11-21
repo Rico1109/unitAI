@@ -53,6 +53,18 @@ export const CLI = {
       SKIP_PERMISSIONS: "--skip-permissions-unsafe",
       FILE: "--file",
       CWD: "--cwd"
+    },
+    ROVODEV: {
+      RUN: "run",
+      YOLO: "--yolo",
+      RESTORE: "--restore",
+      CONFIG: "--config-file"
+    },
+    QWEN: {
+      SANDBOX: "-s",
+      YOLO: "-y",
+      OUTPUT: "-o",
+      INTERACTIVE: "-i"
     }
   }
 } as const;
@@ -97,7 +109,9 @@ export const APPROVAL_MODES = {
 export const BACKENDS = {
   GEMINI: "ask-gemini",
   CURSOR: "ask-cursor",
-  DROID: "ask-droid"
+  DROID: "ask-droid",
+  ROVODEV: "ask-rovodev",
+  QWEN: "ask-qwen"
 } as const;
 
 // Export BACKENDS values for easier importing

@@ -93,47 +93,52 @@ const backendStats = new BackendStats();
 /**
  * Select optimal backend based on task characteristics
  */
+import { circuitBreaker } from '../utils/circuitBreaker.js';
+
+/**
+ * Select optimal backend based on task characteristics
+ */
 export function selectOptimalBackend(
   task: TaskCharacteristics,
   allowedBackends?: string[]
 ): string {
-  // 1. Architectural tasks -> Gemini
-  if (task.requiresArchitecturalThinking || task.domain === 'architecture') {
-    logAudit({
-      operation: 'model-selection',
-      autonomyLevel: 'MEDIUM',
-      details: `Selected Gemini for architectural task. Task: ${JSON.stringify(task)}`
-    });
-    return BACKENDS.GEMINI;
-  }
+  const candidates = allowedBackends || Object.values(BACKENDS);
 
-  // 2. Code generation / Implementation -> Droid (GLM-4.6)
-  if (task.requiresCodeGeneration && !task.requiresSpeed) {
-    logAudit({
-      operation: 'model-selection',
-      autonomyLevel: 'MEDIUM',
-      details: `Selected Droid for implementation task. Task: ${JSON.stringify(task)}`
-    });
-    return BACKENDS.DROID;
-  }
+  // Filter out unavailable backends
+  const availableCandidates = candidates.filter(b => circuitBreaker.isAvailable(b));
 
-  // 3. Debugging / Testing / Refactoring -> Cursor Agent
-  if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
-    logAudit({
-      operation: 'model-selection',
-      autonomyLevel: 'MEDIUM',
-      details: `Selected Cursor Agent for debugging/speed. Task: ${JSON.stringify(task)}`
-    });
+  if (availableCandidates.length === 0) {
+    // If all are down, return a default (likely Cursor) and let the circuit breaker throw the error
+    // or return the "least failed" one. For now, return primary fallback.
     return BACKENDS.CURSOR;
   }
 
-  // 4. Default fallback -> Cursor Agent
-  logAudit({
-    operation: 'model-selection',
-    autonomyLevel: 'MEDIUM',
-    details: `Selected Cursor Agent as default fallback. Task: ${JSON.stringify(task)}`
-  });
-  return BACKENDS.CURSOR;
+  // Helper to check if a backend is available
+  const isAvailable = (b: string) => availableCandidates.includes(b);
+
+  // 1. Architectural tasks -> Gemini > Qwen > Cursor
+  if (task.requiresArchitecturalThinking || task.domain === 'architecture') {
+    if (isAvailable(BACKENDS.GEMINI)) return BACKENDS.GEMINI;
+    if (isAvailable(BACKENDS.QWEN)) return BACKENDS.QWEN;
+    return availableCandidates[0];
+  }
+
+  // 2. Code generation / Implementation -> Droid > Rovodev > Cursor
+  if (task.requiresCodeGeneration && !task.requiresSpeed) {
+    if (isAvailable(BACKENDS.DROID)) return BACKENDS.DROID;
+    if (isAvailable(BACKENDS.ROVODEV)) return BACKENDS.ROVODEV;
+    return availableCandidates[0];
+  }
+
+  // 3. Debugging / Testing / Refactoring -> Cursor Agent > Qwen
+  if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
+    if (isAvailable(BACKENDS.CURSOR)) return BACKENDS.CURSOR;
+    if (isAvailable(BACKENDS.QWEN)) return BACKENDS.QWEN;
+    return availableCandidates[0];
+  }
+
+  // 4. Default fallback
+  return availableCandidates[0];
 }
 
 /**
@@ -144,7 +149,10 @@ export function selectParallelBackends(
   count: number = 2
 ): string[] {
   const selections: string[] = [];
-  const available = [BACKENDS.CURSOR, BACKENDS.GEMINI, BACKENDS.DROID];
+  const allBackends = [BACKENDS.CURSOR, BACKENDS.GEMINI, BACKENDS.DROID, BACKENDS.QWEN, BACKENDS.ROVODEV];
+  const available = allBackends.filter(b => circuitBreaker.isAvailable(b));
+
+  if (available.length === 0) return [BACKENDS.CURSOR]; // Fallback
 
   // Strategy: diversify for different strengths
   if (count >= 1) {
@@ -157,24 +165,24 @@ export function selectParallelBackends(
     // Second choice: complementary backend
     const remaining = available.filter(b => !selections.includes(b));
 
-    if (selections[0] === BACKENDS.GEMINI) {
-      // Complement Gemini with practical Droid
-      selections.push(remaining.includes(BACKENDS.DROID) ? BACKENDS.DROID : remaining[0]);
-    } else if (selections[0] === BACKENDS.DROID) {
-      // Complement Droid with deep-thinking Gemini
-      selections.push(remaining.includes(BACKENDS.GEMINI) ? BACKENDS.GEMINI : remaining[0]);
-    } else {
-      // Complement Cursor with analytical Gemini
-      selections.push(remaining.includes(BACKENDS.GEMINI) ? BACKENDS.GEMINI : remaining[0]);
+    if (remaining.length > 0) {
+      // Simple diversification logic
+      if (selections[0] === BACKENDS.GEMINI || selections[0] === BACKENDS.QWEN) {
+        // If primary is "thinker", add "doer"
+        const doer = remaining.find(b => b === BACKENDS.DROID || b === BACKENDS.ROVODEV);
+        selections.push(doer || remaining[0]);
+      } else {
+        // If primary is "doer", add "thinker"
+        const thinker = remaining.find(b => b === BACKENDS.GEMINI || b === BACKENDS.QWEN);
+        selections.push(thinker || remaining[0]);
+      }
     }
   }
 
   if (count >= 3 && selections.length < count) {
-    // Third choice: remaining backend
+    // Fill remaining slots
     const remaining = available.filter(b => !selections.includes(b));
-    if (remaining.length > 0) {
-      selections.push(remaining[0]);
-    }
+    selections.push(...remaining.slice(0, count - selections.length));
   }
 
   return selections.slice(0, count);

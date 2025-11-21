@@ -93,15 +93,16 @@ export abstract class BaseAgent<TInput, TOutput> implements IAgent<TInput, TOutp
       // Step 3: Execute with preferred backend
       let rawOutput: string;
       let backendUsed: string;
+      const targetBackend = config.backendOverride || this.preferredBackend;
 
       try {
         rawOutput = await this.executeWithBackend(
-          this.preferredBackend,
+          targetBackend,
           prompt,
           config
         );
-        backendUsed = this.preferredBackend;
-        logger.info(`[${this.name}] Primary backend succeeded`);
+        backendUsed = targetBackend;
+        logger.info(`[${this.name}] Primary backend succeeded (${targetBackend})`);
       } catch (error) {
         // Try fallback backend if available
         if (this.fallbackBackend) {
