@@ -215,6 +215,35 @@ export function getBackendStats(): BackendMetrics[] {
 }
 
 /**
+ * Select a fallback backend when the primary fails
+ * Returns a different backend from the failed one, prioritizing by reliability
+ */
+export function selectFallbackBackend(failedBackend: string): string {
+  // Priority order for fallbacks (most reliable first)
+  const fallbackOrder = [
+    BACKENDS.GEMINI,
+    BACKENDS.CURSOR,
+    BACKENDS.DROID,
+    BACKENDS.QWEN,
+    BACKENDS.ROVODEV
+  ];
+
+  // Filter out the failed backend and unavailable ones
+  const available = fallbackOrder.filter(
+    b => b !== failedBackend && circuitBreaker.isAvailable(b)
+  );
+
+  if (available.length > 0) {
+    return available[0];
+  }
+
+  // If all are unavailable, return first that's not the failed one
+  // (let circuit breaker handle the error)
+  const anyOther = fallbackOrder.find(b => b !== failedBackend);
+  return anyOther || BACKENDS.GEMINI;
+}
+
+/**
  * Get recommendations for backend selection
  */
 export function getBackendRecommendations(): string {

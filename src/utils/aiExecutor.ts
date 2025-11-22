@@ -232,6 +232,7 @@ export async function executeDroidCLI(
 }
 
 import { circuitBreaker } from "./circuitBreaker.js";
+import { selectFallbackBackend } from "../workflows/modelSelector.js";
 
 /**
  * Execute Rovodev CLI with the given options
@@ -352,16 +353,56 @@ export async function executeSimpleCommand(
 }
 
 /**
- * Main function to execute an AI command based on backend
+ * Configuration for retry-with-fallback behavior
  */
-export async function executeAIClient(options: AIExecutionOptions): Promise<string> {
+export interface RetryConfig {
+  maxRetries: number;
+  currentRetry: number;
+  triedBackends: string[];
+}
+
+/**
+ * Main function to execute an AI command based on backend
+ * Includes automatic retry-with-fallback when a backend fails
+ */
+export async function executeAIClient(
+  options: AIExecutionOptions,
+  retryConfig?: RetryConfig
+): Promise<string> {
   const { backend, ...rest } = options;
 
-  // Circuit Breaker Check
+  // Initialize retry config
+  const config: RetryConfig = retryConfig || {
+    maxRetries: 2,
+    currentRetry: 0,
+    triedBackends: []
+  };
+
+  // Track this backend as tried
+  config.triedBackends.push(backend);
+
+  // Circuit Breaker Check - try fallback if blocked
   if (!circuitBreaker.isAvailable(backend)) {
-    const msg = `Backend ${backend} is currently unavailable (Circuit Open).`;
-    logger.warn(msg);
-    throw new Error(msg);
+    logger.warn(`Backend ${backend} is currently unavailable (Circuit Open).`);
+
+    if (config.currentRetry < config.maxRetries) {
+      const fallback = selectFallbackBackend(backend);
+
+      // Avoid retrying already-tried backends
+      if (config.triedBackends.includes(fallback)) {
+        const msg = `All available backends have been tried: ${config.triedBackends.join(', ')}`;
+        logger.error(msg);
+        throw new Error(msg);
+      }
+
+      logger.info(`Trying fallback backend: ${fallback}`);
+      return executeAIClient(
+        { ...options, backend: fallback },
+        { ...config, currentRetry: config.currentRetry + 1 }
+      );
+    }
+
+    throw new Error(`Backend ${backend} unavailable and max retries (${config.maxRetries}) exhausted.`);
   }
 
   try {
@@ -388,11 +429,40 @@ export async function executeAIClient(options: AIExecutionOptions): Promise<stri
 
     // Report success to Circuit Breaker
     circuitBreaker.onSuccess(backend);
+
+    // Log successful fallback if this wasn't the first try
+    if (config.currentRetry > 0) {
+      logger.info(`Successfully completed with fallback backend ${backend} after ${config.currentRetry} retries.`);
+    }
+
     return result;
 
   } catch (error) {
     // Report failure to Circuit Breaker
     circuitBreaker.onFailure(backend);
+
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    logger.warn(`Backend ${backend} failed: ${errorMsg}`);
+
+    // Retry with fallback if we haven't exhausted retries
+    if (config.currentRetry < config.maxRetries) {
+      const fallback = selectFallbackBackend(backend);
+
+      // Avoid retrying already-tried backends
+      if (config.triedBackends.includes(fallback)) {
+        logger.error(`Fallback ${fallback} was already tried. Exhausted options.`);
+        throw error;
+      }
+
+      logger.info(`Retrying with fallback backend: ${fallback} (attempt ${config.currentRetry + 1}/${config.maxRetries})`);
+      return executeAIClient(
+        { ...options, backend: fallback },
+        { ...config, currentRetry: config.currentRetry + 1 }
+      );
+    }
+
+    // All retries exhausted
+    logger.error(`All ${config.maxRetries} retry attempts exhausted. Backends tried: ${config.triedBackends.join(', ')}`);
     throw error;
   }
 }
