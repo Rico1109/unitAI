@@ -1,8 +1,7 @@
 ---
-name: OpenSpec: Apply
 description: Implement an approved OpenSpec change and keep tasks in sync.
-category: OpenSpec
-tags: [openspec, apply]
+argument-hint: <change-id>
+allowed-tools: Bash(openspec:*), Bash(npx openspec:*), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 <!-- OPENSPEC:START -->
 **Guardrails**

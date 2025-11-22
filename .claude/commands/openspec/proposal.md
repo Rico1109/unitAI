@@ -1,8 +1,7 @@
 ---
-name: OpenSpec: Proposal
 description: Scaffold a new OpenSpec change and validate strictly.
-category: OpenSpec
-tags: [openspec, change]
+argument-hint: "feature or change description"
+allowed-tools: Bash(openspec:*), Bash(npx openspec:*), Bash(rg:*), Read, Edit, Write, Grep, Glob
 ---
 <!-- OPENSPEC:START -->
 **Guardrails**

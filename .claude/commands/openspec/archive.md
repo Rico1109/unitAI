@@ -1,8 +1,7 @@
 ---
-name: OpenSpec: Archive
 description: Archive a deployed OpenSpec change and update specs.
-category: OpenSpec
-tags: [openspec, archive]
+argument-hint: [change-id]
+allowed-tools: Bash(openspec:*), Bash(npx openspec:*), Read
 ---
 <!-- OPENSPEC:START -->
 **Guardrails**

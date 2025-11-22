@@ -1,9 +1,25 @@
 #!/usr/bin/env tsx
 
-import { parseSlashCommand, validateCommand, executeSlashCommand } from '../slash-commands';
+/**
+ * @deprecated This hook is DEPRECATED as of 2024-11-22.
+ *
+ * Claude Code now has native slash command support via Markdown files in .claude/commands/.
+ * The custom TypeScript-based command system has been moved to .claude/legacy-scripts/
+ * and is no longer the primary mechanism for slash commands.
+ *
+ * Native slash commands are defined in:
+ * - .claude/commands/*.md (main commands)
+ * - .claude/commands/openspec/*.md (namespaced commands)
+ *
+ * This hook is kept for backward compatibility but should not be used for new commands.
+ */
+
+// Legacy imports - kept for backward compatibility only
+import { parseSlashCommand, validateCommand, executeSlashCommand } from '../legacy-scripts/commands';
 
 /**
- * Hook per intercettare e processare i comandi slash
+ * @deprecated Use native Claude Code slash commands instead.
+ * Hook per intercettare e processare i comandi slash (LEGACY)
  * Viene eseguito su ogni messaggio utente inviato a Claude
  */
 export async function onUserPromptSubmit(prompt: string): Promise<void> {
