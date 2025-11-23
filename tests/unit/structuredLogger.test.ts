@@ -412,7 +412,8 @@ describe('WorkflowLogger', () => {
     const timingLog = logs.find(l => l.operation === 'test-operation');
 
     expect(timingLog).toBeDefined();
-    expect(timingLog?.metadata?.duration).toBeGreaterThanOrEqual(50);
+    // Allow small timing variance (setTimeout may resolve slightly early)
+    expect(timingLog?.metadata?.duration).toBeGreaterThanOrEqual(45);
   });
 
   it('should log timing even on operation failure', async () => {

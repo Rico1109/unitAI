@@ -444,6 +444,11 @@ export async function executeAIClient(
     const errorMsg = error instanceof Error ? error.message : String(error);
     logger.warn(`Backend ${backend} failed: ${errorMsg}`);
 
+    // Don't retry for configuration errors (unsupported backend)
+    if (errorMsg.includes('Unsupported backend')) {
+      throw error;
+    }
+
     // Retry with fallback if we haven't exhausted retries
     if (config.currentRetry < config.maxRetries) {
       const fallback = selectFallbackBackend(backend);

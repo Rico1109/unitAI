@@ -108,13 +108,17 @@ describe('Workflow Integration Tests', () => {
       const startTime = Date.now();
       const delays = { gemini: 100, rovodev: 100 };
 
-      // Mock with delays
-      vi.doMock('../../src/utils/aiExecutor.js', async () => ({
-        executeAIClient: vi.fn().mockImplementation(async (config: any) => {
-          await new Promise(resolve => setTimeout(resolve, delays[config.backend as keyof typeof delays]));
-          return `Response from ${config.backend}`;
-        })
-      }));
+      // Mock with delays - include BACKENDS export
+      vi.doMock('../../src/utils/aiExecutor.js', async () => {
+        const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
+        return {
+          ...actual,
+          executeAIClient: vi.fn().mockImplementation(async (config: any) => {
+            await new Promise(resolve => setTimeout(resolve, delays[config.backend as keyof typeof delays]));
+            return `Response from ${config.backend}`;
+          })
+        };
+      });
 
       const { executeParallelReview } = await import('../../src/workflows/parallel-review.workflow.js');
       
@@ -246,6 +250,13 @@ describe('Workflow Integration Tests', () => {
       mockGitCommands([
         { command: 'rev-parse --git-dir', output: '.git' }
       ]);
+
+      // Set up AI executor mock with BACKENDS export
+      mockAIExecutor({
+        'ask-gemini': 'Analysis complete',
+        'ask-cursor': 'Review complete',
+        'ask-droid': 'Check complete'
+      });
 
       const { executeParallelReview } = await import('../../src/workflows/parallel-review.workflow.js');
 
