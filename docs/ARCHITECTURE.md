@@ -4,7 +4,7 @@
 **Last Updated:** 2025-11-14  
 **Status:** Phase 1 Completed
 
-This document provides a comprehensive overview of the unified-ai-mcp-tool architecture, implementation status, and technical decisions.
+This document provides a comprehensive overview of the unitai architecture, implementation status, and technical decisions.
 
 ---
 
@@ -22,7 +22,7 @@ This document provides a comprehensive overview of the unified-ai-mcp-tool archi
 
 ### Overview
 
-The unified-ai-mcp-tool is a Model Context Protocol server that orchestrates multiple AI backends (Qwen, Gemini, Rovodev) through intelligent workflows. The system is designed with progressive autonomy in mind, starting from read-only operations and gradually enabling more autonomous behaviors.
+The unitai is a Model Context Protocol server that orchestrates multiple AI backends (Qwen, Gemini, Rovodev) through intelligent workflows. The system is designed with progressive autonomy in mind, starting from read-only operations and gradually enabling more autonomous behaviors.
 
 ### Architecture Layers
 

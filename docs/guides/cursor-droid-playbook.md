@@ -5,7 +5,7 @@
 **Aggiornato:** 2025-11-19  
 **Stato:** Draft operativo
 
-Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena, claude-context e smart-workflows.
+Guida rapida per utilizzare `ask-cursor` e `droid` in combinazione con Serena, claude-context e smart-workflows.
 
 ---
 
@@ -21,7 +21,7 @@ Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena,
    export CURSOR_AGENT_TOKEN="<token_cursor>"
    export DROID_API_KEY="<token_droid>"
    ```
-3. Impostare il `projectRoot` su `/home/dawid/Projects/unified-ai-mcp-tool` per dare al CLI visibilità sul repo.
+3. Impostare il `projectRoot` su `/home/dawid/Projects/unitai` per dare al CLI visibilità sul repo.
 
 ---
 
@@ -31,7 +31,7 @@ Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena,
 ```
 1. claude-context → “Find usages of broken function”
 2. Serena → find_referencing_symbols + get_symbols_overview
-3. cursor-agent → prompt: "@file Fix logic + add regression test"
+3. ask-cursor → prompt: "@file Fix logic + add regression test"
 4. droid (auto=low) → creare checklist di validazione
 5. smart-workflows.pre-commit-validate(depth="thorough")
 ```
@@ -39,7 +39,7 @@ Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena,
 ### 2.2 Refactor sprint
 ```
 1. Serena → identificare simboli da refactorizzare
-2. cursor-agent (model: sonnet-4.5) → piano + patch suggestive
+2. ask-cursor (model: sonnet-4.5) → piano + patch suggestive
 3. ask-gemini → validation architetturale (opzionale se serve seconda opinione)
 4. droid (auto=medium) → checklist operativa
 5. smart-workflows.refactor-sprint → consolidare output
@@ -50,7 +50,7 @@ Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena,
 1. Raccogliere log con Serena/grep
 2. ask-gemini → sintetizzare i sintomi
 3. droid (auto=medium, files=logs) → generare piano maxActions=5
-4. cursor-agent → applicare i passi più critici (patch chirurgiche)
+4. ask-cursor → applicare i passi più critici (patch chirurgiche)
 5. smart-workflows.auto-remediation → salvare il report finale
 ```
 
@@ -64,7 +64,7 @@ Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena,
   "prompt": "Stai preparando un refactor {depth}. File coinvolti:\n${files}\nGenera piano step-by-step + patch suggerite + test.",
   "model": "sonnet-4.5",
   "files": [...],
-  "projectRoot": "/home/dawid/Projects/unified-ai-mcp-tool"
+  "projectRoot": "/home/dawid/Projects/unitai"
   ```
 - **Patch chirurgica**
   ```
@@ -109,9 +109,9 @@ Guida rapida per utilizzare `cursor-agent` e `droid` in combinazione con Serena,
 
 | Scenario | Sequenza consigliata |
 |----------|----------------------|
-| Bugfix critico | Serena → cursor-agent → droid → pre-commit-validate |
-| Refactor multi-file | claude-context → cursor-agent → smart-workflows.refactor-sprint |
-| Incident / outage | ask-gemini → droid.auto-remediation → cursor-agent (patch) → validate-last-commit |
+| Bugfix critico | Serena → ask-cursor → droid → pre-commit-validate |
+| Refactor multi-file | claude-context → ask-cursor → smart-workflows.refactor-sprint |
+| Incident / outage | ask-gemini → droid.auto-remediation → ask-cursor (patch) → validate-last-commit |
 
 Aggiorna questo playbook ogni volta che trovi pattern efficaci (aggiungi esempi reali e link a PR/commit).
 

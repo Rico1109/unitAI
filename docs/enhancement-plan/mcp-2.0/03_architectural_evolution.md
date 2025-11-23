@@ -1,6 +1,6 @@
 # Architectural Evolution
 
-This document traces the evolution of the `unified-ai-mcp-tool` architecture based on commit history.
+This document traces the evolution of the `unitai` architecture based on commit history.
 
 ## Timeline & Major Milestones
 
@@ -8,7 +8,7 @@ This document traces the evolution of the `unified-ai-mcp-tool` architecture bas
 -   **Commit `dfdf8d8`**: Migrated agents to MCP tools.
 -   **Commit `546f234`**: Big integration step.
     -   Removed specific backend tools: `ask-qwen.tool.ts`, `ask-rovodev.tool.ts`.
-    -   Added functional agent tools: `cursor-agent.tool.ts`, `droid.tool.ts`.
+    -   Added functional agent tools: `ask-cursor.tool.ts`, `droid.tool.ts`.
     -   Introduced the concept of "Workflows" as first-class citizens (`src/workflows/`).
     -   Added `auto-remediation`, `refactor-sprint`, `triangulated-review`.
 
@@ -29,7 +29,7 @@ This document traces the evolution of the `unified-ai-mcp-tool` architecture bas
 ## Key Architectural Decisions
 
 1.  **From Backends to Agents:**
-    The system moved from exposing raw model access (`ask-qwen`) to exposing "Agents" (`cursor-agent`, `droid`) that encapsulate behavior and tools. This raises the abstraction level.
+    The system moved from exposing raw model access (`ask-qwen`) to exposing "Agents" (`ask-cursor`, `droid`) that encapsulate behavior and tools. This raises the abstraction level.
 
 2.  **Workflows as Logic Units:**
     Complex multi-step logic was moved from the tool definition itself into `src/workflows/`. This separates the "what" (workflow logic) from the "how" (MCP tool exposure).

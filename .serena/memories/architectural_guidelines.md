@@ -6,7 +6,7 @@
 Skills and documentation should be concise in main files (<500 lines), with detailed documentation in `ref/` subdirectories loaded on-demand.
 
 ### 2. Recursive MCP Architecture
-**Key Insight**: `unified-ai-mcp-tool` can invoke ALL other MCP servers when running workflows.
+**Key Insight**: `unitai` can invoke ALL other MCP servers when running workflows.
 
 **Power Multiplier:**
 ```typescript

@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-The `unified-ai-mcp-tool` has matured into a powerful system with 10+ complex workflows and autonomous agents. However, its interface remains opaque: capabilities are hidden behind a single "God Tool" (`smart-workflows`) and documentation is locked in the local filesystem.
+The `unitai` has matured into a powerful system with 10+ complex workflows and autonomous agents. However, its interface remains opaque: capabilities are hidden behind a single "God Tool" (`smart-workflows`) and documentation is locked in the local filesystem.
 
 This plan proposes **MCP 2.0**, a major architectural shift focused on **Discoverability** and **Granularity**. By exposing workflows as individual tools and treating documentation as a first-class resource, we enable AI assistants to self-onboard, select the right tools with high precision, and operate autonomously without constant user guidance.
 
@@ -71,7 +71,9 @@ While the current focus is on executing workflows via Tools, future updates shou
 - **17+ MCP Tools** exposed (4 base + 3 meta + 10 workflows)
 - **100% Discovery Rate**: AI can discover all tools via `list_workflows()`
 - **Rich Metadata**: All tools include descriptions, examples, and usage guidance
-- **Test Coverage**: 253/253 tests passing
+- **Test Coverage**: 258/258 tests passing
+- **Backend Naming**: Standardized to `ask-*` convention (ask-gemini, ask-cursor, ask-droid)
+- **Circuit Breaker**: Resilience system with ask-qwen/ask-rovodev as fallback backends
 
 ## Immediate Next Steps
 

@@ -31,9 +31,9 @@ All 4 implementations are **production-ready** and working independently. This a
 **Status:** ✅ Complete (58 files, ~3,900 LOC delta)
 
 **Key Features:**
-- cursor-agent tool (6 models: GPT-5.1, Sonnet-4.5, Composer-1, etc.)
-- droid tool (GLM-4.6 with autonomy levels)
-- Removed ask-qwen and ask-rovodev
+- ask-cursor tool (6 models: GPT-5.1, Sonnet-4.5, Composer-1, etc.)
+- ask-droid tool (GLM-4.6 with autonomy levels)
+- ask-qwen and ask-rovodev retained as non-exposed fallback backends (circuit breaker resilience)
 - Enhanced 6 workflows: bug-hunt, feature-design, refactor-sprint, auto-remediation, triangulated-review, parallel-review
 - AI executor utility with fallback handling
 
@@ -119,16 +119,16 @@ export async function executeOpenspec(params: string[]) {
 
 ---
 
-#### 2.3 cursor-agent/droid + Slash Commands
+#### 2.3 ask-cursor/droid + Slash Commands
 **Integration Point:** Add agentic tools to `/ai-task`  
-**Value:** Expose cursor-agent/droid via simple slash command  
+**Value:** Expose ask-cursor/droid via simple slash command  
 **Effort:** Medium (2-3 hours)
 
 **Implementation:**
 ```typescript
 // .claude/slash-commands/commands/ai-task.ts - extend subcommands
 case 'cursor':
-  return await executeCursor(subParams); // Wrapper for cursor-agent tool
+  return await executeCursor(subParams); // Wrapper for ask-cursor tool
 
 case 'droid':
   return await executeDroid(subParams); // Wrapper for droid tool
@@ -173,14 +173,14 @@ if (!hasSpec.found) {
 
 ---
 
-#### 2.5 Skills → cursor-agent/droid Recommendations
+#### 2.5 Skills → ask-cursor/droid Recommendations
 **Integration Point:** Guide users to appropriate AI tool based on context  
 **Value:** Smart backend selection for different task types  
 **Effort:** Medium (2 hours)
 
 **Skill Logic:**
-- **Bug fixing** → Suggest cursor-agent (best for surgical fixes)
-- **Refactoring** → Suggest cursor-agent (multi-model analysis)
+- **Bug fixing** → Suggest ask-cursor (best for surgical fixes)
+- **Refactoring** → Suggest ask-cursor (multi-model analysis)
 - **Incident response** → Suggest droid (autonomous remediation planning)
 - **Complex architecture** → Suggest ask-gemini (deep reasoning)
 
@@ -189,8 +189,8 @@ if (!hasSpec.found) {
 // skill-rules.json - add relatedTools property
 {
   "quick-exploration": {
-    "relatedTools": ["cursor-agent", "serena"],
-    "toolGuidance": "After exploration, use cursor-agent for surgical edits or serena for symbol-level navigation"
+    "relatedTools": ["ask-cursor", "serena"],
+    "toolGuidance": "After exploration, use ask-cursor for surgical edits or serena for symbol-level navigation"
   }
 }
 ```
@@ -198,7 +198,7 @@ if (!hasSpec.found) {
 ---
 
 #### 2.6 `/save-commit` → Enhanced Validation
-**Integration Point:** Use cursor-agent/droid for pre-commit validation  
+**Integration Point:** Use ask-cursor/droid for pre-commit validation  
 **Value:** AI-powered code review before commit  
 **Effort:** Medium (3 hours)
 
@@ -209,7 +209,7 @@ async function validateCodeStability() {
   // 1. Run pre-commit-validate workflow (existing)
   const basicValidation = await runPreCommitValidate();
   
-  // 2. Run cursor-agent review (if enabled in preferences)
+  // 2. Run ask-cursor review (if enabled in preferences)
   if (userPrefs.enableAIReview) {
     const cursorReview = await executeCursorAgent({
       prompt: "Review staged changes for quality and security",
@@ -235,11 +235,11 @@ async function validateCodeStability() {
 ```
 🎯 SKILL: serena-surgical-editing
 
-Then: cursor-agent (for applying changes)
+Then: ask-cursor (for applying changes)
 Then: pre-commit-validate (before committing)
 Then: save-commit (to finalize)
 
-Complete workflow: serena → cursor-agent → validate → commit
+Complete workflow: serena → ask-cursor → validate → commit
 ```
 
 ---
@@ -251,7 +251,7 @@ Complete workflow: serena → cursor-agent → validate → commit
 
 **Implementation:**
 ```bash
-/check-docs cursor-agent        # Show cursor-agent usage
+/check-docs ask-cursor        # Show ask-cursor usage
 /check-docs droid              # Show droid usage
 /check-docs openspec           # Show OpenSpec user guide
 /check-docs workflows          # List all workflows
@@ -283,14 +283,14 @@ Complete workflow: serena → cursor-agent → validate → commit
 
 ---
 
-#### 2.11 cursor-agent + OpenSpec Synergy
-**Integration Point:** Use OpenSpec as context for cursor-agent  
+#### 2.11 ask-cursor + OpenSpec Synergy
+**Integration Point:** Use OpenSpec as context for ask-cursor  
 **Value:** Spec-aware code generation  
 **Effort:** Medium (3 hours)
 
 **Implementation:**
 ```typescript
-// When running cursor-agent, auto-attach related specs
+// When running ask-cursor, auto-attach related specs
 const relatedSpecs = await detectRelatedSpecs(files);
 const cursorResult = await executeCursorAgent({
   prompt,
@@ -337,7 +337,7 @@ const cursorResult = await executeCursorAgent({
 9. **check-docs extensions** (1-2h)
 10. **OpenSpec progress tracking** (4h)
 11. **Hook → Workflow suggestions** (2-3h)
-12. **cursor-agent + OpenSpec context** (3h)
+12. **ask-cursor + OpenSpec context** (3h)
 13. **Unified memory system** (5+h)
 
 ---
@@ -391,12 +391,12 @@ async function validateAgainstSpec(context) {
    - OpenSpec tools
 
 2. **skill-activation-prompt.ts** needs to know about:
-   - Available MCP tools (cursor-agent, droid, openspec)
+   - Available MCP tools (ask-cursor, droid, openspec)
    - Workflow capabilities
 
 3. **Workflows** need to import:
    - OpenSpec tool functions
-   - cursor-agent/droid executors
+   - ask-cursor/droid executors
 
 ---
 

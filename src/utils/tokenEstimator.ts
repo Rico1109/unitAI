@@ -272,7 +272,7 @@ export async function suggestOptimalTool(context: ToolContext): Promise<ToolSugg
       reason: "Pattern search in codebase. claude-context provides semantic search with hybrid BM25+vector matching, finding related code beyond literal matches.",
       blockedTool: tool,
       suggestedCommands: [
-        `mcp__claude-context__search_code("semantic query", "/home/dawid/Projects/unified-ai-mcp-tool")`
+        `mcp__claude-context__search_code("semantic query", "/home/dawid/Projects/unitai")`
       ],
       estimatedSavings: 1500 // Semantic search is much more targeted
     };

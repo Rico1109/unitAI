@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** 2025-11-14
 
-Thank you for considering contributing to unified-ai-mcp-tool. This guide will help you get started.
+Thank you for considering contributing to unitai. This guide will help you get started.
 
 ---
 
@@ -31,8 +31,8 @@ Thank you for considering contributing to unified-ai-mcp-tool. This guide will h
 ### Clone and Install
 
 ```bash
-git clone https://github.com/jaggerxtrm/unified-ai-mcp-tool.git
-cd unified-ai-mcp-tool
+git clone https://github.com/jaggerxtrm/unitai.git
+cd unitai
 npm install
 ```
 
@@ -63,7 +63,7 @@ npm run lint
 ## Project Structure
 
 ```
-unified-ai-mcp-tool/
+unitai/
 ├── src/
 │   ├── agents/              # Agent implementations (Architect, Implementer, Tester)
 │   │   ├── base/
@@ -73,7 +73,7 @@ unified-ai-mcp-tool/
 │   │   └── TesterAgent.ts
 │   ├── tools/               # MCP tool definitions
 │   │   ├── ask-gemini.tool.ts
-│   │   ├── cursor-agent.tool.ts
+│   │   ├── ask-cursor.tool.ts
 │   │   ├── droid.tool.ts
 │   │   └── smart-workflows.tool.ts
 │   ├── workflows/           # Workflow implementations
@@ -530,4 +530,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-Thank you for contributing to unified-ai-mcp-tool!
+Thank you for contributing to unitai!

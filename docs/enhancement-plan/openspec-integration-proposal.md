@@ -6,7 +6,7 @@
 
 **Condition**: Must complete Phase 0 (Language-Agnosticism Validation) before proceeding to full integration.
 
-**Rationale**: The unified-ai-mcp-tool is a multi-purpose framework for projects in various languages. While OpenSpec uses markdown (inherently language-agnostic format), we must verify that:
+**Rationale**: The unitai is a multi-purpose framework for projects in various languages. While OpenSpec uses markdown (inherently language-agnostic format), we must verify that:
 1. Specification content doesn't force JavaScript/TypeScript patterns
 2. Change tracking works equally well for Python, Go, Rust, and other languages
 3. AI tools generate appropriate code regardless of implementation language
@@ -17,7 +17,7 @@
 
 ## Overview
 
-This proposal outlines the integration of OpenSpec into the unified-ai-mcp-tool project to enhance requirements management and provide structured spec-driven development workflows.
+This proposal outlines the integration of OpenSpec into the unitai project to enhance requirements management and provide structured spec-driven development workflows.
 
 ## Integration Objectives
 
@@ -431,7 +431,7 @@ Archive a completed change.
 
 ### Why This Matters
 
-The unified-ai-mcp-tool serves as an enhancement framework for Claude Code and other agentic coding systems working on projects in various languages. If OpenSpec has hidden biases toward JS/TS:
+The unitai serves as an enhancement framework for Claude Code and other agentic coding systems working on projects in various languages. If OpenSpec has hidden biases toward JS/TS:
 - Python/Go/Rust developers will have poor user experience
 - Specifications will feel unnatural for non-JS projects
 - Change tracking might miss language-specific patterns
@@ -461,7 +461,7 @@ This is a **MANDATORY** phase that must be completed before any integration work
   - `requirements.txt` or `pyproject.toml`
   - Python module structure (`__init__.py`, etc.)
   - Python package conventions
-- [ ] Test with cursor-agent/droid: Do they generate appropriate Python code from specs?
+- [ ] Test with ask-cursor/droid: Do they generate appropriate Python code from specs?
 
 **Success Criteria**:
 - Specs read naturally for Python developers
@@ -486,7 +486,7 @@ This is a **MANDATORY** phase that must be completed before any integration work
   - `go.mod` dependencies
   - Go package layout (`cmd/`, `pkg/`, `internal/`)
   - Go naming conventions
-- [ ] Test with cursor-agent/droid: Do they generate appropriate Go code from specs?
+- [ ] Test with ask-cursor/droid: Do they generate appropriate Go code from specs?
 
 **Success Criteria**:
 - Specs don't force class-based thinking
@@ -514,7 +514,7 @@ This is a **MANDATORY** phase that must be completed before any integration work
   - `Cargo.toml` dependencies
   - Rust module system (`mod.rs`, `lib.rs`)
   - Feature flags
-- [ ] Test with cursor-agent/droid: Do they generate appropriate Rust code from specs?
+- [ ] Test with ask-cursor/droid: Do they generate appropriate Rust code from specs?
 
 **Success Criteria**:
 - Specs work with Rust's ownership model
@@ -538,7 +538,7 @@ Create specifications for **identical features** across all three languages:
 1. Are they equally natural and readable?
 2. Do they force JavaScript/TypeScript patterns?
 3. Can developers in each language understand them without JS knowledge?
-4. Do AI tools (cursor-agent, droid) generate appropriate code for each language?
+4. Do AI tools (ask-cursor, droid) generate appropriate code for each language?
 
 #### Test 2: Change Tracking Validation
 
@@ -563,10 +563,10 @@ Make **equivalent changes** in each language:
 
 #### Test 3: AI Tool Compatibility
 
-Use OpenSpec specifications with integrated AI tools (cursor-agent, droid):
+Use OpenSpec specifications with integrated AI tools (ask-cursor, droid):
 
 1. Create spec in OpenSpec
-2. Ask cursor-agent to implement the feature
+2. Ask ask-cursor to implement the feature
 3. Ask droid to implement the same feature
 4. Evaluate:
    - Do they generate correct language-specific code?
@@ -580,7 +580,7 @@ After completing Phase 0 validation, document:
 1. **Universal Features**: Which OpenSpec features work across all languages
 2. **Language-Specific Considerations**: Best practices for each language
 3. **Limitations Discovered**: Any language-specific issues found
-4. **AI Tool Performance**: How well cursor-agent/droid perform with specs for each language
+4. **AI Tool Performance**: How well ask-cursor/droid perform with specs for each language
 5. **Recommended Workflows**: Language-specific guidance
 
 ### Decision Gates
@@ -695,7 +695,7 @@ Based on Phase 0 results:
 - [ ] OpenSpec specs created naturally for Python, Go, and Rust projects
 - [ ] No forced JavaScript/TypeScript patterns detected in specs
 - [ ] Change tracking works correctly for all tested languages
-- [ ] AI tools (cursor-agent, droid) generate appropriate code for each language
+- [ ] AI tools (ask-cursor, droid) generate appropriate code for each language
 - [ ] Spec readability rated 4/5+ by developers in each language
 - [ ] Language-specific validation report completed and approved
 

@@ -1,14 +1,16 @@
-_   _       _  __ _          _      _    _   __  __  ____  ____  
-  | | | |_ __ (_)/ _(_) ___  __| |    / \  (_)  |  \/  |/ ___||  _ \ 
-  | | | | '_ \| | |_| |/ _ \/ _` |   / _ \ | |  | |\/| | |    | |_) |
-  | |_| | | | | |  _| |  __/ (_| |  / ___ \| |  | |  | | |___ |  __/ 
-   \___/|_| |_|_|_| |_|\___|\__,_| /_/   \_\_|  |_|  |_|\____||_|    
-                                                                      
+ _   _       _ _      _    ___
+| | | |_ __ (_) |_   / \  |_ _|
+| | | | '_ \| | __| / _ \  | |
+| |_| | | | | | |_ / ___ \ | |
+ \___/|_| |_|_|\__/_/   \_\___|
+
 <div align="center">
 
-**One MCP Server. Three AI Powerhouses. Infinite Possibilities.**
+# UnitAI
 
-[![npm version](https://img.shields.io/npm/v/@jaggerxtrm/unified-ai-mcp-tool.svg)](https://www.npmjs.com/package/@jaggerxtrm/unified-ai-mcp-tool)
+**One MCP Server. Multiple AI Backends. Intelligent Orchestration.**
+
+[![npm version](https://img.shields.io/npm/v/@jaggerxtrm/unitai.svg)](https://www.npmjs.com/package/@jaggerxtrm/unitai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
@@ -64,33 +66,33 @@ Real-time feedback on long-running operations.
 ### Claude Desktop (Quickest)
 
 ```bash
-claude mcp add unified-ai -- npx -y @jaggerxtrm/unified-ai-mcp-tool
+claude mcp add unified-ai -- npx -y @jaggerxtrm/unitai
 ```
 
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g @jaggerxtrm/unified-ai-mcp-tool
+npm install -g @jaggerxtrm/unitai
 ```
 
 ### Local Installation
 
 ```bash
-npm install @jaggerxtrm/unified-ai-mcp-tool
+npm install @jaggerxtrm/unitai
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/jaggerxtrm/unified-ai-mcp-tool.git
-cd unified-ai-mcp-tool
+git clone https://github.com/jaggerxtrm/unitai.git
+cd unitai
 npm install
 npm run build
 ```
 
 ### UPDATING
 ```bash
-npm update -g @jaggerxtrm/unified-ai-mcp-tool
+npm update -g @jaggerxtrm/unitai
 ```
 
 ---
@@ -105,7 +107,7 @@ npm update -g @jaggerxtrm/unified-ai-mcp-tool
 {
   "mcpServers": {
     "unified-ai": {
-      "command": "unified-ai-mcp-tool"
+      "command": "unitai"
     }
   }
 }
@@ -118,7 +120,7 @@ npm update -g @jaggerxtrm/unified-ai-mcp-tool
   "mcpServers": {
     "unified-ai": {
       "command": "node",
-      "args": ["/path/to/unified-ai-mcp-tool/dist/index.js"]
+      "args": ["/path/to/unitai/dist/index.js"]
     }
   }
 }
@@ -144,9 +146,9 @@ maxActions: 5
 
 ## Available Tools
 
-### cursor-agent
+### ask-cursor
 
-Cursor Agent headless CLI per refactor, bug fixing e patch chirurgiche multi-modello (GPT-5.x/Sonnet/Composer).
+Cursor Agent headless CLI for refactoring, bug fixing, and surgical multi-model patches (GPT-5.x/Sonnet/Composer).
 
 <details>
 <summary><b>Parameters & Examples</b></summary>
@@ -166,7 +168,7 @@ Cursor Agent headless CLI per refactor, bug fixing e patch chirurgiche multi-mod
   "prompt": "@src/workflows/parallel-review.workflow.ts Proponi un refactor modulare",
   "model": "sonnet-4.5",
   "files": ["src/workflows/parallel-review.workflow.ts"],
-  "projectRoot": "/home/dawid/Projects/unified-ai-mcp-tool"
+  "projectRoot": "/home/dawid/Projects/unitai"
 }
 ```
 
@@ -183,9 +185,9 @@ Cursor Agent headless CLI per refactor, bug fixing e patch chirurgiche multi-mod
 
 ---
 
-### droid
+### ask-droid
 
-Factory Droid CLI (`droid exec`) basato su GLM-4.6 per generare checklist operative e remediation plan autonomi.
+Factory Droid CLI (`droid exec`) based on GLM-4.6 for generating operational checklists and autonomous remediation plans.
 
 <details>
 <summary><b>Parameters & Examples</b></summary>
@@ -215,7 +217,7 @@ Factory Droid CLI (`droid exec`) basato su GLM-4.6 per generare checklist operat
   "prompt": "Continua la sessione precedente e verifica i nuovi log",
   "sessionId": "session-42",
   "auto": "low",
-  "cwd": "/home/dawid/Projects/unified-ai-mcp-tool"
+  "cwd": "/home/dawid/Projects/unitai"
 }
 ```
 
@@ -307,6 +309,39 @@ Intelligent workflows that orchestrate multiple AI backends for complex tasks li
 
 ---
 
+## MCP 2.0 Discovery System
+
+The MCP 2.0 update introduces a **Discovery-First Architecture** that enables AI assistants to self-onboard and discover all available capabilities.
+
+### Meta Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_workflows` | Lists all available workflows with descriptions and metadata |
+| `describe_workflow` | Returns rich documentation, parameters, and examples for a specific workflow |
+| `get_system_instructions` | Returns the complete system manual for self-onboarding |
+
+### Granular Workflow Tools
+
+Each workflow is now exposed as an individual, directly-callable tool:
+
+| Tool | Description | Best For |
+|------|-------------|----------|
+| `workflow_init_session` | AI-powered session initialization | Starting work sessions |
+| `workflow_parallel_review` | Multi-model parallel code review | Deep code analysis |
+| `workflow_pre_commit_validate` | Validate staged changes | Before committing |
+| `workflow_validate_last_commit` | Analyze recent commits | Post-commit review |
+| `workflow_triangulated_review` | 3-way cross-check (Gemini→Cursor→Droid) | Critical changes |
+| `workflow_bug_hunt` | AI-powered bug discovery | Finding root causes |
+| `workflow_feature_design` | Multi-agent feature planning | New features |
+| `workflow_auto_remediation` | Autonomous fix generation | Quick fixes |
+| `workflow_refactor_sprint` | Coordinated refactoring | Large refactors |
+| `workflow_openspec_driven_development` | Spec-first implementation | Structured development |
+
+> **Note:** The legacy `smart-workflows` router is still available for backward compatibility but will be deprecated in a future release.
+
+---
+
 ## Agent System
 
 The Unified AI MCP Tool now includes a powerful **Agent System** that provides specialized, domain-focused AI agents for common development tasks. Each agent encapsulates a specific AI backend optimized for its purpose.
@@ -347,7 +382,7 @@ Specializes in:
 Create agents dynamically:
 
 ```typescript
-import { AgentFactory, AgentType } from "unified-ai-mcp-tool";
+import { AgentFactory, AgentType } from "unitai";
 
 // Specific agent creation
 const architect = AgentFactory.createArchitect();
@@ -436,54 +471,36 @@ Control operation approval:
 
 ## Prerequisites
 
+### System Requirements
+
+- **Node.js** 20.19.0 or newer
+- **npm** (comes with Node.js)
+- **git** (for workflow context analysis)
+
 ### Required CLIs
+
+Install the CLIs for the AI backends you plan to use:
 
 <table>
 <tr>
-<th>AI Tool</th>
-<th>CLI Installation</th>
+<th>AI Backend</th>
+<th>Installation</th>
+<th>Environment Variables</th>
 <th>Verification</th>
 </tr>
 <tr>
-<td><strong>Qwen Code</strong></td>
+<td><strong>Gemini</strong><br/><em>(Primary)</em></td>
 <td>
 
 ```bash
-pip install qwen-code-cli
+npm install -g @anthropic-ai/gemini-cli
 ```
 
 </td>
 <td>
 
 ```bash
-qwen --version
-```
-
-</td>
-</tr>
-<tr>
-<td><strong>Rovo Dev</strong></td>
-<td>
-
-```bash
-npm install -g @atlassian/acli
-```
-
-</td>
-<td>
-
-```bash
-acli rovodev --help
-```
-
-</td>
-</tr>
-<tr>
-<td><strong>Gemini</strong></td>
-<td>
-
-```bash
-npm install -g @google/generative-ai-cli
+export GOOGLE_API_KEY=your-api-key
 ```
 
 </td>
@@ -495,9 +512,75 @@ gemini --version
 
 </td>
 </tr>
+<tr>
+<td><strong>Cursor Agent</strong><br/><em>(Refactoring)</em></td>
+<td>
+
+```bash
+npm install -g @cursorai/agent
+```
+
+</td>
+<td>
+
+```bash
+export CURSOR_AGENT_TOKEN=your-token
+```
+
+</td>
+<td>
+
+```bash
+cursor --version
+```
+
+</td>
+</tr>
+<tr>
+<td><strong>Factory Droid</strong><br/><em>(Checklists)</em></td>
+<td>
+
+```bash
+npm install -g @factoryai/droid-cli
+```
+
+</td>
+<td>
+
+```bash
+export DROID_API_KEY=your-api-key
+```
+
+</td>
+<td>
+
+```bash
+droid --version
+```
+
+</td>
+</tr>
 </table>
 
-> **Note:** You only need to install the CLIs for the AI tools you plan to use.
+### Optional CLIs (Fallback Backends)
+
+These are used internally for resilience and fallback when primary backends fail:
+
+| Backend | Installation | Purpose |
+|---------|--------------|---------|
+| **Qwen Code** | `pip install qwen-code-cli` | Fallback for analysis tasks |
+| **Rovo Dev** | `npm install -g @atlassian/acli` | Fallback for code generation |
+
+### Optional: OpenSpec Integration
+
+For spec-driven development workflows:
+
+```bash
+npm install -g @fission-ai/openspec
+openspec --version
+```
+
+> **Note:** The system automatically detects available CLIs at startup and adapts its capabilities accordingly. You can check availability with the `workflow_init_session` tool.
 
 ---
 
@@ -505,8 +588,8 @@ gemini --version
 
 ```bash
 # Clone repository
-git clone https://github.com/jaggerxtrm/unified-ai-mcp-tool.git
-cd unified-ai-mcp-tool
+git clone https://github.com/jaggerxtrm/unitai.git
+cd unitai
 
 # Install dependencies
 npm install
@@ -527,16 +610,16 @@ npm start
 ### Project Structure
 
 ```
-unified-ai-mcp-tool/
+unitai/
 ├── src/
 │   ├── agents/             # Agent implementations
 │   │   ├── ArchitectAgent.ts
 │   │   ├── ImplementerAgent.ts
 │   │   └── TesterAgent.ts
 │   ├── tools/              # Tool definitions
-│   │   ├── cursor-agent.tool.ts
-│   │   ├── droid.tool.ts
+│   │   ├── ask-cursor.tool.ts
 │   │   ├── ask-gemini.tool.ts
+│   │   ├── droid.tool.ts
 │   │   └── smart-workflows.tool.ts
 │   ├── workflows/          # Workflow implementations
 │   │   ├── init-session.workflow.ts
@@ -621,8 +704,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Links
 
-- 📦 [npm Package](https://www.npmjs.com/package/@jaggerxtrm/unified-ai-mcp-tool)
-- 🐙 [GitHub Repository](https://github.com/jaggerxtrm/unified-ai-mcp-tool)
+- 📦 [npm Package](https://www.npmjs.com/package/@jaggerxtrm/unitai)
+- 🐙 [GitHub Repository](https://github.com/jaggerxtrm/unitai)
 - 📖 [Model Context Protocol](https://modelcontextprotocol.io)
 - 🤖 [Qwen Code](https://github.com/QwenLM/qwen-code)
 - 🏢 [Atlassian Rovo Dev](https://developer.atlassian.com/rovodev/)

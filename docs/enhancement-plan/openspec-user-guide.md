@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenSpec brings **spec-driven development** to your unified-ai-mcp-tool workflow. Instead of writing code first and hoping for the best, OpenSpec ensures that:
+OpenSpec brings **spec-driven development** to your unitai workflow. Instead of writing code first and hoping for the best, OpenSpec ensures that:
 
 1. **Intent is captured clearly** before any code is written
 2. **Requirements are structured and traceable** throughout development
@@ -216,7 +216,7 @@ graph TD
       "targetFiles": ["src/auth/register.py", "src/auth/email.py"],
       "implementationApproach": "incremental",
       "autonomyLevel": "low",
-      "validationBackends": ["ask-gemini", "cursor-agent"]
+      "validationBackends": ["ask-gemini", "ask-cursor"]
     }
   }
 }

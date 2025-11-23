@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides comprehensive API documentation for all workflows available in the unified-ai-mcp-tool. Each workflow can be invoked through the MCP `smart-workflows` tool.
+This document provides comprehensive API documentation for all workflows available in the unitai. Each workflow can be invoked through the MCP `smart-workflows` tool.
 
 ## Table of Contents
 

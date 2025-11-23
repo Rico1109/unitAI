@@ -12,7 +12,7 @@ All four enhancement tasks have been reviewed with focus on ensuring the framewo
 
 ### Review Context
 
-The unified-ai-mcp-tool is a **multi-purpose framework** implemented in TypeScript/Bash (appropriate for MCP servers and Claude Code hooks) that serves projects in **various programming languages**. The critical review criterion was: **Will new features work equally well for Python, Go, Rust, and other language projects, or do they have hidden JavaScript/TypeScript bias?**
+The unitai is a **multi-purpose framework** implemented in TypeScript/Bash (appropriate for MCP servers and Claude Code hooks) that serves projects in **various programming languages**. The critical review criterion was: **Will new features work equally well for Python, Go, Rust, and other language projects, or do they have hidden JavaScript/TypeScript bias?**
 
 ---
 
@@ -38,14 +38,14 @@ No modifications required. The proposal is ready for implementation as written.
 
 ---
 
-## Task 2: MCP Tools Integration (cursor-agent & droid)
+## Task 2: MCP Tools Integration (ask-cursor & droid)
 
 ### Status: ✅ **APPROVED**
 
 ### Approval Rationale
 
-**Why approved**: The new tools (cursor-agent, droid) use general-purpose LLMs that handle multiple programming languages:
-- **cursor-agent**: Uses GPT-5.1, Sonnet-4.5, Composer-1 (all multi-language)
+**Why approved**: The new tools (ask-cursor, droid) use general-purpose LLMs that handle multiple programming languages:
+- **ask-cursor**: Uses GPT-5.1, Sonnet-4.5, Composer-1 (all multi-language)
 - **droid**: Uses GLM-4.6 (supports multiple languages)
 
 **Key points**:
@@ -106,7 +106,7 @@ This can be addressed during Phase B (documentation) of the implementation.
 - Verify delta format works for all language conventions
 
 #### Test 3: AI Tool Compatibility
-- Use specs with cursor-agent and droid
+- Use specs with ask-cursor and droid
 - Check: Do they generate appropriate code for each language?
 - Measure: Code quality compared to direct prompting
 
@@ -247,10 +247,10 @@ This is straightforward to implement and doesn't require proposal changes.
 - [ ] User feedback positive
 
 **Task 2**:
-- [ ] cursor-agent and droid integrated
-- [ ] ask-qwen/ask-rovodev removed
-- [ ] smart-workflows enhanced
-- [ ] Works for multi-language projects
+- [x] ask-cursor and ask-droid integrated
+- [x] ask-qwen/ask-rovodev retained as non-exposed fallback backends (for resilience)
+- [x] smart-workflows enhanced with MCP 2.0 Discovery
+- [x] Works for multi-language projects
 
 **Task 3**:
 - [ ] Phase 0 validation completed successfully

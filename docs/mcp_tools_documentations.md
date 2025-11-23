@@ -5,7 +5,7 @@ date_modified: Wednesday, November 19th 2025, 4:15:00 pm
 
 # Documentazione MCP Tools
 
-Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP esposti da `unified-ai-mcp-tool`. Si concentra sui quattro strumenti principali (`ask-gemini`, `cursor-agent`, `droid`, `smart-workflows`) e sui servizi di supporto (deepwiki, context7, openmemory, serena).
+Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP esposti da `unitai`. Si concentra sui quattro strumenti principali (`ask-gemini`, `ask-cursor`, `droid`, `smart-workflows`) e sui servizi di supporto (deepwiki, context7, openmemory, serena).
 
 ---
 
@@ -27,7 +27,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
   }
   ```
 
-### 1.2 cursor-agent
+### 1.2 ask-cursor
 - **Scopo**: bug fixing, refactoring e patch chirurgiche usando i modelli GPT-5.x/Sonnet/Composer.
 - **Installazione**: `npm install -g @cursorai/agent` + `export CURSOR_AGENT_TOKEN=<token>`.
 - **Parametri principali**:
@@ -47,7 +47,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
     "prompt": "Analizza @src/workflows/parallel-review.workflow.ts e proponi un refactor modulare",
     "model": "sonnet-4.5",
     "files": ["src/workflows/parallel-review.workflow.ts"],
-    "projectRoot": "/home/dawid/Projects/unified-ai-mcp-tool"
+    "projectRoot": "/home/dawid/Projects/unitai"
   }
   ```
 
@@ -115,7 +115,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
 | Scenario | Tool consigliato |
 |----------|------------------|
 | Lettura/analisi documenti lunghi | `ask-gemini` |
-| Bug fixing chirurgico | `cursor-agent` |
+| Bug fixing chirurgico | `ask-cursor` |
 | Piano operativo/autonomo | `droid` |
 | Processi standard (review, pre-commit, bug) | `smart-workflows` |
 | Ricerca semantica | `claude-context` |
@@ -125,7 +125,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
 ```
 1. claude-context → individua file pertinenti
 2. serena.find_referencing_symbols → impact analysis
-3. cursor-agent → genera patch + test suggeriti
+3. ask-cursor → genera patch + test suggeriti
 4. droid → checklist operativa / auto-remediation
 5. smart-workflows.pre-commit-validate → verifica finale
 ```
@@ -142,7 +142,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
 
 | Sintomo | Tool | Soluzione |
 |---------|------|-----------|
-| `cursor-agent` restituisce errore di auth | Cursor | Verificare `CURSOR_AGENT_TOKEN` e login CLI |
+| `ask-cursor` restituisce errore di auth | Cursor | Verificare `CURSOR_AGENT_TOKEN` e login CLI |
 | `droid` blocca `--skip-permissions-unsafe` | Droid | Alzare `autonomyLevel` del workflow o togliere il flag |
 | Smart workflow si ferma su backend mancante | smart-workflows | Controllare installazione CLI e PATH |
 | Output tronco/illeggibile | Tutti | Usa `outputFormat: "json"` o `sandbox` per log puliti |

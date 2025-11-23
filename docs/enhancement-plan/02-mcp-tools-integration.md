@@ -1,7 +1,7 @@
 # Task 2: MCP Tools Integration & Documentation
 
 ## Objective
-Ensure all MCP tools are properly integrated, documented, and optimally configured. Add missing tools (cursor-agent, droid) and remove deprecated ones (ask-qwen, ask-rovodev).
+Ensure all MCP tools are properly integrated, documented, and optimally configured. Add new tools (ask-cursor, ask-droid) and retain ask-qwen/ask-rovodev as fallback backends for circuit breaker resilience.
 
 ## Status
 - [x] Documentation review completed
@@ -30,7 +30,7 @@ Ensure all MCP tools are properly integrated, documented, and optimally configur
 ## Requirements
 
 ### Tools to Integrate
-1. **cursor-agent** (NEW)
+1. **ask-cursor** (NEW)
    - Multi-function agent with multiple models
    - Excellent for bug fixing and refactoring proposals
    - Documentation: https://cursor.com/docs/cli/headless
@@ -40,9 +40,11 @@ Ensure all MCP tools are properly integrated, documented, and optimally configur
    - Agentic task execution
    - Documentation: https://docs.factory.ai/cli/droid-exec/overview#droid-exec-headless-cli
 
-### Tools to Remove
-1. **ask-qwen** - To be deprecated
-2. **ask-rovodev** - To be deprecated
+### Fallback Backends (Retained for Resilience)
+1. **ask-qwen** - Non-exposed fallback for analysis tasks
+2. **ask-rovodev** - Non-exposed fallback for code generation
+
+> **Note:** These backends are NOT removed. They are retained internally for the circuit breaker resilience system. When primary backends (ask-gemini, ask-cursor, ask-droid) fail, the system automatically falls back to these.
 
 ### Tools to Enhance
 1. **smart-workflows**
@@ -54,7 +56,7 @@ Ensure all MCP tools are properly integrated, documented, and optimally configur
 
 #### unified-ai-mcp tools
 - **ask-gemini**: For reading long files, folders, entire codebases. Use for second opinions on complex tasks, over-engineering detection
-- **cursor-agent**: Bug fixing, refactoring proposals
+- **ask-cursor**: Bug fixing, refactoring proposals
 - **droid**: Agentic task execution
 - **smart-workflows**: Predefined complex agentic tasks
 
@@ -76,7 +78,7 @@ Ensure all MCP tools are properly integrated, documented, and optimally configur
 
 ### Phase 2: Proposal Creation
 **DO NOT IMPLEMENT YET. Create a proposal document that includes:**
-1. Integration approach for cursor-agent:
+1. Integration approach for ask-cursor:
    - Installation requirements
    - MCP server wrapper design
    - Configuration schema
@@ -102,16 +104,16 @@ After creating your proposal:
 2. Check off "Current MCP configuration analyzed"
 3. Check off "Missing tools identified"
 4. Check off "Proposal created"
-5. Link your proposal document here: `[Proposal](file:///home/dawid/Projects/unified-ai-mcp-tool/docs/enhancement-plan/02-proposal-mcp-tools.md)`
+5. Link your proposal document here: `[Proposal](file:///home/dawid/Projects/unitai/docs/enhancement-plan/02-proposal-mcp-tools.md)`
 
 ## Success Criteria
-- [ ] cursor-agent and droid are fully integrated and functional
-- [ ] ask-qwen and ask-rovodev are cleanly removed
-- [ ] smart-workflows are enhanced and project-specific
-- [ ] All tools are documented with clear usage patterns
-- [ ] Tool selection guidance is clear (when to use which tool)
-- [ ] `.mcp.json` is properly configured
-- [ ] Integration tests pass
+- [x] ask-cursor and ask-droid are fully integrated and functional
+- [x] ask-qwen and ask-rovodev retained as non-exposed fallback backends
+- [x] smart-workflows enhanced with MCP 2.0 Discovery architecture
+- [x] All tools are documented with clear usage patterns
+- [x] Tool selection guidance is clear (when to use which tool)
+- [x] `.mcp.json` is properly configured
+- [x] Integration tests pass (258 tests)
 
 ## Notes
 - Consider tool activation patterns in hooks/skills

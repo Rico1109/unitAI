@@ -8,7 +8,7 @@
 
 ## Overview
 
-All four enhancement task proposals have been comprehensively reviewed with focus on ensuring the unified-ai-mcp-tool framework remains truly multi-purpose and language-agnostic for projects in various programming languages.
+All four enhancement task proposals have been comprehensively reviewed with focus on ensuring the unitai framework remains truly multi-purpose and language-agnostic for projects in various programming languages.
 
 ## Review Scope
 
@@ -100,7 +100,7 @@ All four enhancement task proposals have been comprehensively reviewed with focu
 **Decision**: ✅ **APPROVED**
 
 **Rationale**: 
-- cursor-agent uses GPT-5.1, Sonnet-4.5, Composer-1 (multi-language models)
+- ask-cursor uses GPT-5.1, Sonnet-4.5, Composer-1 (multi-language models)
 - droid uses GLM-4.6 (supports multiple languages)
 - Tool wrappers in TypeScript are appropriate for MCP
 - Underlying AI models are language-agnostic

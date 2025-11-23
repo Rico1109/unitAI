@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** 2025-11-14
 
-Quick start guide to get up and running with unified-ai-mcp-tool.
+Quick start guide to get up and running with unitai.
 
 ---
 
@@ -33,7 +33,7 @@ Before installing, ensure you have:
 If you use Claude Desktop:
 
 ```bash
-claude mcp add unified-ai -- npx -y @jaggerxtrm/unified-ai-mcp-tool
+claude mcp add unified-ai -- npx -y @jaggerxtrm/unitai
 ```
 
 ### Method 2: Global Installation (Recommended)
@@ -41,13 +41,13 @@ claude mcp add unified-ai -- npx -y @jaggerxtrm/unified-ai-mcp-tool
 For system-wide availability:
 
 ```bash
-npm install -g @jaggerxtrm/unified-ai-mcp-tool
+npm install -g @jaggerxtrm/unitai
 ```
 
 Verify installation:
 
 ```bash
-unified-ai-mcp-tool --version
+unitai --version
 ```
 
 ### Method 3: Local Installation
@@ -55,7 +55,7 @@ unified-ai-mcp-tool --version
 For project-specific use:
 
 ```bash
-npm install @jaggerxtrm/unified-ai-mcp-tool
+npm install @jaggerxtrm/unitai
 ```
 
 ---
@@ -75,7 +75,7 @@ npm install @jaggerxtrm/unified-ai-mcp-tool
 {
   "mcpServers": {
     "unified-ai": {
-      "command": "unified-ai-mcp-tool"
+      "command": "unitai"
     }
   }
 }
@@ -288,11 +288,11 @@ Or via MCP:
 
 ```json
 {
-  "tool": "cursor-agent",
+  "tool": "ask-cursor",
   "params": {
     "prompt": "@tests/auth.test.ts Proponi nuovi test edge case",
     "model": "composer-1",
-    "projectRoot": "/home/dawid/Projects/unified-ai-mcp-tool"
+    "projectRoot": "/home/dawid/Projects/unitai"
   }
 }
 ```
@@ -462,7 +462,7 @@ Now that you are set up:
 - Backend logs: `logs/ai-backend-calls.log`
 
 **Issue Reporting:**
-- GitHub: https://github.com/jaggerxtrm/unified-ai-mcp-tool/issues
+- GitHub: https://github.com/jaggerxtrm/unitai/issues
 - Include: Error message, workflow used, logs
 
 ---

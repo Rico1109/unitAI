@@ -65,9 +65,11 @@ export function mockAIExecutor(responses: Record<string, string>): void {
   const responsesRef = { ...responses };
 
   vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js');
+    const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
     return {
       ...actual,
+      // Ensure BACKENDS is always exported
+      BACKENDS: actual.BACKENDS,
       executeAIClient: vi.fn().mockImplementation(async (config: any) => {
         const backend = config.backend;
         if (responsesRef[backend]) {
@@ -99,9 +101,11 @@ export function mockAIExecutorWithDelay(responses: Record<string, string>, delay
   const delayMsRef = delayMs;
 
   vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js');
+    const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
     return {
       ...actual,
+      // Ensure BACKENDS is always exported
+      BACKENDS: actual.BACKENDS,
       executeAIClient: vi.fn().mockImplementation(async (config: any) => {
         await new Promise(resolve => setTimeout(resolve, delayMsRef));
         const backend = config.backend;
@@ -126,9 +130,11 @@ export function mockAIExecutorWithFailure(
   let callCount = 0;
 
   vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js');
+    const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
     return {
       ...actual,
+      // Ensure BACKENDS is always exported
+      BACKENDS: actual.BACKENDS,
       executeAIClient: vi.fn().mockImplementation(async () => {
         callCount++;
         if (callCount > failAfterCallsRef) {

@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** 2025-11-14
 
-Advanced usage patterns and techniques for power users of unified-ai-mcp-tool.
+Advanced usage patterns and techniques for power users of unitai.
 
 ---
 

@@ -31,7 +31,7 @@ Tools for the AI to learn about the system.
 
 ### Backend Tools (Renaming recommended for consistency)
 -   `ask_gemini` (was `ask-gemini`)
--   `ask_cursor_agent` (was `cursor-agent` - explicit "ask" verb)
+-   `ask_cursor_agent` (was `ask-cursor` - explicit "ask" verb)
 -   `ask_droid` (was `droid` - explicit "ask" verb)
 
 ## 2. Enhanced Tool Definition Structure

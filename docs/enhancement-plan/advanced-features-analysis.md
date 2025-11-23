@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-After thorough analysis of both MoAI-ADK and OpenSpec, this document evaluates their potential integration with the unified-ai-mcp-tool project. Both tools offer valuable capabilities but present different integration challenges and opportunities.
+After thorough analysis of both MoAI-ADK and OpenSpec, this document evaluates their potential integration with the unitai project. Both tools offer valuable capabilities but present different integration challenges and opportunities.
 
 **Recommendation**: Integrate OpenSpec (HIGH priority) for specification management, while monitoring MoAI-ADK (MEDIUM priority) for future workflow orchestration capabilities.
 
@@ -179,7 +179,7 @@ After thorough analysis of both MoAI-ADK and OpenSpec, this document evaluates t
 4. **Team Adoption**: Familiar markdown-based workflow minimizes learning curve
 
 **Integration Approach**:
-1. Add OpenSpec as dependency in unified-ai-mcp-tool
+1. Add OpenSpec as dependency in unitai
 2. Create MCP tools that expose OpenSpec CLI commands
 3. Integrate spec management into existing agent workflows
 4. Add OpenSpec initialization to project setup process

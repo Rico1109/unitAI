@@ -66,10 +66,10 @@ OpenSpec's ADDED/MODIFIED/REMOVED format successfully captured all changes acros
 ## Test 3: AI Tool Compatibility
 
 ### Objective
-Verify that AI tools (cursor-agent, droid) generate appropriate code for each language when working with OpenSpec specifications.
+Verify that AI tools (ask-cursor, droid) generate appropriate code for each language when working with OpenSpec specifications.
 
 ### Methodology
-Since direct access to cursor-agent/droid is not available in this environment, compatibility was assessed by:
+Since direct access to ask-cursor/droid is not available in this environment, compatibility was assessed by:
 
 1. **Code Pattern Analysis**: Reviewing what code patterns each AI tool typically generates
 2. **Language-Specific Requirements**: Ensuring specs provide sufficient context for correct code generation
@@ -147,7 +147,7 @@ OpenSpec integration may proceed to Phase 1 with the following conditions:
 
 1. **Language-Specific Documentation**: Include best practices for Python, Go, Rust in integration docs
 2. **Example Specifications**: Provide example specs for each supported language
-3. **AI Tool Testing**: Verify cursor-agent/droid compatibility during Phase 1
+3. **AI Tool Testing**: Verify ask-cursor/droid compatibility during Phase 1
 4. **Template Flexibility**: Allow language-specific customizations if needed
 
 ### Phase 0 Deliverables Completed

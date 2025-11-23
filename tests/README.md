@@ -1,6 +1,6 @@
 # Test Infrastructure
 
-Testing infrastructure per unified-ai-mcp-tool basata su Vitest.
+Testing infrastructure per unitai basata su Vitest.
 
 ## Struttura
 

@@ -17,7 +17,7 @@ L'obiettivo è risolvere i problemi di Claude come esecutore passivo, introducen
 
 ## 2. Architettura del Sistema
 
-L'architettura combina una visione gerarchica (il "Boss") con un'implementazione a livelli (il nostro `unified-ai-mcp-tool`).
+L'architettura combina una visione gerarchica (il "Boss") con un'implementazione a livelli (il nostro `unitai`).
 
 ### 2.1. Livello Strategico: Claude "Boss"
 
@@ -34,7 +34,7 @@ Claude Code (Master AI Boss)
 
 ### 2.2. Livelli di Esecuzione e Orchestrazione
 
-Il `unified-ai-mcp-tool` agisce come braccio operativo per il "Boss", implementando i livelli 3 e 4.
+Il `unitai` agisce come braccio operativo per il "Boss", implementando i livelli 3 e 4.
 
 ```
 +------------------------------------------------+
@@ -46,7 +46,7 @@ Il `unified-ai-mcp-tool` agisce come braccio operativo per il "Boss", implementa
 +----------------------+-------------------------+
                        |
 +----------------------v-------------------------+
-| Livello 3: Esecuzione (Skill -> unified-ai-mcp-tool) |
+| Livello 3: Esecuzione (Skill -> unitai) |
 +----------------------+-------------------------+
                        |
 +----------------------v-------------------------+
@@ -274,7 +274,7 @@ LSP-based            Embedding-based    Live libs      GitHub wiki
 
 ### 🔥 Architettura Ricorsiva: Il Vero Potere
 
-**Insight Chiave:** `unified-ai-mcp-tool`, essendo esso stesso un MCP server che gira nel contesto di Claude Code, **ha accesso completo a tutti gli altri MCP servers**.
+**Insight Chiave:** `unitai`, essendo esso stesso un MCP server che gira nel contesto di Claude Code, **ha accesso completo a tutti gli altri MCP servers**.
 
 Questo significa che quando Claude invoca uno smart-workflow tramite `unified-ai-mcp`, il workflow può a sua volta invocare:
 - Serena per navigazione semantica
@@ -504,7 +504,7 @@ serena             ✓ Connected  # Symbol surgery
 openmemory         ✓ Connected  # Cloud memory
 openmemory-local   ✓ Connected  # Local memory
 
-# Project: unified-ai-mcp-tool
+# Project: unitai
 # Codebase indexed: 27 files, 265 chunks
 # Serena project: activated (TypeScript)
 

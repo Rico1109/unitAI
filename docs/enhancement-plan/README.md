@@ -1,6 +1,6 @@
 # Enhancement Plan
 
-This directory contains structured tasks for enhancing the unified-ai-mcp-tool project. Each task is self-contained and includes comprehensive documentation requirements, phased implementation instructions, and progress tracking.
+This directory contains structured tasks for enhancing the unitai project. Each task is self-contained and includes comprehensive documentation requirements, phased implementation instructions, and progress tracking.
 
 ## 📋 Review Status: COMPLETED
 
@@ -19,7 +19,7 @@ This directory contains structured tasks for enhancing the unified-ai-mcp-tool p
 
 ## Tasks Overview
 
-### [Task 1: Hooks & Skills System Optimization](file:///home/dawid/Projects/unified-ai-mcp-tool/docs/enhancement-plan/01-hooks-and-skills-optimization.md)
+### [Task 1: Hooks & Skills System Optimization](file:///home/dawid/Projects/unitai/docs/enhancement-plan/01-hooks-and-skills-optimization.md)
 **Objective**: Optimize the Claude Code hooks and skills system to be less restrictive while maintaining guidance effectiveness.
 
 **Key Areas**:
@@ -32,21 +32,21 @@ This directory contains structured tasks for enhancing the unified-ai-mcp-tool p
 
 ---
 
-### [Task 2: MCP Tools Integration & Documentation](file:///home/dawid/Projects/unified-ai-mcp-tool/docs/enhancement-plan/02-mcp-tools-integration.md)
-**Objective**: Integrate missing tools (cursor-agent, droid), remove deprecated ones (ask-qwen, ask-rovodev), and enhance smart-workflows.
+### [Task 2: MCP Tools Integration & Documentation](file:///home/dawid/Projects/unitai/docs/enhancement-plan/02-mcp-tools-integration.md)
+**Objective**: Integrate new tools (ask-cursor, ask-droid), retain ask-qwen/ask-rovodev as fallback backends, and enhance smart-workflows with MCP 2.0 Discovery.
 
 **Key Areas**:
-- Integrate cursor-agent for bug fixing and refactoring
-- Integrate droid (GLM-4.6) for agentic tasks
-- Remove ask-qwen and ask-rovodev
-- Enhance and adapt smart-workflows
+- Integrate ask-cursor for bug fixing and refactoring
+- Integrate ask-droid (GLM-4.6) for agentic tasks
+- Retain ask-qwen and ask-rovodev as non-exposed fallback backends (circuit breaker resilience)
+- Enhance smart-workflows with MCP 2.0 Discovery architecture
 
-**Status**: ✅ Approved - Ready for implementation
-**Review Note**: LLMs are multi-language. Consider documenting language-specific performance during implementation.
+**Status**: ✅ Complete
+**Implementation Note**: All backends integrated with circuit breaker pattern for automatic failover.
 
 ---
 
-### [Task 3: Advanced Features Exploration](file:///home/dawid/Projects/unified-ai-mcp-tool/docs/enhancement-plan/03-advanced-features-exploration.md)
+### [Task 3: Advanced Features Exploration](file:///home/dawid/Projects/unitai/docs/enhancement-plan/03-advanced-features-exploration.md)
 **Objective**: Research and evaluate moai-adk and OpenSpec for potential integration.
 
 **Key Areas**:
@@ -60,7 +60,7 @@ This directory contains structured tasks for enhancing the unified-ai-mcp-tool p
 
 ---
 
-### [Task 4: Custom Slash Commands for Repetitive Workflows](file:///home/dawid/Projects/unified-ai-mcp-tool/docs/enhancement-plan/04-custom-slash-commands.md)
+### [Task 4: Custom Slash Commands for Repetitive Workflows](file:///home/dawid/Projects/unitai/docs/enhancement-plan/04-custom-slash-commands.md)
 **Objective**: Create custom slash commands for frequently used tasks: session init, memory+commit, AI task execution, spec creation, docs lookup.
 
 **Key Areas**:

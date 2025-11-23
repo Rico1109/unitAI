@@ -39,7 +39,7 @@ gemini -m gemini-2.5-flash -p "Ciao! Come stai?"
 # Result: 400 error with duplicate prompts
 ```
 
-## Impact on unified-ai-mcp-tool
+## Impact on unitai
 
 - **ArchitectAgent**: Cannot use Gemini (primary backend)
 - **ImplementerAgent**: Falls back to Rovodev (working)

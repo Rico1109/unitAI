@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-This document outlines an investigation request for integrating **OpenSpec** (spec-driven development framework) with the unified-ai-mcp-tool ecosystem. The integration aims to provide **optional** structured specification management while preserving the existing high-velocity multi-agent workflow system.
+This document outlines an investigation request for integrating **OpenSpec** (spec-driven development framework) with the unitai ecosystem. The integration aims to provide **optional** structured specification management while preserving the existing high-velocity multi-agent workflow system.
 
 **Recommended Approach:** Option 3 - Middle Ground Integration
 - Fix existing OpenSpec tools to work correctly (currently broken)
@@ -25,7 +25,7 @@ This document outlines an investigation request for integrating **OpenSpec** (sp
 
 ### Current Implementation Issues
 
-The unified-ai-mcp-tool has partial OpenSpec integration, but it's **fundamentally broken**:
+The unitai has partial OpenSpec integration, but it's **fundamentally broken**:
 
 1. **Incorrect CLI Usage**
    - `openspec-proposal.tool.ts` calls `npx @fission-ai/openspec proposal` (doesn't exist)

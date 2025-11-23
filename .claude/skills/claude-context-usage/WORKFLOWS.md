@@ -7,7 +7,7 @@ Workflow completi di integrazione per scenari comuni.
 ### Before Any Code Work
 ```bash
 # 1. Use claude-context for discovery
-mcp__claude-context__search_code "[key term or function]" --path /home/dawid/Projects/unified-ai-mcp-tool
+mcp__claude-context__search_code "[key term or function]" --path /home/dawid/Projects/unitai
 
 # 2. Use Serena for symbol-level navigation
 mcp__serena__get_symbols_overview --relative_path "discovered/file.ts"

@@ -4,10 +4,10 @@
 **Last Updated:** 2025-11-19  
 **Status:** Production Ready
 
-Questa guida descrive i tre tool MCP esposti da `unified-ai-mcp-tool`:
+Questa guida descrive i tre tool MCP esposti da `unitai`:
 
 - `ask-gemini` – analisi profonda e lettura documentazione
-- `cursor-agent` – refactor, bug fixing e patch chirurgiche
+- `ask-cursor` – refactor, bug fixing e patch chirurgiche
 - `droid` – task agentici/autonomi e piani di remediation
 
 ---
@@ -15,7 +15,7 @@ Questa guida descrive i tre tool MCP esposti da `unified-ai-mcp-tool`:
 ## Table of Contents
 
 - [ask-gemini](#ask-gemini)
-- [cursor-agent](#cursor-agent)
+- [ask-cursor](#ask-cursor)
 - [droid](#droid)
 - [File Reference Syntax](#file-reference-syntax)
 
@@ -75,7 +75,7 @@ Query Google Gemini CLI con supporto per file multipli e contesti estesi.
 
 ---
 
-## cursor-agent
+## ask-cursor
 
 Invoca il Cursor Agent Headless CLI con modelli GPT-5.x/Sonnet/Composer. Ideale per refactor e proposte di patch.
 
@@ -108,7 +108,7 @@ Invoca il Cursor Agent Headless CLI con modelli GPT-5.x/Sonnet/Composer. Ideale 
   "prompt": "Analizza @src/utils/aiExecutor.ts e proponi un refactor per separare i backend",
   "model": "sonnet-4.5",
   "files": ["src/utils/aiExecutor.ts"],
-  "projectRoot": "/home/dawid/Projects/unified-ai-mcp-tool"
+  "projectRoot": "/home/dawid/Projects/unitai"
 }
 ```
 
@@ -169,7 +169,7 @@ Interfaccia con il Factory Droid CLI (`droid exec`) basato su GLM-4.6. Ideale pe
   "prompt": "Continua l'analisi della sessione precedente e verifica i nuovi log",
   "sessionId": "session-123",
   "auto": "low",
-  "cwd": "/home/dawid/Projects/unified-ai-mcp-tool"
+  "cwd": "/home/dawid/Projects/unitai"
 }
 ```
 

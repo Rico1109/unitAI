@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Questa proposta descrive l'implementazione di 5 comandi slash personalizzati per ottimizzare i workflow ripetitivi nel progetto unified-ai-mcp-tool. I comandi saranno implementati come estensioni del sistema skills/hooks esistente e utilizzeranno i workflow già disponibili.
+Questa proposta descrive l'implementazione di 5 comandi slash personalizzati per ottimizzare i workflow ripetitivi nel progetto unitai. I comandi saranno implementati come estensioni del sistema skills/hooks esistente e utilizzeranno i workflow già disponibili.
 
 ## Architettura Proposta
 

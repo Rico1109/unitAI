@@ -1,6 +1,6 @@
 # Workflow Inventory
 
-This document provides a comprehensive inventory of all workflows implemented in the `unified-ai-mcp-tool` system.
+This document provides a comprehensive inventory of all workflows implemented in the `unitai` system.
 
 ## Implemented Workflows
 

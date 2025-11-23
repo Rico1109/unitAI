@@ -24,7 +24,7 @@ This skill guides Claude to efficiently access project documentation using targe
 
 ```
 # Search for documentation files first
-mcp__claude-context__search_code "connection methods" --path /home/dawid/Projects/unified-ai-mcp-tool
+mcp__claude-context__search_code "connection methods" --path /home/dawid/Projects/unitai
 # Look specifically for .md files: "where is container connection documented?"
 ```
 
@@ -81,7 +81,7 @@ Once relevant documentation is identified:
 
 ```
 # 1. Find relevant docs
-mcp__claude-context__search_code "connection" --path /home/dawid/Projects/unified-ai-mcp-tool
+mcp__claude-context__search_code "connection" --path /home/dawid/Projects/unitai
 
 # 2. Ask AI about specific documentation
 "Based on [specific_file.md], explain how container connections are configured, specifically focusing on the [X] pattern."

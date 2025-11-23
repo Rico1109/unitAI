@@ -96,8 +96,8 @@ sandbox mode, and model selection
     ],
 
     "notFor": [
-      "Quick syntax fixes (use cursor-agent)",
-      "Single file edits (use cursor-agent)",
+      "Quick syntax fixes (use ask-cursor)",
+      "Single file edits (use ask-cursor)",
       "Autonomous code generation (use droid)",
       "Interactive debugging sessions"
     ],
@@ -125,7 +125,7 @@ sandbox mode, and model selection
     "alternatives": [
       {
         "when": "Need fast response (<5s) for simple tasks",
-        "useTool": "cursor-agent"
+        "useTool": "ask-cursor"
       },
       {
         "when": "Need code generation with file edits",
@@ -138,7 +138,7 @@ sandbox mode, and model selection
 
 ---
 
-## cursor-agent (Enhanced)
+## ask-cursor (Enhanced)
 
 ### Current Description
 ```
@@ -148,7 +148,7 @@ Multi-model Cursor Agent CLI per bug fixing e refactoring guidati
 ### Proposed Enhanced Description
 ```json
 {
-  "name": "cursor-agent",
+  "name": "ask-cursor",
   "summary": "Cursor Agent (GPT-5.1/Sonnet 4.5) - Fast bug fixes, refactoring, and test generation",
 
   "detailed": {
@@ -230,7 +230,7 @@ Factory Droid CLI (GLM-4.6) per task agentici con livelli di autonomia configura
     ],
 
     "notFor": [
-      "Quick single-file fixes (use cursor-agent)",
+      "Quick single-file fixes (use ask-cursor)",
       "Architectural planning (use gemini)",
       "Read-only analysis tasks",
       "High-risk production changes without review"
@@ -263,7 +263,7 @@ Factory Droid CLI (GLM-4.6) per task agentici con livelli di autonomia configura
       },
       {
         "when": "Simple single-file fix",
-        "useTool": "cursor-agent"
+        "useTool": "ask-cursor"
       }
     ]
   }
@@ -360,17 +360,17 @@ Intelligent workflows that orchestrate multiple AI backends for complex tasks
 Task Type?
 │
 ├─ Quick fix (1 file, <100 LOC)
-│  └─> cursor-agent
+│  └─> ask-cursor
 │
 ├─ Analysis only (no code changes)
 │  ├─ Large context (>10 files)
 │  │  └─> gemini
 │  └─ Small context (<5 files)
-│     └─> cursor-agent
+│     └─> ask-cursor
 │
 ├─ Implementation (write code)
 │  ├─ Single file / simple
-│  │  └─> cursor-agent
+│  │  └─> ask-cursor
 │  └─ Multi-file / complex
 │     └─> droid
 │
@@ -774,7 +774,7 @@ and Droid (implementation) analysis simultaneously and combines results.
 - Comprehensive quality checks (3 perspectives)
 
 **Not Recommended For:**
-- Quick fixes (use cursor-agent directly)
+- Quick fixes (use ask-cursor directly)
 - Single file review (overkill, use workflow_pre_commit_validate)
 
 **Parameters:**
@@ -852,7 +852,7 @@ git log <enhancement-branch>..HEAD --oneline --name-status
 ```
 
 **Domande da Rispondere:**
-1. Quando sono stati aggiunti cursor-agent e droid?
+1. Quando sono stati aggiunti ask-cursor e droid?
 2. Quali workflow sono stati aggiunti dopo il branch enhancement?
 3. Ci sono workflow deprecati o rimossi?
 4. Quali breaking changes ci sono stati?
@@ -863,7 +863,7 @@ git log <enhancement-branch>..HEAD --oneline --name-status
 # Architectural Evolution
 
 ## Major Changes
-- [commit-hash] Add cursor-agent and droid tools (replaced qwen/rovodev)
+- [commit-hash] Add ask-cursor and droid tools (replaced qwen/rovodev)
 - [commit-hash] Implement OpenSpec integration (6 tools + 1 workflow)
 - [commit-hash] Add auto-remediation workflow
 - [commit-hash] Refactor model selector (BACKENDS constants)
@@ -1025,7 +1025,7 @@ git log <enhancement-branch>..HEAD --oneline --name-status
 // Backend Tools (unchanged)
 {
   "ask-gemini": { ... },
-  "cursor-agent": { ... },
+  "ask-cursor": { ... },
   "droid": { ... }
 }
 
@@ -1057,7 +1057,7 @@ git log <enhancement-branch>..HEAD --oneline --name-status
     inputSchema: { ... },
     metadata: {
       category: "code-review",
-      backends: ["gemini", "cursor-agent", "droid"],
+      backends: ["gemini", "ask-cursor", "droid"],
       duration: "30-60s",
       cost: "high"
     }
@@ -1207,7 +1207,7 @@ export const workflowParallelReviewTool: UnifiedTool = {
   category: 'workflow',
   metadata: {
     workflowName: 'parallel-review',
-    backends: ['gemini', 'cursor-agent', 'droid'],
+    backends: ['gemini', 'ask-cursor', 'droid'],
     duration: '30-60s',
     cost: 'high',
     bestFor: [...],
@@ -1218,7 +1218,7 @@ export const workflowParallelReviewTool: UnifiedTool = {
 
 ## Task 4: Enhanced Descriptions
 - [ ] Update ask-gemini description
-- [ ] Update cursor-agent description
+- [ ] Update ask-cursor description
 - [ ] Update droid description
 - [ ] Update all OpenSpec tool descriptions
 - [ ] Add examples to all inputSchemas

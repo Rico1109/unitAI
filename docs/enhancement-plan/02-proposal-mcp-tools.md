@@ -11,10 +11,10 @@
 ## 1. Sintesi della ricerca obbligatoria
 - **Serena**: confermata l'esigenza di mantenere l'accesso simbolico per ridurre il consumo di token; le nuove integrazioni devono rispettare il modello "Serena per il codice, agenti MCP per l'orchestrazione".
 - **Claude Context**: rimane il canale principale per la ricerca semantica; i nuovi tool devono citare esplicitamente quando preferire una ricerca semantica rispetto ai nuovi agenti.
-- **Cursor Agent Headless CLI**: supporta prompt singoli (`cursor-agent -p "..." --model <id> --output-format text`) con modelli multipli (GPT-5/5.1, composer-1, sonnet-4.5 ecc.) e modalità multi-step; richiede token Cursor (`CURSOR_AGENT_TOKEN`).
+- **Cursor Agent Headless CLI**: supporta prompt singoli (`ask-cursor -p "..." --model <id> --output-format text`) con modelli multipli (GPT-5/5.1, composer-1, sonnet-4.5 ecc.) e modalità multi-step; richiede token Cursor (`CURSOR_AGENT_TOKEN`).
 - **Factory Droid CLI**: `droid exec` con flag `--auto`, `--output-format`, `--skip-permissions-unsafe`; usa GLM-4.6 e sessioni riutilizzabili (`--session-id`).
 - **Smart Workflows doc locale** (`docs/WORKFLOWS.md`) e `dist/src/workflows`: descrivono gli attuali sei workflow e l'uso parallelo di Qwen/Gemini/Rovodev.
-- **.mcp.json**: oggi espone i server `claude-context`, `deepwiki`, `context7`, `unified-ai-mcp`, `serena`, `openmemory`, `memory-local`. Non prevede ancora `cursor-agent` o `droid`.
+- **.mcp.json**: oggi espone i server `claude-context`, `deepwiki`, `context7`, `unified-ai-mcp`, `serena`, `openmemory`, `memory-local`. Non prevede ancora `ask-cursor` o `droid`.
 - **Codice sorgente**: `src/tools/index.ts` registra `ask-qwen`, `ask-rovodev`, `ask-gemini`, `smart-workflows`; `src/utils/aiExecutor.ts` esegue i CLI attuali; `src/workflows/**` e `dist/workflows/**` orchestrano i backend; `docs/mcp_tools_documentations.md` contiene note preliminari su Cursor e Droid.
 
 ---
@@ -31,28 +31,28 @@
 
 ---
 
-## 3. Integrazione di `cursor-agent`
+## 3. Integrazione di `ask-cursor`
 ### 3.1 Requisiti di installazione
-1. Dipendenza CLI: `npm install -g @cursorai/agent` (o uso `npx cursor-agent` per ambienti isolati).
+1. Dipendenza CLI: `npm install -g @cursorai/agent` (o uso `npx ask-cursor` per ambienti isolati).
 2. Token: `export CURSOR_AGENT_TOKEN=<token>` (proveniente dal workspace Cursor).
-3. Directory di lavoro: passare `--cwd /home/dawid/Projects/unified-ai-mcp-tool` per consentire accesso al repo.
+3. Directory di lavoro: passare `--cwd /home/dawid/Projects/unitai` per consentire accesso al repo.
 4. Modelli ammessi: `gpt-5.1`, `gpt-5`, `composer-1`, `sonnet-4.5`, `haiku-5`, `deepseek-v3`. Mappa da salvare in `AI_MODELS.CURSOR_AGENT`.
 
 ### 3.2 Wrapper MCP (codice)
 1. **Costanti** (`src/constants.ts`):
-   - Aggiungere `BACKENDS.CURSOR = "cursor-agent"`.
+   - Aggiungere `BACKENDS.CURSOR = "ask-cursor"`.
    - Definire `AI_MODELS.CURSOR_AGENT = {...}` e flag CLI (`CLI.FLAGS.CURSOR = { MODEL: "--model", OUTPUT: "--output-format", PROMPT: "-p", YT }`).
 2. **Executor** (`src/utils/aiExecutor.ts`):
-   - Nuova funzione `executeCursorAgentCLI` che invoca `cursor-agent` con:
+   - Nuova funzione `executeCursorAgentCLI` che invoca `ask-cursor` con:
      - `-p "<prompt>"`, `--model <model>`, `--output-format text|json`, `--cwd`, `--auto-approve` opzionale.
      - Supporto per allegati file (`--file @path`) sfruttando preparazione temporanea.
    - Estendere `executeAIClient` e `AIExecutionOptions` con campi `outputFormat`, `projectRoot`, `attachments`.
-3. **Tool MCP** (`src/tools/cursor-agent.tool.ts`):
+3. **Tool MCP** (`src/tools/ask-cursor.tool.ts`):
    - Schema Zod: `{ prompt: string; model?: enum; outputFormat?: "text"|"json"; projectRoot?: string; files?: string[]; autonomy?: "low"|"medium"|"high"; approvalMode?: "plan"|"default"|"auto" }`.
    - Progress logging coerente con `STATUS_MESSAGES`.
 4. **Registrazione** (`src/tools/index.ts`): registrare il nuovo tool e rimuovere `ask-qwen/ask-rovodev`.
 5. **Test**:
-   - Nuovi unit test per la serializzazione dei parametri (`tests/unit/tools/cursor-agent.tool.test.ts`).
+   - Nuovi unit test per la serializzazione dei parametri (`tests/unit/tools/ask-cursor.tool.test.ts`).
    - Mock di `executeCommand` per verificare i flag generati.
 
 ### 3.3 Schema di configurazione
@@ -66,7 +66,7 @@
     "cursorAgent": {
       "defaultModel": "gpt-5.1",
       "defaultOutputFormat": "text",
-      "projectRoot": "/home/dawid/Projects/unified-ai-mcp-tool"
+      "projectRoot": "/home/dawid/Projects/unitai"
     }
   }
   ```
@@ -74,8 +74,8 @@
 
 ### 3.4 Pattern d'uso
 - **Bug fixing e refactoring**: sfruttare i modelli `sonnet-4.5` o `composer-1` per generare patch dettagliate, poi validare con `smart-workflows`.
-- **Second opinion**: usare `cursor-agent` in parallelo a `ask-gemini` per confronto (nuovo workflow "triangulation" sotto §6).
-- **Token efficiency**: quando Serena individua un simbolo problematico, `cursor-agent` può proporre patch chirurgiche mantenendo il contesto minimo (passando file via `--file`).
+- **Second opinion**: usare `ask-cursor` in parallelo a `ask-gemini` per confronto (nuovo workflow "triangulation" sotto §6).
+- **Token efficiency**: quando Serena individua un simbolo problematico, `ask-cursor` può proporre patch chirurgiche mantenendo il contesto minimo (passando file via `--file`).
 
 ---
 
@@ -119,21 +119,21 @@
 ## 5. Piano di deprecazione per `ask-qwen` e `ask-rovodev`
 ### 5.1 Migrazione funzionale
 1. **Manuale**: sostituire nelle guide (`CLAUDE.MD`, `docs/WORKFLOWS.md`, `docs/mcp_tools_documentations.md`) ogni riferimento a `ask-qwen/ask-rovodev` con:
-   - `cursor-agent` (analisi + patch),
+   - `ask-cursor` (analisi + patch),
    - `droid` (esecuzioni autonome),
    - `ask-gemini` rimane per letture lunghe.
-2. **Workflow**: aggiornare la tabella "Manual Patterns" in `CLAUDE.MD` con la nuova sequenza `Serena → claude-context → cursor-agent → smart-workflows`.
+2. **Workflow**: aggiornare la tabella "Manual Patterns" in `CLAUDE.MD` con la nuova sequenza `Serena → claude-context → ask-cursor → smart-workflows`.
 
 ### 5.2 Cleanup checklist
 1. Rimuovere file `src/tools/ask-qwen.tool.ts` e `ask-rovodev.tool.ts` + corrispondenti in `dist/tools`.
 2. Aggiornare `src/tools/index.ts` per non registrarli.
 3. Eliminare test/unit associati (o aggiornarli per i nuovi tool).
-4. Aggiornare `docs/CHANGELOG.md` con voce "Removed ask-qwen/ask-rovodev (replaced by cursor-agent & droid)".
+4. Aggiornare `docs/CHANGELOG.md` con voce "Removed ask-qwen/ask-rovodev (replaced by ask-cursor & droid)".
 5. Validare `npm run build && npm run test`.
 
 ### 5.3 Migrazione dei workflow
 - `TesterAgent` continuerà a usare Qwen tramite backend interno → nessun cambiamento immediato; documentare che il backend è considerato "internal" e non esposto come tool singolo.
-- `ImplementerAgent` mantiene Rovodev come backend ma aggiunge Droid come fallback; per l'utente finale il nuovo strumento manuale è `cursor-agent`.
+- `ImplementerAgent` mantiene Rovodev come backend ma aggiunge Droid come fallback; per l'utente finale il nuovo strumento manuale è `ask-cursor`.
 - `smart-workflows` dovrà esporre nei metadata quali backend sono stati usati (includendo Cursor/Droid) per trasparenza.
 
 ---
@@ -158,16 +158,16 @@
    - `depth=paranoid` esegue Droid con `auto=low` per tentare fix automatici (solo suggerimenti, no modifiche dirette).
    - Logging dei token stimati tramite `tokenEstimator`.
 4. **Bug Hunt**:
-   - Step 2 (analisi) passa a `cursor-agent` per generare ipotesi multiple.
+   - Step 2 (analisi) passa a `ask-cursor` per generare ipotesi multiple.
    - Step 3 può delegare a Droid per un "fix plan" multi-step.
 5. **Feature Design**:
-   - `ImplementerAgent` usa `cursor-agent` per generare patch di esempio se Rovodev e Droid falliscono.
-   - Nuovo parametro `validationBackends` per scegliere se includere `ask-gemini`, `cursor-agent`, o `droid`.
+   - `ImplementerAgent` usa `ask-cursor` per generare patch di esempio se Rovodev e Droid falliscono.
+   - Nuovo parametro `validationBackends` per scegliere se includere `ask-gemini`, `ask-cursor`, o `droid`.
 
 ### 6.3 Nuove idee di workflow
 1. **`triangulated-review`**:
    - Input: `{ files: string[], goal: "bugfix" | "refactor" }`.
-   - Esegue in sequenza `claude-context` (permi link), `cursor-agent`, `smart-workflows/parallel-review`.
+   - Esegue in sequenza `claude-context` (permi link), `ask-cursor`, `smart-workflows/parallel-review`.
    - Output: report comparativo + suggerimenti di merge.
 2. **`auto-remediation`**:
    - Input: `{ symptoms: string, maxActions?: number }`.
@@ -185,15 +185,15 @@
 ## 7. Struttura di documentazione e best practices
 | Documento | Aggiornamenti richiesti |
 |-----------|-------------------------|
-| `docs/mcp_tools_documentations.md` | Nuove sezioni dettagliate per `cursor-agent` e `droid` con esempi CLI, variabili d'ambiente, limiti noti. Rimuovere paragrafi su `ask-qwen/ask-rovodev`. |
+| `docs/mcp_tools_documentations.md` | Nuove sezioni dettagliate per `ask-cursor` e `droid` con esempi CLI, variabili d'ambiente, limiti noti. Rimuovere paragrafi su `ask-qwen/ask-rovodev`. |
 | `docs/WORKFLOWS.md` | Aggiornare tabelle "Workflow Comparison" e "Manual Patterns" con i nuovi backend. Aggiungere i workflow proposti quando implementati. |
-| `docs/INTEGRATIONS.md` | Sezione "MCP Servers" → descrivere come `unified-ai-mcp` ora espone `cursor-agent` e `droid`. Aggiornare "Tool Selection Decision Tree". |
+| `docs/INTEGRATIONS.md` | Sezione "MCP Servers" → descrivere come `unified-ai-mcp` ora espone `ask-cursor` e `droid`. Aggiornare "Tool Selection Decision Tree". |
 | `CLAUDE.MD` | Sezione 3 aggiornata: sostituire `ask-qwen/ask-rovodev` nei pattern; descrivere quando usare Cursor/Droid. |
 | `README.md` principale | Breve nota nelle "Features" su nuovi tool e deprecazioni. |
-| Nuova guida rapida (`docs/guides/cursor-droid-playbook.md`, previa approvazione) | Raccolta di snippet `mcp__unified-ai-mcp__cursor-agent({...})` e `...droid({...})`. |
+| Nuova guida rapida (`docs/guides/cursor-droid-playbook.md`, previa approvazione) | Raccolta di snippet `mcp__unified-ai-mcp__ask-cursor({...})` e `...droid({...})`. |
 
 **Best practices da documentare:**
-- Preferire `cursor-agent` per patch e refactor; usare `droid` per task generativi lunghi.
+- Preferire `ask-cursor` per patch e refactor; usare `droid` per task generativi lunghi.
 - Specificare `autonomyLevel` coerente con `PermissionManager`; vietare `--skip-permissions-unsafe` quando il workflow è `read-only`.
 - Documentare trade-off di costo/token vs accuratezza, includendo una tabella comparativa (Gemini vs Cursor vs Droid).
 
@@ -227,7 +227,7 @@
 ---
 
 ## 9. Metriche di successo e validazione
-- Tool `cursor-agent` e `droid` visibili in `mcp__unified-ai-mcp__list-tools`.
+- Tool `ask-cursor` e `droid` visibili in `mcp__unified-ai-mcp__list-tools`.
 - Tutti i workflow riportano i backend effettivamente usati nel report finale.
 - Documentazione aggiornata + link funzionanti.
 - Test automatizzati: nuove suite unit/integration verdi (incluso `tests/integration/workflows/pre-commit-validate.integration.ts` aggiornato per i backend extra).
@@ -239,6 +239,6 @@
 1. Validare con i maintainer la roadmap sopra.
 2. Iniziare Fase A implementando gli executor nuovi dietro flag (`ENABLE_CURSOR_AGENT`, `ENABLE_DROID`) per rollout graduale.
 3. Aprire due issue di tracking:  
-   - `feat: add cursor-agent MCP tool`  
+   - `feat: add ask-cursor MCP tool`  
    - `feat: add droid MCP tool + retire ask-qwen/ask-rovodev`.
 

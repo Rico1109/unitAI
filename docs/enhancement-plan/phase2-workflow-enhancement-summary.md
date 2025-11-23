@@ -129,7 +129,7 @@ const openspecDrivenDevelopmentSchema = z.object({
   targetFiles: z.array(z.string()).optional(),
   implementationApproach: z.enum(["incremental", "full-rewrite", "minimal"]),
   autonomyLevel: z.nativeEnum(AutonomyLevel),
-  validationBackends: z.array(z.enum(["ask-gemini", "cursor-agent", "droid"]))
+  validationBackends: z.array(z.enum(["ask-gemini", "ask-cursor", "droid"]))
 });
 ```
 

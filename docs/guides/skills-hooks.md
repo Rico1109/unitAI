@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** 2025-11-14
 
-Simplified guide to Claude Code Skills and Hooks in unified-ai-mcp-tool.
+Simplified guide to Claude Code Skills and Hooks in unitai.
 
 For complete technical details, see [Integrations Guide](../INTEGRATIONS.md).
 
@@ -241,7 +241,7 @@ Skills and hooks are configured but you don't need to modify them. They work aut
 .claude/hooks/[hook-name].ts
 ```
 
-**Note:** The current configuration is optimized for unified-ai-mcp-tool. Customization is optional and advanced.
+**Note:** The current configuration is optimized for unitai. Customization is optional and advanced.
 
 ---
 

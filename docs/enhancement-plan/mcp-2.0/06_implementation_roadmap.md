@@ -62,8 +62,8 @@
 
 1.  **Deprecation:**
     -   [ ] Add deprecation notice to `smart-workflows` description.
-    -   [ ] Rename `cursor-agent` -> `ask_cursor_agent` (alias for backward compat).
-    -   [ ] Rename `droid` -> `ask_droid` (alias for backward compat).
+    -   [x] Naming convention standardized to `ask-*` pattern (ask-cursor, ask-droid, ask-gemini).
+    -   [ ] Create backward compatibility aliases if needed.
 
 2.  **Verification:**
     -   [ ] Run `list_workflows`.

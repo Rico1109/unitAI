@@ -179,7 +179,7 @@ Iniziare con SQLite file-based storage, no fancy AI retrieval.
 └─────────────────────┬───────────────────────────────┘
                       │ MCP Protocol
 ┌─────────────────────▼───────────────────────────────┐
-│ Livello 2: unified-ai-mcp-tool (MCP Server)        │
+│ Livello 2: unitai (MCP Server)        │
 │  - Tool: ask-qwen, ask-gemini, ask-rovodev          │
 │  - Tool: smart-workflows                            │
 │  - Permission Manager (autonomyLevel checking)      │
@@ -753,7 +753,7 @@ async function executeParallelReview(
 
 ```bash
 # Terminal 1: Run MCP server
-unified-ai-mcp-tool
+unitai
 
 # Terminal 2: Monitor workflow activity
 tail -f logs/workflow-executions.log | jq '.'
@@ -2033,7 +2033,7 @@ export class AdaptiveBackendSelector {
 
 **Task:**
 ```bash
-# unified-ai-mcp-tool CLI (non solo MCP server)
+# unitai CLI (non solo MCP server)
 unified-ai workflow list
 unified-ai workflow run parallel-review --files src/index.ts --focus security
 unified-ai workflow history init-session

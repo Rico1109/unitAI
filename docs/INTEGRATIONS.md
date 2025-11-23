@@ -4,7 +4,7 @@
 **Last Updated:** 2025-11-14  
 **Status:** Active
 
-This guide explains how unified-ai-mcp-tool integrates with external systems including MCP servers, Claude Code Skills, and Hooks.
+This guide explains how unitai integrates with external systems including MCP servers, Claude Code Skills, and Hooks.
 
 ---
 
@@ -21,7 +21,7 @@ This guide explains how unified-ai-mcp-tool integrates with external systems inc
 
 ### Overview
 
-The unified-ai-mcp-tool can integrate with external MCP servers to extend functionality. Currently supported integrations:
+The unitai can integrate with external MCP servers to extend functionality. Currently supported integrations:
 
 ### Serena (Symbol-Level Code Navigation)
 
@@ -117,17 +117,17 @@ Before Refactoring:
 
 ### unified-ai-mcp (Toolset)
 
-**Purpose:** Esporre i tool principali (`ask-gemini`, `cursor-agent`, `droid`, `smart-workflows`) attraverso un unico server MCP.
+**Purpose:** Esporre i tool principali (`ask-gemini`, `ask-cursor`, `droid`, `smart-workflows`) attraverso un unico server MCP.
 
 **When to Use:**
 - Analisi/lettura profonda di codice o documentazione (`ask-gemini`)
-- Refactor, bug fixing, patch chirurgiche (`cursor-agent`)
+- Refactor, bug fixing, patch chirurgiche (`ask-cursor`)
 - Piani operativi autonomi e remediation (`droid`)
 - Processi standardizzati (pre-commit, bug-hunt, feature-design, ecc.) tramite `smart-workflows`
 
 **Key Operations:**
 - `mcp__unified-ai-mcp__ask-gemini({ ... })`
-- `mcp__unified-ai-mcp__cursor-agent({ ... })`
+- `mcp__unified-ai-mcp__ask-cursor({ ... })`
 - `mcp__unified-ai-mcp__droid({ ... })`
 - `mcp__unified-ai-mcp__smart-workflows({ workflow: "...", params: { ... } })`
 
@@ -158,7 +158,7 @@ Skills are markdown files that Claude Code reads automatically at session start.
 
 ### Active Skills
 
-The unified-ai-mcp-tool project includes 9 active skills:
+The unitai project includes 9 active skills:
 
 **1. unified-ai-orchestration**
 - **Purpose:** Main orchestration skill for smart workflows

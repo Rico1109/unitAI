@@ -4,7 +4,7 @@
 
 **Phase 1 Status**: ✅ **COMPLETED**
 
-Successfully integrated OpenSpec into the unified-ai-mcp-tool project, adding 6 new MCP tools for spec-driven development.
+Successfully integrated OpenSpec into the unitai project, adding 6 new MCP tools for spec-driven development.
 
 ## What Was Implemented
 

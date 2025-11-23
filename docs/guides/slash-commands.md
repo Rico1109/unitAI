@@ -4,7 +4,7 @@
 **Data:** 19 novembre 2025
 **Status:** Production Ready
 
-Questa guida fornisce documentazione completa per i comandi slash personalizzati implementati nel progetto unified-ai-mcp-tool.
+Questa guida fornisce documentazione completa per i comandi slash personalizzati implementati nel progetto unitai.
 
 ## Indice
 

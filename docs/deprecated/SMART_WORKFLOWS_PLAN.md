@@ -3,13 +3,13 @@
 **Versione:** 1.0
 **Data:** 2025-11-06
 
-Questo documento delinea la visione strategica, l'architettura e il piano di sviluppo per il `unified-ai-mcp-tool`, concepito come un'estensione di orchestrazione intelligente per il tool CLI `claude-code`.
+Questo documento delinea la visione strategica, l'architettura e il piano di sviluppo per il `unitai`, concepito come un'estensione di orchestrazione intelligente per il tool CLI `claude-code`.
 
 ---
 
 ## 1. Visione Strategica
 
-L'obiettivo è trasformare `claude-code` da un potente strumento CLI a un **orchestratore di agenti AI semi-autonomo**. Il `unified-ai-mcp-tool` funge da "sistema nervoso" e "braccio operativo", permettendo a Claude di delegare compiti complessi a un ecosistema di AI specializzate e strumenti di contesto, per poi riprendere il controllo per la validazione e l'implementazione finale.
+L'obiettivo è trasformare `claude-code` da un potente strumento CLI a un **orchestratore di agenti AI semi-autonomo**. Il `unitai` funge da "sistema nervoso" e "braccio operativo", permettendo a Claude di delegare compiti complessi a un ecosistema di AI specializzate e strumenti di contesto, per poi riprendere il controllo per la validazione e l'implementazione finale.
 
 ---
 
@@ -29,7 +29,7 @@ Proponiamo un'architettura a più livelli che astrae la complessità e massimizz
 +----------------------+-------------------------+
                        |
 +----------------------v-------------------------+
-| Livello 3: Esecuzione (Skill -> unified-ai-mcp-tool) |
+| Livello 3: Esecuzione (Skill -> unitai) |
 | (Chiama il nostro tool con parametri specifici)|
 +----------------------+-------------------------+
                        |
@@ -58,7 +58,7 @@ Proponiamo un'architettura a più livelli che astrae la complessità e massimizz
 
 ## 4. Principi di Integrazione e Autonomia (Il "Sistema Nervoso")
 
-Questa sezione descrive i meccanismi chiave che permetteranno a Claude Code di interagire con il `unified-ai-mcp-tool` in modo efficiente, proattivo e sicuro.
+Questa sezione descrive i meccanismi chiave che permetteranno a Claude Code di interagire con il `unitai` in modo efficiente, proattivo e sicuro.
 
 ### 1. Skill Claude con Progressive Disclosure
 

@@ -52,7 +52,7 @@ Edit `~/.config/claude/claude_desktop_config.json` (Linux):
   "mcpServers": {
     "unified-ai-local": {
       "command": "node",
-      "args": ["/absolute/path/to/unified-ai-mcp-tool/dist/index.js"]
+      "args": ["/absolute/path/to/unitai/dist/index.js"]
     }
   }
 }

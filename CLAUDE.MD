@@ -8,7 +8,7 @@
 
 SSOT: `CLAUDE.md`
 
-## PROJECT: unified-ai-mcp-tool
+## PROJECT: unitai
 
 Multi-AI orchestration MCP server. Stack: TypeScript, Node.js, MCP protocol. Backends: Qwen CLI, Gemini CLI, Rovodev CLI. Features: smart-workflows, intelligent model selection, recursive MCP architecture.
 
@@ -39,7 +39,7 @@ mcp__unified-ai-mcp__smart-workflows({
 
 ## 3) MCP TOOLS & WORKFLOWS
 
-**CLAUDE-CONTEXT** (Repo: /home/dawid/Projects/unified-ai-mcp-tool)
+**CLAUDE-CONTEXT** (Repo: /home/dawid/Projects/unitai)
 - Index: mcp__claude-context__index_codebase --path <repo>
 - Search: mcp__claude-context__search_code "semantic query" --path <repo>
 - Use BEFORE: features, bugs, refactors (finds ALL related code, 0 file reads)
@@ -134,7 +134,7 @@ Task({ subagent_type: "AGENT_NAME", prompt: "task description" })
 - ALWAYS: Serena find_referencing_symbols before editing (75-80% token savings)
 
 ## 5) MISSING/MOVED FILE RECOVERY
-- mcp__claude-context__search_code "where is <X> now?" --path /home/dawid/Projects/unified-ai-mcp-tool
+- mcp__claude-context__search_code "where is <X> now?" --path /home/dawid/Projects/unitai
 - Serena: mcp__serena__find_file "<name>" (if symbol-based)
 - Glob: **/<name.ext>, **/<partial>*.ts
 - Grep: rg -n "<signature>" --glob '!**/node_modules/**'

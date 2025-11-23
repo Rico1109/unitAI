@@ -4,7 +4,7 @@
 **Last Updated:** 2025-11-14  
 **Status:** Production Ready
 
-This guide provides comprehensive documentation for all workflows available in unified-ai-mcp-tool.
+This guide provides comprehensive documentation for all workflows available in unitai.
 
 ---
 
@@ -314,7 +314,7 @@ The workflow provides synthesized analysis combining both perspectives:
       duration: number
     },
     {
-      backend: "cursor-agent",
+      backend: "ask-cursor",
       output: string,
       success: boolean,
       duration: number
@@ -882,7 +882,7 @@ Create `.git/hooks/pre-commit`:
 echo "Running pre-commit validation..."
 
 # Run thorough validation
-result=$(node /path/to/unified-ai-mcp-tool/dist/index.js <<EOF
+result=$(node /path/to/unitai/dist/index.js <<EOF
 {
   "jsonrpc": "2.0",
   "method": "tools/call",
@@ -933,8 +933,8 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Install unified-ai-mcp-tool
-        run: npm install -g @jaggerxtrm/unified-ai-mcp-tool
+      - name: Install unitai
+        run: npm install -g @jaggerxtrm/unitai
       
       - name: Validate Last Commit
         run: |

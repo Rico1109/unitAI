@@ -1,4 +1,4 @@
-# Project Overview: unified-ai-mcp-tool
+# Project Overview: unitai
 
 ## Purpose
 Unified Model Context Protocol server that provides seamless access to **Qwen Code**, **Atlassian Rovo Dev**, and **Google Gemini** through a single interface. 
@@ -15,7 +15,7 @@ Unified Model Context Protocol server that provides seamless access to **Qwen Co
 ## Architecture
 - **Level 1**: User Interface (Claude Code CLI)
 - **Level 2**: Automation (Hooks + Skills)
-- **Level 3**: Execution (unified-ai-mcp-tool)
+- **Level 3**: Execution (unitai)
 - **Level 4**: Orchestration (Smart Workflows with recursive MCP calls)
 
 ## Target Metrics

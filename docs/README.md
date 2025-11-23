@@ -4,7 +4,7 @@
 **Last Updated:** 2025-11-14  
 **Status:** Active
 
-This directory contains all documentation for unified-ai-mcp-tool.
+This directory contains all documentation for unitai.
 
 ---
 
@@ -12,7 +12,7 @@ This directory contains all documentation for unified-ai-mcp-tool.
 
 ### Getting Started
 
-New to unified-ai-mcp-tool? Start here:
+New to unitai? Start here:
 
 - **[Getting Started Guide](./guides/getting-started.md)** - Installation, configuration, first workflow
 - **[README.md](../README.md)** - Project overview and features
@@ -30,7 +30,7 @@ Main documentation organized by topic:
 
 Complete API specifications:
 
-- **[Base Tools API](./reference/api-tools.md)** - ask-gemini, cursor-agent, droid
+- **[Base Tools API](./reference/api-tools.md)** - ask-gemini, ask-cursor, ask-droid
 - **[Workflows API](./reference/api-workflows.md)** - All 6 workflow specifications
 - **[Error Codes](./reference/error-codes.md)** - Complete error reference
 
@@ -80,7 +80,7 @@ Want to contribute?
 - [Workflows API Reference](./reference/api-workflows.md) - Complete specifications
 
 **Using Base Tools:**
-- [Base Tools API](./reference/api-tools.md) - ask-gemini, cursor-agent, droid
+- [Base Tools API](./reference/api-tools.md) - ask-gemini, ask-cursor, ask-droid
 
 **Understanding Skills and Hooks:**
 - [Skills and Hooks Guide](./guides/skills-hooks.md) - Simplified overview
@@ -164,8 +164,8 @@ These are kept for historical reference but are no longer maintained.
 ## External Resources
 
 **Project Links:**
-- GitHub Repository: https://github.com/jaggerxtrm/unified-ai-mcp-tool
-- npm Package: https://www.npmjs.com/package/@jaggerxtrm/unified-ai-mcp-tool
+- GitHub Repository: https://github.com/jaggerxtrm/unitai
+- npm Package: https://www.npmjs.com/package/@jaggerxtrm/unitai
 - Model Context Protocol: https://modelcontextprotocol.io
 
 **AI Backend Documentation:**

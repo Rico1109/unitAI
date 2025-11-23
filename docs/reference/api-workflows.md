@@ -477,5 +477,5 @@ All workflows return standardized error responses:
 ## See Also
 
 - [Workflows Guide](../WORKFLOWS.md) - Usage guide with examples
-- [Base Tools API](./api-tools.md) - ask-gemini, cursor-agent, droid
+- [Base Tools API](./api-tools.md) - ask-gemini, ask-cursor, ask-droid
 - [Error Codes](./error-codes.md) - Complete error reference

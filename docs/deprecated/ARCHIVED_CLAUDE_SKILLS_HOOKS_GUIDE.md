@@ -600,7 +600,7 @@ const dynamicPatterns = {
 
 #### 7. Integra con Smart Workflows
 
-Quando implementi gli smart-workflows di `unified-ai-mcp-tool`:
+Quando implementi gli smart-workflows di `unitai`:
 
 **Hook → Workflow Integration**:
 ```javascript

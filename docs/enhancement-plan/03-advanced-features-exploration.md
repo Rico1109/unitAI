@@ -1,7 +1,7 @@
 # Task 3: Advanced Features Exploration
 
 ## Objective
-Research and evaluate two powerful systems for potential integration: moai-adk and OpenSpec. Determine if and how they should be integrated into the unified-ai-mcp-tool project.
+Research and evaluate two powerful systems for potential integration: moai-adk and OpenSpec. Determine if and how they should be integrated into the unitai project.
 
 ## Status
 - [x] moai-adk documentation review completed
@@ -82,7 +82,7 @@ Create a comprehensive analysis document covering:
 ### Phase 3: Integration Proposal (if recommended)
 **Only if you recommend integration, create a proposal that includes:**
 1. Integration approach and architecture
-2. Required changes to unified-ai-mcp-tool
+2. Required changes to unitai
 3. Configuration requirements
 4. Usage examples
 5. Documentation plan

@@ -1,6 +1,6 @@
 # Gap Analysis Report
 
-This document identifies the gaps between the current implementation of `unified-ai-mcp-tool` and the desired state (MCP 2.0).
+This document identifies the gaps between the current implementation of `unitai` and the desired state (MCP 2.0).
 
 ## Critical Gaps
 

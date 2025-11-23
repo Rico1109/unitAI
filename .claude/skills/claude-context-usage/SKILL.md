@@ -19,10 +19,10 @@ Use claude-context for semantic codebase search before implementation, refactori
 ### Basic Pattern
 ```bash
 # 1. Index (once per codebase)
-mcp__claude-context__index_codebase --path /home/dawid/Projects/unified-ai-mcp-tool
+mcp__claude-context__index_codebase --path /home/dawid/Projects/unitai
 
 # 2. Search with natural language
-mcp__claude-context__search_code "where is authentication handled?" --path /home/dawid/Projects/unified-ai-mcp-tool
+mcp__claude-context__search_code "where is authentication handled?" --path /home/dawid/Projects/unitai
 ```
 
 ## When to Use

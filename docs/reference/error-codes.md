@@ -4,7 +4,7 @@
 **Last Updated:** 2025-11-14  
 **Status:** Production Ready
 
-Complete reference for error codes and error handling in unified-ai-mcp-tool.
+Complete reference for error codes and error handling in unitai.
 
 ---
 

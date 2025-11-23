@@ -112,9 +112,9 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
+      // Only CURSOR and DROID are allowed, so one of them should be selected
       const backend = selectOptimalBackend(task, [BACKENDS.CURSOR, BACKENDS.DROID]);
-      expect([BACKENDS.CURSOR, BACKENDS.DROID, BACKENDS.GEMINI]).toContain(backend);
-      expect(backend).toBe(BACKENDS.GEMINI);
+      expect([BACKENDS.CURSOR, BACKENDS.DROID]).toContain(backend);
     });
   });
 
