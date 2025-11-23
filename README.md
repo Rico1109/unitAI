@@ -63,10 +63,10 @@ Real-time feedback on long-running operations.
 
 ## Installation
 
-### Claude Desktop (Quickest)
+### Claude Desktop/Claude Code (Quickest)
 
 ```bash
-claude mcp add unified-ai -- npx -y @jaggerxtrm/unitai
+claude mcp add unitAI -- npx -y @jaggerxtrm/unitai
 ```
 
 ### Global Installation (Recommended)
@@ -106,7 +106,7 @@ npm update -g @jaggerxtrm/unitai
 ```json
 {
   "mcpServers": {
-    "unified-ai": {
+    "unitAI": {
       "command": "unitai"
     }
   }
@@ -118,7 +118,7 @@ npm update -g @jaggerxtrm/unitai
 ```json
 {
   "mcpServers": {
-    "unified-ai": {
+    "unitAI": {
       "command": "node",
       "args": ["/path/to/unitai/dist/index.js"]
     }
