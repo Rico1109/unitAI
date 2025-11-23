@@ -25,4 +25,4 @@
 - **context7**: External API documentation
 - **deepwiki**: GitHub repository analysis
 - **openmemory-local**: Persistent memory store
-- **unified-ai-mcp** (this project): Multi-AI orchestrator with recursive MCP capability
+- **unitAI** (this project): Multi-AI orchestrator with recursive MCP capability

@@ -1,8 +1,11 @@
 # Memory Orchestration Design
 
+
+# ATTENZIONE:
+SERVIREBBE UN SISTEMA DI SPEC SIMILE A MOAI PER UNA SSOT PER I WALKTHROUGH E PIANI CHE I BACKEND POSSONO REFERENZIARE 
 ## Overview
 
-This document outlines the design for intelligent memory orchestration across multiple memory systems in the unified-ai-mcp ecosystem.
+This document outlines the design for intelligent memory orchestration across multiple memory systems in the unitAI ecosystem.
 
 ## Current State: Three Memory Systems
 

@@ -14,14 +14,14 @@
 - **Cursor Agent Headless CLI**: supporta prompt singoli (`ask-cursor -p "..." --model <id> --output-format text`) con modelli multipli (GPT-5/5.1, composer-1, sonnet-4.5 ecc.) e modalità multi-step; richiede token Cursor (`CURSOR_AGENT_TOKEN`).
 - **Factory Droid CLI**: `droid exec` con flag `--auto`, `--output-format`, `--skip-permissions-unsafe`; usa GLM-4.6 e sessioni riutilizzabili (`--session-id`).
 - **Smart Workflows doc locale** (`docs/WORKFLOWS.md`) e `dist/src/workflows`: descrivono gli attuali sei workflow e l'uso parallelo di Qwen/Gemini/Rovodev.
-- **.mcp.json**: oggi espone i server `claude-context`, `deepwiki`, `context7`, `unified-ai-mcp`, `serena`, `openmemory`, `memory-local`. Non prevede ancora `ask-cursor` o `droid`.
+- **.mcp.json**: oggi espone i server `claude-context`, `deepwiki`, `context7`, `unitAI`, `serena`, `openmemory`, `memory-local`. Non prevede ancora `ask-cursor` o `droid`.
 - **Codice sorgente**: `src/tools/index.ts` registra `ask-qwen`, `ask-rovodev`, `ask-gemini`, `smart-workflows`; `src/utils/aiExecutor.ts` esegue i CLI attuali; `src/workflows/**` e `dist/workflows/**` orchestrano i backend; `docs/mcp_tools_documentations.md` contiene note preliminari su Cursor e Droid.
 
 ---
 
 ## 2. Stato attuale e gap
 ### 2.1 Configurazione MCP (`/.mcp.json`)
-- Solo `unified-ai-mcp` fornisce strumenti custom; gli altri server sono HTTP/stdio esterni.
+- Solo `unitAI` fornisce strumenti custom; gli altri server sono HTTP/stdio esterni.
 - Nessun riferimento a CLI o env per Cursor/Droid → necessarie nuove variabili (`CURSOR_AGENT_TOKEN`, `DROID_API_KEY`, `DROID_DEFAULT_MODEL`, `DROID_AUTO_LEVEL`).
 
 ### 2.2 Tooling esistente (`src/tools`, `src/utils/aiExecutor.ts`)
@@ -56,7 +56,7 @@
    - Mock di `executeCommand` per verificare i flag generati.
 
 ### 3.3 Schema di configurazione
-- `.mcp.json` non necessita di un server separato: il tool viene esposto da `unified-ai-mcp`.
+- `.mcp.json` non necessita di un server separato: il tool viene esposto da `unitAI`.
 - Aggiungere a `README`/`docs/INTEGRATIONS.md`:
   ```json
   {
@@ -187,10 +187,10 @@
 |-----------|-------------------------|
 | `docs/mcp_tools_documentations.md` | Nuove sezioni dettagliate per `ask-cursor` e `droid` con esempi CLI, variabili d'ambiente, limiti noti. Rimuovere paragrafi su `ask-qwen/ask-rovodev`. |
 | `docs/WORKFLOWS.md` | Aggiornare tabelle "Workflow Comparison" e "Manual Patterns" con i nuovi backend. Aggiungere i workflow proposti quando implementati. |
-| `docs/INTEGRATIONS.md` | Sezione "MCP Servers" → descrivere come `unified-ai-mcp` ora espone `ask-cursor` e `droid`. Aggiornare "Tool Selection Decision Tree". |
+| `docs/INTEGRATIONS.md` | Sezione "MCP Servers" → descrivere come `unitAI` ora espone `ask-cursor` e `droid`. Aggiornare "Tool Selection Decision Tree". |
 | `CLAUDE.MD` | Sezione 3 aggiornata: sostituire `ask-qwen/ask-rovodev` nei pattern; descrivere quando usare Cursor/Droid. |
 | `README.md` principale | Breve nota nelle "Features" su nuovi tool e deprecazioni. |
-| Nuova guida rapida (`docs/guides/cursor-droid-playbook.md`, previa approvazione) | Raccolta di snippet `mcp__unified-ai-mcp__ask-cursor({...})` e `...droid({...})`. |
+| Nuova guida rapida (`docs/guides/cursor-droid-playbook.md`, previa approvazione) | Raccolta di snippet `mcp__unitAI__ask-cursor({...})` e `...droid({...})`. |
 
 **Best practices da documentare:**
 - Preferire `ask-cursor` per patch e refactor; usare `droid` per task generativi lunghi.
@@ -227,7 +227,7 @@
 ---
 
 ## 9. Metriche di successo e validazione
-- Tool `ask-cursor` e `droid` visibili in `mcp__unified-ai-mcp__list-tools`.
+- Tool `ask-cursor` e `droid` visibili in `mcp__unitAI__list-tools`.
 - Tutti i workflow riportano i backend effettivamente usati nel report finale.
 - Documentazione aggiornata + link funzionanti.
 - Test automatizzati: nuove suite unit/integration verdi (incluso `tests/integration/workflows/pre-commit-validate.integration.ts` aggiornato per i backend extra).

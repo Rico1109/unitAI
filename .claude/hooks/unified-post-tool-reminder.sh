@@ -165,7 +165,7 @@ if [ "$SUPPRESS_WORKFLOWS" != "true" ]; then
         echo ""
         echo "Pattern: $reason"
         echo ""
-        echo "Consider: mcp__unified-ai-mcp__smart-workflows --workflow \"$workflow\""
+        echo "Consider: mcp__unitAI__smart-workflows --workflow \"$workflow\""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     }
     

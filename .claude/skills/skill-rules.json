@@ -322,7 +322,7 @@
             "type": "domain",
             "enforcement": "suggest",
             "priority": "medium",
-            "description": "Use unified-ai-mcp for multi-model AI analysis when complexity requires different perspectives. Run ask-gemini + ask-qwen in parallel for comprehensive validation. Add ask-rovodev for production-ready code generation.",
+            "description": "Use unitAI for multi-model AI analysis when complexity requires different perspectives. Run ask-gemini + ask-qwen in parallel for comprehensive validation. Add ask-rovodev for production-ready code generation.",
             "behaviorFlags": {
                 "showEveryTime": false,
                 "minimumConfidence": 0.85,

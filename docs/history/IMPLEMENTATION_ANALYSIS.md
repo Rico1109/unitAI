@@ -112,13 +112,13 @@ AI_MODELS = {
 - ✅ claude-context (semantic search)
 - ✅ deepwiki (GitHub repo analysis)
 - ✅ context7 (API documentation)
-- ✅ unified-ai-mcp (this tool - recursive orchestrator)
+- ✅ unitAI (this tool - recursive orchestrator)
 - ✅ serena (LSP-based symbol surgery)
 - ✅ openmemory + openmemory-local (persistent memory)
 
 **Recursive Architecture Confirmed:**
 ```
-User → Claude → unified-ai-mcp → [Autonomous workflow]
+User → Claude → unitAI → [Autonomous workflow]
                                    ├─> claude-context.search()
                                    ├─> serena.findSymbol()
                                    ├─> context7.getDocs()
@@ -2004,7 +2004,7 @@ export class MCPClient {
     });
     
     this.client = new Client({
-      name: "unified-ai-mcp-workflow",
+      name: "unitAI-workflow",
       version: "1.0.0"
     }, {
       capabilities: {}

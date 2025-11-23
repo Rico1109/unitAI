@@ -227,7 +227,7 @@ The workflow returns a verdict with detailed validation results:
 # .git/hooks/pre-commit
 
 # Run thorough validation
-result=$(npx unified-ai-mcp workflow run pre-commit-validate --depth thorough)
+result=$(npx unitAI workflow run pre-commit-validate --depth thorough)
 
 # Check verdict
 if echo "$result" | grep -q "FAIL"; then
@@ -420,7 +420,7 @@ Detailed validation including commit metadata and verdict:
 # .github/workflows/validate.yml
 - name: Validate Last Commit
   run: |
-    result=$(npx unified-ai-mcp workflow run validate-last-commit)
+    result=$(npx unitAI workflow run validate-last-commit)
     if echo "$result" | grep -q "errors"; then
       exit 1
     fi

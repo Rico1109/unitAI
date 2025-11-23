@@ -89,7 +89,7 @@ Questo documento rappresenta una revisione critica e pragmatica del piano origin
 ### 1.1. Problemi Identificati
 
 #### Architettura Ricorsiva MCP: Gap Realta'/Visione
-**Problema:** Il piano v2.0 descrive dettagliatamente un'architettura ricorsiva dove `unified-ai-mcp` invoca altri MCP servers (Serena, claude-context, context7, deepwiki, openmemory).
+**Problema:** Il piano v2.0 descrive dettagliatamente un'architettura ricorsiva dove `unitAI` invoca altri MCP servers (Serena, claude-context, context7, deepwiki, openmemory).
 
 **Realta':** Analizzando il codice:
 - `src/utils/aiExecutor.ts`: Chiama solo CLI esterni (qwen, acli, gemini)
@@ -1635,7 +1635,7 @@ await executeAIClient({ backend, prompt });
 
 **NOTA CRITICA:** Questa fase implementa l'"architettura ricorsiva MCP" descritta nel piano v2.0. E' tecnicamente fattibile MA richiede:
 1. Installare e configurare Serena, claude-context, etc come MCP servers
-2. Implementare MCP client SDK in unified-ai-mcp
+2. Implementare MCP client SDK in unitAI
 3. Gestire lifecycle di multiple MCP connections
 4. Debugging complesso (multi-layer)
 
@@ -1660,7 +1660,7 @@ export class MCPClientManager {
   
   async connect(config: MCPServerConfig): Promise<void> {
     const client = new Client({
-      name: `unified-ai-mcp-client-${config.name}`,
+      name: `unitAI-client-${config.name}`,
       version: '1.0.0'
     });
     

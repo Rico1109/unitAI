@@ -1,7 +1,7 @@
 ---
 description: Validate code stability, save to memory, and create git commit
 argument-hint: "commit message" [--force] [--no-cloud] [--tag "tag-name"]
-allowed-tools: mcp__unified-ai-mcp__workflow_pre_commit_validate, mcp__openmemory__*, mcp__openmemory-cloud__*, Bash(git:*)
+allowed-tools: mcp__unitAI__workflow_pre_commit_validate, mcp__openmemory__*, mcp__openmemory-cloud__*, Bash(git:*)
 ---
 
 Safely save stable work with automatic validation, memory storage, and commit creation.
@@ -19,7 +19,7 @@ Extract from arguments:
 ### Step 1: Validate Code Stability (unless --force)
 
 If --force is NOT present:
-1. Use `mcp__unified-ai-mcp__workflow_pre_commit_validate` with:
+1. Use `mcp__unitAI__workflow_pre_commit_validate` with:
    - `depth`: "thorough"
    - `autonomyLevel`: "MEDIUM"
 2. Check the result for:

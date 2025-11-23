@@ -36,10 +36,10 @@ git log --oneline -5
 **For technical issues**:
 ```bash
 # Quick issue resolution
-mcp__unified-ai-mcp__ask-qwen --prompt "I was working on [task] and encountered [problem]. How should I proceed?"
+mcp__unitAI__ask-qwen --prompt "I was working on [task] and encountered [problem]. How should I proceed?"
 
 # Deep problem analysis
-mcp__unified-ai-mcp__ask-gemini --prompt "Help me resume work on [task]. I encountered [issue] and need guidance."
+mcp__unitAI__ask-gemini --prompt "Help me resume work on [task]. I encountered [issue] and need guidance."
 ```
 
 **For code context**:

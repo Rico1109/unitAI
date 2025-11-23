@@ -1,7 +1,7 @@
 ---
 description: Enhance prompts with project context using AI backends
 argument-hint: <gemini|droid> "your prompt"
-allowed-tools: mcp__unified-ai-mcp__ask-gemini, mcp__unified-ai-mcp__droid, mcp__openmemory__*, mcp__openmemory-cloud__*, mcp__serena__*, Bash(git:*)
+allowed-tools: mcp__unitAI__ask-gemini, mcp__unitAI__droid, mcp__openmemory__*, mcp__openmemory-cloud__*, mcp__serena__*, Bash(git:*)
 ---
 
 Enhance a user prompt with project context using AI backends for better, more detailed instructions.
@@ -69,12 +69,12 @@ You are a Senior Developer and Prompt Engineer. Your goal is to enhance the user
 Based on backend selection:
 
 **If "gemini":**
-Use `mcp__unified-ai-mcp__ask-gemini` with:
+Use `mcp__unitAI__ask-gemini` with:
 - `prompt`: the constructed meta-prompt
 - `model`: "gemini-2.5-pro"
 
 **If "droid":**
-Use `mcp__unified-ai-mcp__droid` with:
+Use `mcp__unitAI__droid` with:
 - `prompt`: the constructed meta-prompt
 - `auto`: "low"
 

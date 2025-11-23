@@ -3,7 +3,7 @@
 ## 🎯 Problema Identificato
 
 **Situazione Attuale:**
-- Unified-AI-MCP ha 4 tool generici esposti via MCP
+- unitAI ha 4 tool generici esposti via MCP
 - 9+ workflow potenti ma NASCOSTI dentro `smart-workflows`
 - Documentazione ricca solo locale (docs/enhancement-plan/)
 - AI assistants (Claude) devono "indovinare" capacità e parametri
@@ -24,7 +24,7 @@
 ## 🚀 Obiettivi
 
 ### Obiettivo Primario
-Trasformare unified-ai-mcp in un sistema **self-documenting** e **discoverable**, dove:
+Trasformare unitAI in un sistema **self-documenting** e **discoverable**, dove:
 1. Ogni workflow è un tool MCP separato
 2. AI assistants possono scoprire capacità automaticamente
 3. Documentazione ricca è accessibile via MCP

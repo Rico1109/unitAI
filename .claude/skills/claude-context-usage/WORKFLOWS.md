@@ -63,7 +63,7 @@ Verify architectural impact before committing:
 mcp__claude-context__search_code "code depending on MyFunction" --path /project/path
 
 # If many dependencies, get AI review
-mcp__unified-ai-mcp__ask-gemini --prompt "@changed-file.ts Validate architectural impact"
+mcp__unitAI__ask-gemini --prompt "@changed-file.ts Validate architectural impact"
 ```
 
 ## Advanced Queries

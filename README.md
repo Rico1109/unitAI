@@ -14,7 +14,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
-A unified [Model Context Protocol](https://modelcontextprotocol.io) server that provides seamless access to **Qwen Code**, **Atlassian Rovo Dev**, and **Google Gemini** through a single, elegant interface.
+A unified [Model Context Protocol](https://modelcontextprotocol.io) server that provides seamless access to **Google Gemini**, **Cursor Agent**, and **Factory Droid** through a single, elegant interface.
 
 [Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Tools](#-available-tools) • [Configuration](#-configuration)
 
@@ -32,7 +32,7 @@ A unified [Model Context Protocol](https://modelcontextprotocol.io) server that 
 Single MCP server for multiple AI backends - no need to manage separate connections
 
 ### Agent System
-Specialized agents (Architect, Implementer, Tester) for domain-focused tasks.
+Specialized agents (Architect, Implementer, Tester) for domain-focused tasks using Gemini, Droid, and Cursor.
 
 ### Smart Workflows
 6 powerful, pre-built workflows for common development tasks like pre-commit validation and bug hunting.
@@ -157,7 +157,6 @@ Cursor Agent headless CLI for refactoring, bug fixing, and surgical multi-model 
 - `prompt` *(required)*: Richiesta principale (`@file` per allegare file)
 - `model` *(optional)*: Uno tra `gpt-5.1`, `gpt-5`, `composer-1`, `sonnet-4.5`, `haiku-5`, `deepseek-v3`
 - `outputFormat` *(optional)*: `text` (default) o `json`
-- `projectRoot` *(optional)*: Passato a `--cwd`
 - `files` *(optional)*: Array di percorsi da passare come `--file`
 - `autoApprove` *(optional)*: Abilita `--auto-approve`
 
@@ -167,8 +166,7 @@ Cursor Agent headless CLI for refactoring, bug fixing, and surgical multi-model 
 {
   "prompt": "@src/workflows/parallel-review.workflow.ts Proponi un refactor modulare",
   "model": "sonnet-4.5",
-  "files": ["src/workflows/parallel-review.workflow.ts"],
-  "projectRoot": "/home/dawid/Projects/unitai"
+  "files": ["src/workflows/parallel-review.workflow.ts"]
 }
 ```
 
@@ -321,6 +319,13 @@ The MCP 2.0 update introduces a **Discovery-First Architecture** that enables AI
 | `describe_workflow` | Returns rich documentation, parameters, and examples for a specific workflow |
 | `get_system_instructions` | Returns the complete system manual for self-onboarding |
 
+### Slash Commands
+
+The server supports "Slash Commands" for quick actions (implementation details may vary by client):
+- `/prompt`: Execute a prompt with a specific backend
+- `/check-docs`: Verify documentation coverage
+- `/fix`: Attempt to fix a specific issue
+
 ### Granular Workflow Tools
 
 Each workflow is now exposed as an individual, directly-callable tool:
@@ -358,7 +363,7 @@ Specializes in:
 
 ### ImplementerAgent
 
-**Production-ready code generation using Rovodev with Gemini fallback**
+**Production-ready code generation using Factory Droid (GLM-4.6)**
 
 Specializes in:
 - Production-quality code generation
@@ -368,7 +373,7 @@ Specializes in:
 
 ### TesterAgent
 
-**Fast test generation and validation using Qwen**
+**Fast test generation and validation using Cursor Agent**
 
 Specializes in:
 - Unit test generation
@@ -468,6 +473,19 @@ Control operation approval:
 
 ---
 
+## Resilience & Reliability
+
+### Circuit Breaker
+The system includes a robust **Circuit Breaker** pattern to handle backend failures gracefully.
+- **Automatic Detection**: Detects when a backend is unresponsive or returning errors.
+- **Fast Fail**: Prevents cascading failures by temporarily disabling the problematic backend.
+- **Auto-Recovery**: Periodically checks if the backend has recovered.
+
+### Retry with Fallback
+If a primary backend fails (e.g., Gemini is down), the system automatically retries with a suitable fallback (e.g., Cursor or Qwen), ensuring high availability for your workflows.
+
+---
+
 ## Prerequisites
 
 ### System Requirements
@@ -488,7 +506,7 @@ Install the CLIs for the AI backends you plan to use:
 <th>Verification</th>
 </tr>
 <tr>
-<td><strong>Gemini</strong><br/><em>(Primary)</em></td>
+<td><strong>Gemini</strong><br/><em>(Architect)</em></td>
 <td>
 
 ```bash
@@ -512,7 +530,7 @@ gemini --version
 </td>
 </tr>
 <tr>
-<td><strong>Cursor Agent</strong><br/><em>(Refactoring)</em></td>
+<td><strong>Cursor Agent</strong><br/><em>(Tester/Refactor)</em></td>
 <td>
 
 ```bash
@@ -536,7 +554,7 @@ cursor --version
 </td>
 </tr>
 <tr>
-<td><strong>Factory Droid</strong><br/><em>(Checklists)</em></td>
+<td><strong>Factory Droid</strong><br/><em>(Implementer)</em></td>
 <td>
 
 ```bash

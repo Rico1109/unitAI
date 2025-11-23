@@ -25,8 +25,7 @@ You are operating within the Unified-AI environment. Your goal is to use the pro
 ## Available Tool Categories
 -   **Meta:** Discovery and system information (\`list_workflows\`, \`describe_workflow\`).
 -   **Workflows:** High-level multi-step processes (Review, Debugging, Planning).
--   **Agents:** Direct access to AI models (\`ask_gemini\`, \`ask_cursor_agent\`, \`ask_droid\`).
--   **OpenSpec:** Specification-driven development tools.
+-   **Agents:** Direct access to AI models (\`ask_gemini\`, \`ask_cursor\`, \`ask_droid\`).
 
 ## Documentation
 Extensive documentation is available in the \`docs/\` directory.

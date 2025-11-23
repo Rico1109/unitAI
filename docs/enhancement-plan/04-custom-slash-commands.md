@@ -1,7 +1,7 @@
 # Task 4: Custom Slash Commands for Repetitive Workflows
 
 ## Objective
-Create custom slash commands for frequently used, repetitive tasks to streamline common workflows: session initialization, memory management, commits, documentation checks, and unified-ai-mcp task execution.
+Create custom slash commands for frequently used, repetitive tasks to streamline common workflows: session initialization, memory management, commits, documentation checks, and unitAI task execution.
 
 ## Status
 - [x] Slash commands documentation reviewed
@@ -86,9 +86,9 @@ Create custom slash commands for frequently used, repetitive tasks to streamline
 5. Create git commit with descriptive message
 6. Optionally tag commit in memory system
 
-### 3. Unified-AI-MCP Task Execution
+### 3. unitAI Task Execution
 **Command**: `/ai-task [workflow-name]` or similar
-**Purpose**: Execute predefined unified-ai-mcp workflows
+**Purpose**: Execute predefined unitAI workflows
 **Should support**:
 - List available workflows: `/ai-task list`
 - Execute specific workflow: `/ai-task [name]`
@@ -147,7 +147,7 @@ Create a design document covering:
 3. Integration points with:
    - openmemory / openmemory-cloud
    - serena memories
-   - unified-ai-mcp workflows
+   - unitAI workflows
    - git commands
 4. Documentation plan (how users will learn about commands)
 5. Testing strategy

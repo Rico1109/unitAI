@@ -1,13 +1,13 @@
 ---
 name: infrastructure-analyzer
-description: Use this agent when the user requests a comprehensive review, analysis, or evaluation of existing infrastructure, pipelines, or system architecture. This includes requests to analyze data aggregation pipelines, review current infrastructure setup, evaluate system performance, or assess technical implementations. Examples: <example>Context: User wants to review their current data pipeline infrastructure. user: 'Can you review our current data aggregator pipeline and infrastructure?' assistant: 'I'll use the infrastructure-analyzer agent to conduct a comprehensive analysis of your data aggregation pipeline and infrastructure.' <commentary>Since the user is requesting infrastructure review, use the infrastructure-analyzer agent to perform deep analysis using MCP tools.</commentary></example> <example>Context: User needs evaluation of their Mercury API performance. user: 'Please analyze the performance and architecture of our Mercury API system' assistant: 'Let me use the infrastructure-analyzer agent to perform a thorough analysis of your Mercury API architecture and performance.' <commentary>User is requesting system analysis, so use the infrastructure-analyzer agent to leverage unified-ai-mcp for deep analysis.</commentary></example>
+description: Use this agent when the user requests a comprehensive review, analysis, or evaluation of existing infrastructure, pipelines, or system architecture. This includes requests to analyze data aggregation pipelines, review current infrastructure setup, evaluate system performance, or assess technical implementations. Examples: <example>Context: User wants to review their current data pipeline infrastructure. user: 'Can you review our current data aggregator pipeline and infrastructure?' assistant: 'I'll use the infrastructure-analyzer agent to conduct a comprehensive analysis of your data aggregation pipeline and infrastructure.' <commentary>Since the user is requesting infrastructure review, use the infrastructure-analyzer agent to perform deep analysis using MCP tools.</commentary></example> <example>Context: User needs evaluation of their Mercury API performance. user: 'Please analyze the performance and architecture of our Mercury API system' assistant: 'Let me use the infrastructure-analyzer agent to perform a thorough analysis of your Mercury API architecture and performance.' <commentary>User is requesting system analysis, so use the infrastructure-analyzer agent to leverage unitAI for deep analysis.</commentary></example>
 model: sonnet
 ---
 
 ## ⚠️ Migration Notice (v3.0)
 
 **Updated to use MCP tools** with token-efficient patterns:
-- ✅ `mcp__unified-ai-mcp__ask-gemini` + `ask-qwen` (parallel analysis)
+- ✅ `mcp__unitAI__ask-gemini` + `ask-qwen` (parallel analysis)
 - ✅ `mcp__serena__get_symbols_overview` + `find_symbol` (75-95% token savings)
 - ✅ `mcp__claude-context__search_code` (semantic infrastructure search)
 - ✅ `mcp__context7__get-library-docs` (up-to-date documentation)
@@ -70,10 +70,10 @@ Execute analysis in **parallel** for comprehensive infrastructure review:
 
 ```javascript
 Promise.all([
-  mcp__unified-ai-mcp__ask-gemini({
+  mcp__unitAI__ask-gemini({
     prompt: "@infrastructure-components Deep analysis: 1) Architecture patterns 2) Performance bottlenecks 3) Security vulnerabilities 4) Scalability limits 5) Design decisions"
   }),
-  mcp__unified-ai-mcp__ask-qwen({
+  mcp__unitAI__ask-qwen({
     prompt: "@infrastructure-components Quality check: 1) Code quality issues 2) Configuration problems 3) Integration risks 4) Maintainability concerns"
   })
 ])
@@ -233,8 +233,8 @@ For each recommendation:
 - `mcp__serena__get_symbols_overview` - Infrastructure symbol overview (95% token savings)
 - `mcp__serena__find_symbol` - Targeted component reading (94% token savings)
 - `mcp__serena__find_referencing_symbols` - Dependency analysis (find all usage points)
-- `mcp__unified-ai-mcp__ask-gemini` - Deep infrastructure analysis (architecture, security, scalability)
-- `mcp__unified-ai-mcp__ask-qwen` - Fast quality assessment (configuration, integration, quality)
+- `mcp__unitAI__ask-gemini` - Deep infrastructure analysis (architecture, security, scalability)
+- `mcp__unitAI__ask-qwen` - Fast quality assessment (configuration, integration, quality)
 - `mcp__claude-context__search_code` - Semantic infrastructure pattern search
 - `mcp__context7__resolve-library-id` - Find library documentation IDs
 - `mcp__context7__get-library-docs` - Get up-to-date best practices
@@ -242,7 +242,7 @@ For each recommendation:
 ### File Reference Syntax
 Use `@filename` or `@directory/` to include context in AI prompts:
 ```
-mcp__unified-ai-mcp__ask-gemini --prompt "@src/infrastructure/ Analyze architecture patterns and security"
+mcp__unitAI__ask-gemini --prompt "@src/infrastructure/ Analyze architecture patterns and security"
 ```
 
 ## Example Workflow
@@ -265,10 +265,10 @@ mcp__claude-context__search_code "database connection pooling" --path /project/p
 
 # 5. Parallel deep analysis (complementary perspectives)
 Promise.all([
-  mcp__unified-ai-mcp__ask-gemini({
+  mcp__unitAI__ask-gemini({
     prompt: "@infrastructure-symbols Comprehensive analysis: architecture patterns, security vulnerabilities, scalability limits, performance bottlenecks"
   }),
-  mcp__unified-ai-mcp__ask-qwen({
+  mcp__unitAI__ask-qwen({
     prompt: "@infrastructure-symbols Quality assessment: configuration issues, integration risks, code quality, best practices adherence"
   })
 ])

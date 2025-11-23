@@ -1,13 +1,13 @@
 ---
 name: slash-ai-task
-description: Use /ai-task to execute unified-ai-mcp workflows with simple commands - list available workflows or run specific ones like pre-commit validation, code review, bug hunting, and feature design.
+description: Use /ai-task to execute unitAI workflows with simple commands - list available workflows or run specific ones like pre-commit validation, code review, bug hunting, and feature design.
 ---
 
 # Slash AI Task Skill
 
 ## Purpose
 
-Provides easy access to the full suite of unified-ai-mcp workflows through simple slash commands, eliminating the need to remember complex workflow names and parameters.
+Provides easy access to the full suite of unitAI workflows through simple slash commands, eliminating the need to remember complex workflow names and parameters.
 
 ## Available Workflows
 
@@ -79,7 +79,7 @@ The command automatically parses parameters:
 
 ## Integration Points
 
-- **Workflows**: Direct execution of all `unified-ai-mcp` workflows
+- **Workflows**: Direct execution of all `unitAI` workflows
 - **Backends**: Automatic selection (Gemini, Qwen, Rovodev)
 - **Caching**: Intelligent result caching for repeated operations
 
@@ -93,5 +93,5 @@ The command automatically parses parameters:
 ---
 
 **Skill Status**: Active
-**Workflow Coverage**: All unified-ai-mcp workflows
+**Workflow Coverage**: All unitAI workflows
 **Parameter Support**: Full workflow parameter mapping

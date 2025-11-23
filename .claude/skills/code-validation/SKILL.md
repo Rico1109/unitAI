@@ -50,13 +50,13 @@ Get multiple perspectives on changes:
 
 **Parallel AI review** (for comprehensive validation):
 ```bash
-mcp__unified-ai-mcp__ask-gemini --prompt "@file.ts Validate architecture, security, performance"
-mcp__unified-ai-mcp__ask-qwen --prompt "@file.ts Check quality, edge cases, bugs"
+mcp__unitAI__ask-gemini --prompt "@file.ts Validate architecture, security, performance"
+mcp__unitAI__ask-qwen --prompt "@file.ts Check quality, edge cases, bugs"
 ```
 
 **Single tool review** (for quick checks):
 ```bash
-mcp__unified-ai-mcp__ask-qwen --prompt "@file.ts Quick review: any obvious issues?"
+mcp__unitAI__ask-qwen --prompt "@file.ts Quick review: any obvious issues?"
 ```
 
 ### Plan Verification
@@ -71,8 +71,8 @@ Before implementing, second-guess the approach:
 **MCP tool validation**:
 ```bash
 # Get different perspectives on the plan
-mcp__unified-ai-mcp__ask-gemini --prompt "Review this implementation plan: [details]"
-mcp__unified-ai-mcp__ask-qwen --prompt "Identify edge cases in this approach: [details]"
+mcp__unitAI__ask-gemini --prompt "Review this implementation plan: [details]"
+mcp__unitAI__ask-qwen --prompt "Identify edge cases in this approach: [details]"
 ```
 
 ### Functionality Verification

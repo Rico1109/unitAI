@@ -40,7 +40,7 @@ Optimize the Claude Code hooks and skills system to be less restrictive while ma
 The system should guide Claude to use:
 - **serena**: For code retrieval without reading entire files (avoid 1000+ LOC reads)
 - **claude-context**: For semantic search as first approach to understand context and file relationships
-- **unified-ai-mcp tools**: For complex agentic tasks (details in Task 2)
+- **unitAI tools**: For complex agentic tasks (details in Task 2)
 - **Memory systems**: openmemory, openmemory-cloud, serena memories
 
 ## Instructions for Implementation

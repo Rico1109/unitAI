@@ -66,7 +66,7 @@ This directory contains structured tasks for enhancing the unitai project. Each 
 **Key Areas**:
 - `/init-session` - Initialize work session
 - `/save-commit` - Memory + commit workflow
-- `/ai-task` - Execute unified-ai-mcp workflows
+- `/ai-task` - Execute unitAI workflows
 - `/create-spec` - Specification document creation
 - `/check-docs` - Quick documentation lookup
 
@@ -111,7 +111,7 @@ Task 3 (Advanced Features)
   └─ May influence → All other tasks
 
 Task 4 (Slash Commands)
-  └─ Depends on → Task 2 (needs unified-ai-mcp workflows)
+  └─ Depends on → Task 2 (needs unitAI workflows)
 ```
 
 **Recommended Order**:

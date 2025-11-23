@@ -20,7 +20,7 @@ Advanced usage patterns and techniques for power users of unitai.
 
 ## Recursive MCP Architecture
 
-The unified-ai-mcp tool can invoke other MCP servers from within workflows, creating powerful composition patterns.
+The unitAI tool can invoke other MCP servers from within workflows, creating powerful composition patterns.
 
 ### Pattern: Workflow Calls External MCP
 

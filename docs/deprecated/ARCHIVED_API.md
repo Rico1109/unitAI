@@ -113,7 +113,7 @@ I tool base permettono di interagire direttamente con i backend AI senza orchest
 
 1. Analisi con file reference:
 ```
-mcp__unified-ai-mcp__ask-gemini({
+mcp__unitAI__ask-gemini({
   "prompt": "Analizza @src/utils/tokenEstimator.ts e identifica possibili ottimizzazioni",
   "model": "gemini-2.5-pro"
 })
@@ -121,7 +121,7 @@ mcp__unified-ai-mcp__ask-gemini({
 
 2. Fast analysis con Flash:
 ```
-mcp__unified-ai-mcp__ask-gemini({
+mcp__unitAI__ask-gemini({
   "prompt": "Summarize the main purpose of @docs/PLAN.md",
   "model": "gemini-2.5-flash"
 })
@@ -153,7 +153,7 @@ mcp__unified-ai-mcp__ask-gemini({
 
 1. Security scan:
 ```
-mcp__unified-ai-mcp__ask-qwen({
+mcp__unitAI__ask-qwen({
   "prompt": "Scan @src/** for security vulnerabilities: SQL injection, XSS, hardcoded secrets",
   "model": "qwen3-coder-turbo",
   "approvalMode": "plan"
@@ -162,7 +162,7 @@ mcp__unified-ai-mcp__ask-qwen({
 
 2. Code generation con auto-approval:
 ```
-mcp__unified-ai-mcp__ask-qwen({
+mcp__unitAI__ask-qwen({
   "prompt": "Generate unit tests for @src/utils/tokenEstimator.ts covering edge cases",
   "model": "qwen3-coder-plus",
   "yolo": true
@@ -195,7 +195,7 @@ mcp__unified-ai-mcp__ask-qwen({
 
 1. Safe refactoring con shadow mode:
 ```
-mcp__unified-ai-mcp__ask-rovodev({
+mcp__unitAI__ask-rovodev({
   "prompt": "Refactor @src/workflows/parallel-review.workflow.ts to use Strategy Pattern for backend selection",
   "shadow": true,
   "verbose": true
@@ -204,7 +204,7 @@ mcp__unified-ai-mcp__ask-rovodev({
 
 2. Bug fix implementation:
 ```
-mcp__unified-ai-mcp__ask-rovodev({
+mcp__unitAI__ask-rovodev({
   "prompt": "Fix the shell injection vulnerability in @src/utils/tokenEstimator.ts:104. Use execFile instead of execAsync.",
   "yolo": false
 })
@@ -318,7 +318,7 @@ console.log(`
   - ImplementerAgent: Code generation with Rovodev
   - TesterAgent: Test suite creation with Qwen
   
-  To execute: mcp__unified-ai-mcp__smart-workflows({
+  To execute: mcp__unitAI__smart-workflows({
     workflow: "feature-design",
     params: {
       featureDescription: "OAuth authentication feature",
@@ -926,14 +926,14 @@ logs/
 **Git Hooks**:
 ```bash
 # .git/hooks/pre-commit
-npx unified-ai-mcp workflow run pre-commit-validate --depth thorough
+npx unitAI workflow run pre-commit-validate --depth thorough
 ```
 
 **CI/CD**:
 ```yaml
 # .github/workflows/validate.yml
 - name: Validate Commit
-  run: npx unified-ai-mcp workflow run validate-last-commit
+  run: npx unitAI workflow run validate-last-commit
 ```
 
 **CLI Usage**:

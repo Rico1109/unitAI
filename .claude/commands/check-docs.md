@@ -1,7 +1,7 @@
 ---
 description: Search documentation across multiple sources with optional AI backend analysis
 argument-hint: <topic> [--source auto|local|context7|deepwiki|all] [--backend gemini|cursor|droid]
-allowed-tools: mcp__context7__*, mcp__deepwiki__*, mcp__unified-ai-mcp__ask-gemini, mcp__unified-ai-mcp__ask-cursor, mcp__unified-ai-mcp__droid, Grep, Glob, Read
+allowed-tools: mcp__context7__*, mcp__deepwiki__*, mcp__unitAI__ask-gemini, mcp__unitAI__ask-cursor, mcp__unitAI__droid, Grep, Glob, Read
 ---
 
 Search and analyze documentation from local or external sources.
@@ -80,7 +80,7 @@ If `--backend` is specified, after gathering documentation content:
 
 **For Gemini:**
 ```
-mcp__unified-ai-mcp__ask-gemini with prompt:
+mcp__unitAI__ask-gemini with prompt:
 "Analyze the following documentation about [topic]. Provide insights on:
 - Key concepts and patterns
 - Best practices
@@ -93,7 +93,7 @@ Documentation:
 
 **For Cursor:**
 ```
-mcp__unified-ai-mcp__ask-cursor with prompt:
+mcp__unitAI__ask-cursor with prompt:
 "Review the following documentation about [topic]. Focus on:
 - Code patterns and examples
 - Implementation suggestions
@@ -106,7 +106,7 @@ Documentation:
 
 **For Droid:**
 ```
-mcp__unified-ai-mcp__droid with prompt:
+mcp__unitAI__droid with prompt:
 "Based on the following documentation about [topic], create:
 - Step-by-step implementation guide
 - Operational checklist

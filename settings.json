@@ -1,12 +1,14 @@
 {
   "mcpServers": {
-    "unified-ai-mcp": {
+    "unitAI": {
       "command": "unitai",
       "env": {}
     },
     "openmemory": {
       "command": "node",
-      "args": ["/home/dawid/Projects/unitai/OpenMemory/backend/src/ai/mcp.ts"],
+      "args": [
+        "/home/dawid/Projects/unitai/OpenMemory/backend/src/ai/mcp.ts"
+      ],
       "env": {
         "NODE_ENV": "production",
         "OM_PORT": "8080",

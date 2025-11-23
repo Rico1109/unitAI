@@ -70,7 +70,7 @@ Salva lavoro stabile con validazione automatica, memoria e commit.
 
 ### `/ai-task` - Esecuzione Workflow AI
 
-Esegue workflow unified-ai-mcp con interfaccia semplificata.
+Esegue workflow unitAI con interfaccia semplificata.
 
 ```bash
 /ai-task <sottocomando> [parametri]

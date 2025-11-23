@@ -11,7 +11,7 @@
 1. [Cosa Sono Skills & Hooks](#cosa-sono)
 2. [Skills: Automazione Dichiarativa](#skills)
 3. [Hooks: Automazione Procedurale](#hooks)
-4. [Integrazione con unified-ai-mcp](#integrazione)
+4. [Integrazione con unitAI](#integrazione)
 5. [Best Practices](#best-practices)
 
 ---
@@ -54,12 +54,12 @@ Una **Skill** è un file markdown che Claude legge automaticamente all'avvio, co
 │       └── .claudeignore     # File da ignorare
 ```
 
-### Esempio: SKILL.md per unified-ai-mcp
+### Esempio: SKILL.md per unitAI
 
 ```markdown
 # Unified AI Orchestrator Skill
 
-You are an AI orchestration expert with access to the `unified-ai-mcp` tool.
+You are an AI orchestration expert with access to the `unitAI` tool.
 
 ## Core Capabilities
 
@@ -121,7 +121,7 @@ await serena.replaceSymbolBody("AuthService", improved_code);
 
 ## Decision Framework
 
-### Use unified-ai-mcp when:
+### Use unitAI when:
 ✅ Task requires multiple AI perspectives
 ✅ Need to orchestrate MCP servers autonomously
 ✅ Complex multi-step workflow
@@ -346,7 +346,7 @@ Gli hook possono restituire:
 
 ---
 
-## 🔗 Integrazione con unified-ai-mcp {#integrazione}
+## 🔗 Integrazione con unitAI {#integrazione}
 
 ### Pattern 1: Skill → Tool Invocation
 

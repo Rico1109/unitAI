@@ -312,7 +312,7 @@ export async function suggestOptimalTool(context: ToolContext): Promise<ToolSugg
             recommended: "workflow",
             reason: `Large non-code file (${estimate.loc} lines, ${estimate.estimatedTokens} tokens). Consider using ask-gemini for summarization.`,
             suggestedCommands: [
-              `mcp__unified-ai-mcp__ask-gemini("@${target} Summarize key points")`
+              `mcp__unitAI__ask-gemini("@${target} Summarize key points")`
             ]
           };
         }
@@ -608,11 +608,11 @@ export class TokenSavingsMetrics {
     report += `  • Suggestions followed: ${stats.suggestionsFollowed} (${stats.followRate}%)\n`;
     report += `  • Suggestions ignored: ${stats.suggestionsIgnored}\n`;
     report += `  • Total estimated savings: ${stats.totalEstimatedSavings.toLocaleString()} tokens\n`;
-    
+
     if (stats.totalActualSavings > 0) {
       report += `  • Total actual savings: ${stats.totalActualSavings.toLocaleString()} tokens\n`;
     }
-    
+
     report += `  • Average savings per suggestion: ${stats.averageSavingsPerSuggestion} tokens\n\n`;
 
     if (Object.keys(stats.byBlockedTool).length > 0) {

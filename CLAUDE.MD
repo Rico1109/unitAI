@@ -24,7 +24,7 @@ Multi-AI orchestration MCP server. Stack: TypeScript, Node.js, MCP protocol. Bac
 
 **Use init-session workflow:**
 ```typescript
-mcp__unified-ai-mcp__smart-workflows({
+mcp__unitAI__smart-workflows({
   workflow: "init-session",
   params: {}
 })
@@ -34,7 +34,7 @@ mcp__unified-ai-mcp__smart-workflows({
 - Shows repo status, branch, CLI availability
 
 **Then execute suggested memory queries:**
-- openmemory-search-memories "recent work on unified-ai-mcp"
+- openmemory-search-memories "recent work on unitAI"
 - openmemory-search-memories "<YYYY-MM-DD> <topic>"
 
 ## 3) MCP TOOLS & WORKFLOWS
@@ -51,7 +51,7 @@ mcp__unified-ai-mcp__smart-workflows({
 - mcp__serena__replace_symbol_body / rename_symbol
 - ALWAYS: find_referencing_symbols before edit (impact analysis)
 
-**UNIFIED-AI-MCP** (Parallel analysis)
+**unitAI** (Parallel analysis)
 - ask-gemini: Architecture, best practices, security
 - cursor-agent: Refactor plan, patch chirurgiche, bugfix guidati
 - droid: Checklist autonome, remediation plan
@@ -76,7 +76,7 @@ mcp__unified-ai-mcp__smart-workflows({
 
 **Invocation:**
 ```typescript
-mcp__unified-ai-mcp__smart-workflows({
+mcp__unitAI__smart-workflows({
   workflow: "WORKFLOW_NAME",
   params: { /* see table */ }
 })
@@ -161,7 +161,7 @@ Task({ subagent_type: "AGENT_NAME", prompt: "task description" })
 
 **Automated (ALWAYS use):**
 ```typescript
-mcp__unified-ai-mcp__smart-workflows({
+mcp__unitAI__smart-workflows({
   workflow: "pre-commit-validate",
   params: { depth: "quick" }  // or "thorough" / "paranoid"
 })
@@ -247,10 +247,10 @@ Hook detects patterns → suggests workflow (ask user confirmation before execut
 
 | Pattern | Workflow | Command |
 |---------|----------|---------|
-| "implement\|feature\|create" | feature-design | `mcp__unified-ai-mcp__smart-workflows({ workflow: "feature-design", params: { featureDescription: "...", targetFiles: [...] } })` |
-| "bug\|error\|fix\|broken" | bug-hunt | `mcp__unified-ai-mcp__smart-workflows({ workflow: "bug-hunt", params: { symptoms: "..." } })` |
-| "review\|analyze\|audit" | parallel-review | `mcp__unified-ai-mcp__smart-workflows({ workflow: "parallel-review", params: { files: [...], focus: "quality" } })` |
-| "commit\|validate" | pre-commit-validate | `mcp__unified-ai-mcp__smart-workflows({ workflow: "pre-commit-validate", params: { depth: "thorough" } })` |
+| "implement\|feature\|create" | feature-design | `mcp__unitAI__smart-workflows({ workflow: "feature-design", params: { featureDescription: "...", targetFiles: [...] } })` |
+| "bug\|error\|fix\|broken" | bug-hunt | `mcp__unitAI__smart-workflows({ workflow: "bug-hunt", params: { symptoms: "..." } })` |
+| "review\|analyze\|audit" | parallel-review | `mcp__unitAI__smart-workflows({ workflow: "parallel-review", params: { files: [...], focus: "quality" } })` |
+| "commit\|validate" | pre-commit-validate | `mcp__unitAI__smart-workflows({ workflow: "pre-commit-validate", params: { depth: "thorough" } })` |
 
 **Token Estimation:** LOC × 0.4 → classify (small <300, medium 300-600, large >600) → suggest tool
 

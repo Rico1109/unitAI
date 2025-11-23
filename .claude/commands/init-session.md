@@ -1,7 +1,7 @@
 ---
 description: Initialize development session with context and memory queries
 argument-hint: [--deep] [--no-memory]
-allowed-tools: mcp__unified-ai-mcp__workflow_init_session, mcp__openmemory__*, mcp__openmemory-cloud__*, Bash(git:*)
+allowed-tools: mcp__unitAI__workflow_init_session, mcp__openmemory__*, mcp__openmemory-cloud__*, Bash(git:*)
 ---
 
 Initialize a development session by analyzing the current repository state and suggesting relevant context.
@@ -14,7 +14,7 @@ Initialize a development session by analyzing the current repository state and s
 
 ### Step 1: Execute Init Session Workflow
 
-Use `mcp__unified-ai-mcp__workflow_init_session` with:
+Use `mcp__unitAI__workflow_init_session` with:
 - `autonomyLevel`: "low" if --deep flag is present, otherwise "read-only"
 - `commitCount`: 20 if --deep flag is present, otherwise 10
 

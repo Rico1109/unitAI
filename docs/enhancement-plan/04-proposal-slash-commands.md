@@ -76,7 +76,7 @@ I comandi slash saranno implementati attraverso:
 
 **Sintassi:** `/ai-task <comando> [parametri]`
 
-**Scopo:** Esegue workflow unified-ai-mcp con interfaccia semplificata.
+**Scopo:** Esegue workflow unitAI con interfaccia semplificata.
 
 **Sottocomandi:**
 - `/ai-task list`: Lista workflow disponibili

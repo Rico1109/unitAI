@@ -9,7 +9,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
 
 ---
 
-## 1. Strumenti Principali (`unified-ai-mcp`)
+## 1. Strumenti Principali (`unitAI`)
 
 ### 1.1 ask-gemini
 - **Scopo**: analisi architetturale, lettura di file lunghi, seconda opinione ad alta affidabilità.
@@ -131,7 +131,7 @@ Questa guida è la Single Source of Truth per l’utilizzo degli strumenti MCP e
 ```
 
 ### 3.3 Note operative
-- Impostare `CURSOR_AGENT_TOKEN` e `DROID_API_KEY` nello stesso ambiente di `unified-ai-mcp`.
+- Impostare `CURSOR_AGENT_TOKEN` e `DROID_API_KEY` nello stesso ambiente di `unitAI`.
 - Per workflow con `autonomyLevel=read-only`, Droid blocca `--skip-permissions-unsafe`.
 - Allegare file reali (no glob) quando si usano `files`/`attachments`; Serena è più efficiente per grandi insiemi di file.
 - Usa `ask-gemini` come “secondo parere” quando Cursor/Droid propongono cambi strutturali importanti.

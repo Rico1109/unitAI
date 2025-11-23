@@ -115,7 +115,7 @@ Before Refactoring:
 - `mcp__openmemory__openmemory-add-memory`: Store memory
 - `mcp__openmemory__openmemory-search-memories`: Search memories
 
-### unified-ai-mcp (Toolset)
+### unitAI (Toolset)
 
 **Purpose:** Esporre i tool principali (`ask-gemini`, `ask-cursor`, `droid`, `smart-workflows`) attraverso un unico server MCP.
 
@@ -126,10 +126,10 @@ Before Refactoring:
 - Processi standardizzati (pre-commit, bug-hunt, feature-design, ecc.) tramite `smart-workflows`
 
 **Key Operations:**
-- `mcp__unified-ai-mcp__ask-gemini({ ... })`
-- `mcp__unified-ai-mcp__ask-cursor({ ... })`
-- `mcp__unified-ai-mcp__droid({ ... })`
-- `mcp__unified-ai-mcp__smart-workflows({ workflow: "...", params: { ... } })`
+- `mcp__unitAI__ask-gemini({ ... })`
+- `mcp__unitAI__ask-cursor({ ... })`
+- `mcp__unitAI__droid({ ... })`
+- `mcp__unitAI__smart-workflows({ workflow: "...", params: { ... } })`
 
 **Notes:**
 - Impostare `CURSOR_AGENT_TOKEN` e `DROID_API_KEY` nell'env del server MCP.

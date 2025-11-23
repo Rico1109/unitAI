@@ -1,7 +1,7 @@
 ---
 description: Generate structured specification documents for new features
 argument-hint: "feature description" [--template api|ui|db|full] [--with-design] [--output path]
-allowed-tools: mcp__unified-ai-mcp__workflow_feature_design, Write, Read, Bash(mkdir:*)
+allowed-tools: mcp__unitAI__workflow_feature_design, Write, Read, Bash(mkdir:*)
 ---
 
 Generate structured specification documents for new features with optional architectural analysis.
@@ -52,7 +52,7 @@ Based on the template type, create a specification document:
 ### Step 3: Run Architectural Analysis (if --with-design)
 
 If --with-design flag is present:
-1. Use `mcp__unified-ai-mcp__workflow_feature_design` with:
+1. Use `mcp__unitAI__workflow_feature_design` with:
    - `featureDescription`: the parsed description
    - `targetFiles`: [] (workflow will determine)
    - `architecturalFocus`: "design"

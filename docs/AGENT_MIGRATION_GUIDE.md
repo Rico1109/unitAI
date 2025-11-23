@@ -21,8 +21,8 @@ This document details the comprehensive migration of all agents in `.claude/agen
 
 **Changes**:
 - ❌ Deprecated: `gemini-cli` bash command
-- ✅ Added: `mcp__unified-ai-mcp__ask-gemini`
-- ✅ Added: `mcp__unified-ai-mcp__ask-qwen` for parallel validation
+- ✅ Added: `mcp__unitAI__ask-gemini`
+- ✅ Added: `mcp__unitAI__ask-qwen` for parallel validation
 - ✅ Added: Serena integration guidance (75-80% token savings)
 - ✅ Added: Migration notice warning users about deprecated tools
 - ⚡ Model: Sonnet (retained for complex analysis)
@@ -35,7 +35,7 @@ gemini-cli "analyze src/large-file.ts"
 # New approach (400-1000 tokens, 88% savings)
 mcp__serena__get_symbols_overview --relative_path "src/large-file.ts"
 mcp__serena__find_symbol --name_path "TargetClass" --include_body true
-mcp__unified-ai-mcp__ask-gemini --prompt "@symbols Analyze architecture"
+mcp__unitAI__ask-gemini --prompt "@symbols Analyze architecture"
 ```
 
 **Parallel Execution**:
@@ -54,7 +54,7 @@ Promise.all([
 
 **Changes**:
 - ❌ Deprecated: `gemini-cli` bash command
-- ✅ Added: `mcp__unified-ai-mcp__ask-gemini` + `ask-qwen` (parallel)
+- ✅ Added: `mcp__unitAI__ask-gemini` + `ask-qwen` (parallel)
 - ✅ Added: **Aggressive Serena integration** (75-95% token savings)
 - ✅ Added: 3-phase validation methodology
 - ⚡ Model: Haiku (retained - already optimal for validation)
@@ -94,7 +94,7 @@ Promise.all([
 
 **Changes**:
 - ❌ Deprecated: `gemini-cli` bash command
-- ✅ Added: `mcp__unified-ai-mcp__ask-gemini` + `ask-qwen` (parallel)
+- ✅ Added: `mcp__unitAI__ask-gemini` + `ask-qwen` (parallel)
 - ✅ Added: Serena integration for infrastructure code analysis
 - ✅ Added: Claude-context semantic search for patterns
 - ✅ Added: Context7 for technology documentation
@@ -132,7 +132,7 @@ mcp__context7__get-library-docs --context7CompatibleLibraryID "/tiangolo/fastapi
 
 **Changes**:
 - ❌ Deprecated: `acli rovodev` bash command
-- ✅ Added: `mcp__unified-ai-mcp__ask-rovodev`
+- ✅ Added: `mcp__unitAI__ask-rovodev`
 - ✅ Added: Optional parallel validation (rovodev + gemini + qwen)
 - ✅ Added: File reference syntax (`@filename`) documentation
 - ⚡ **Model: Haiku** (CHANGED from Sonnet - 70% cost reduction)
@@ -177,9 +177,9 @@ Promise.all([
 **Changes**:
 - ❌ Deprecated: `gemini-cli` bash command
 - ❌ Deprecated: `rovodev` bash command
-- ✅ Added: `mcp__unified-ai-mcp__ask-gemini`
-- ✅ Added: `mcp__unified-ai-mcp__ask-qwen` (NEW, fast iteration)
-- ✅ Added: `mcp__unified-ai-mcp__ask-rovodev`
+- ✅ Added: `mcp__unitAI__ask-gemini`
+- ✅ Added: `mcp__unitAI__ask-qwen` (NEW, fast iteration)
+- ✅ Added: `mcp__unitAI__ask-rovodev`
 - ✅ Added: **Parallel execution** of all 3 validators (60-70% time savings)
 - ✅ Added: Serena integration for context gathering
 - ⚡ Model: Sonnet (retained - complex synthesis requires advanced reasoning)
@@ -283,17 +283,17 @@ Time savings: 60-70% reduction
 
 ## MCP Tools Reference
 
-### Unified-AI-MCP (Multi-Model AI)
+### unitAI (Multi-Model AI)
 
 ```bash
 # Gemini: Deep architectural analysis, security review
-mcp__unified-ai-mcp__ask-gemini --prompt "@files/ Analyze architecture and security"
+mcp__unitAI__ask-gemini --prompt "@files/ Analyze architecture and security"
 
 # Qwen: Fast quality checks, edge case detection
-mcp__unified-ai-mcp__ask-qwen --prompt "@files/ Check code quality and edge cases"
+mcp__unitAI__ask-qwen --prompt "@files/ Check code quality and edge cases"
 
 # Rovodev: Production code generation, deployment validation
-mcp__unified-ai-mcp__ask-rovodev --prompt "@files/ Generate production implementation"
+mcp__unitAI__ask-rovodev --prompt "@files/ Generate production implementation"
 ```
 
 **File Reference Syntax**:
@@ -424,8 +424,8 @@ ask-gemini --prompt "@src/auth/ Validate security implementation"
 
 **Do NOT use these tools** (they no longer work):
 
-❌ `gemini-cli` - Replaced by `mcp__unified-ai-mcp__ask-gemini`
-❌ `acli rovodev` - Replaced by `mcp__unified-ai-mcp__ask-rovodev`
+❌ `gemini-cli` - Replaced by `mcp__unitAI__ask-gemini`
+❌ `acli rovodev` - Replaced by `mcp__unitAI__ask-rovodev`
 
 **Migration Path**:
 ```bash
@@ -433,7 +433,7 @@ ask-gemini --prompt "@src/auth/ Validate security implementation"
 gemini-cli "analyze code"
 
 # New
-mcp__unified-ai-mcp__ask-gemini --prompt "@code/ analyze architecture"
+mcp__unitAI__ask-gemini --prompt "@code/ analyze architecture"
 ```
 
 ---

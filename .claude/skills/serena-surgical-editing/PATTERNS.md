@@ -49,7 +49,7 @@ mcp__serena__find_referencing_symbols --name_path "complexFunction" --relative_p
 # → Found: 23 references across 8 files!
 
 # 3. Breaking change? Get AI help
-mcp__unified-ai-mcp__ask-gemini --prompt "@src/core.ts complexFunction has 23 callers. Best refactoring strategy?"
+mcp__unitAI__ask-gemini --prompt "@src/core.ts complexFunction has 23 callers. Best refactoring strategy?"
 
 # 4. Implement strategy (non-breaking if possible)
 mcp__serena__replace_symbol_body --name_path "complexFunction" --relative_path "src/core.ts" --body "..."

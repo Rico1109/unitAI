@@ -8,9 +8,9 @@ color: blue
 ## ⚠️ Migration Notice (v3.0)
 
 **Updated to use MCP tools** with parallel validation for maximum efficiency:
-- ✅ `mcp__unified-ai-mcp__ask-gemini` (replaces gemini-cli)
-- ✅ `mcp__unified-ai-mcp__ask-qwen` (added for fast iteration validation)
-- ✅ `mcp__unified-ai-mcp__ask-rovodev` (replaces rovodev bash command)
+- ✅ `mcp__unitAI__ask-gemini` (replaces gemini-cli)
+- ✅ `mcp__unitAI__ask-qwen` (added for fast iteration validation)
+- ✅ `mcp__unitAI__ask-rovodev` (replaces rovodev bash command)
 - ✅ **Parallel execution**: Run all 3 validators simultaneously (60-70% time savings)
 - ✅ `mcp__serena__*` tools for token-efficient code analysis
 - ✅ `mcp__claude-context__search_code` for semantic discovery
@@ -65,17 +65,17 @@ mcp__context7__get-library-docs --context7CompatibleLibraryID "/redis/redis" --t
 ```javascript
 Promise.all([
   // Validator 1: Gemini (Deep Architecture & Security)
-  mcp__unified-ai-mcp__ask-gemini({
+  mcp__unitAI__ask-gemini({
     prompt: "@relevant-files/ Validate implementation approach for [PLAN]. Analyze: 1) Architectural soundness 2) Security implications 3) Scalability concerns 4) Design pattern appropriateness 5) Integration complexity"
   }),
 
   // Validator 2: Qwen (Quality & Edge Cases)
-  mcp__unified-ai-mcp__ask-qwen({
+  mcp__unitAI__ask-qwen({
     prompt: "@relevant-files/ Review implementation approach for [PLAN]. Check: 1) Code quality concerns 2) Edge cases and failure modes 3) Performance implications 4) Maintenance complexity 5) Testing requirements"
   }),
 
   // Validator 3: Rovodev (Production Implementation)
-  mcp__unified-ai-mcp__ask-rovodev({
+  mcp__unitAI__ask-rovodev({
     prompt: "@relevant-files/ Validate production-readiness for [PLAN]. Assess: 1) Implementation feasibility 2) Production deployment concerns 3) Operational complexity 4) Alternative approaches 5) Risk mitigation strategies"
   })
 ])
@@ -234,9 +234,9 @@ Look for issues only one validator identified:
 ## Tools Available
 
 ### MCP Tools for Validation
-- `mcp__unified-ai-mcp__ask-gemini` - Deep architectural analysis, security review, scalability assessment
-- `mcp__unified-ai-mcp__ask-qwen` - Fast quality checks, edge case detection, performance review
-- `mcp__unified-ai-mcp__ask-rovodev` - Production code generation, deployment validation, operational assessment
+- `mcp__unitAI__ask-gemini` - Deep architectural analysis, security review, scalability assessment
+- `mcp__unitAI__ask-qwen` - Fast quality checks, edge case detection, performance review
+- `mcp__unitAI__ask-rovodev` - Production code generation, deployment validation, operational assessment
 - `mcp__serena__get_symbols_overview` - Symbol-level code overview (95% token savings)
 - `mcp__serena__find_symbol` - Targeted code reading (94% token savings)
 - `mcp__serena__find_referencing_symbols` - Dependency and impact analysis
@@ -247,7 +247,7 @@ Look for issues only one validator identified:
 ### File Reference Syntax
 Use `@filename` or `@directory/` to include context in validator prompts:
 ```
-mcp__unified-ai-mcp__ask-gemini --prompt "@src/auth/ Validate authentication refactor approach"
+mcp__unitAI__ask-gemini --prompt "@src/auth/ Validate authentication refactor approach"
 ```
 
 ## Example Workflow
@@ -271,13 +271,13 @@ mcp__context7__get-library-docs --context7CompatibleLibraryID "/redis/redis" --t
 
 # Phase 2: Parallel Triple Validation (60-70% time savings)
 Promise.all([
-  mcp__unified-ai-mcp__ask-gemini({
+  mcp__unitAI__ask-gemini({
     prompt: "@src/cache/ Validate Redis clustering with automatic failover. Analyze: architecture patterns, security implications, scalability limits, design decisions, integration complexity"
   }),
-  mcp__unified-ai-mcp__ask-qwen({
+  mcp__unitAI__ask-qwen({
     prompt: "@src/cache/ Review Redis clustering approach. Check: code quality, edge cases, failure modes, performance impact, maintenance complexity"
   }),
-  mcp__unified-ai-mcp__ask-rovodev({
+  mcp__unitAI__ask-rovodev({
     prompt: "@src/cache/ Assess Redis clustering production readiness. Evaluate: implementation feasibility, deployment concerns, operational complexity, alternatives, risks"
   })
 ])

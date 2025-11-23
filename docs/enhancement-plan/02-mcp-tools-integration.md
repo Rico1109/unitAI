@@ -54,7 +54,7 @@ Ensure all MCP tools are properly integrated, documented, and optimally configur
 
 ### Tool Usage Patterns to Document
 
-#### unified-ai-mcp tools
+#### unitAI tools
 - **ask-gemini**: For reading long files, folders, entire codebases. Use for second opinions on complex tasks, over-engineering detection
 - **ask-cursor**: Bug fixing, refactoring proposals
 - **droid**: Agentic task execution

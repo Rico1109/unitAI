@@ -7,7 +7,7 @@ model: haiku
 ## ⚠️ Migration Notice (v3.0)
 
 **Updated to use MCP tools** with **Haiku model** for cost efficiency (70% savings vs Sonnet):
-- ✅ `mcp__unified-ai-mcp__ask-gemini` + `ask-qwen` (parallel validation)
+- ✅ `mcp__unitAI__ask-gemini` + `ask-qwen` (parallel validation)
 - ✅ `mcp__serena__find_symbol` (targeted validation, 75% token savings)
 - ✅ `mcp__serena__find_referencing_symbols` (impact analysis)
 
@@ -55,10 +55,10 @@ Execute validation in **parallel** for comprehensive coverage:
 
 ```javascript
 Promise.all([
-  mcp__unified-ai-mcp__ask-gemini({
+  mcp__unitAI__ask-gemini({
     prompt: "@modified-symbols Validate: 1) Architecture consistency 2) Security implications 3) Performance impact 4) Error handling completeness"
   }),
-  mcp__unified-ai-mcp__ask-qwen({
+  mcp__unitAI__ask-qwen({
     prompt: "@modified-symbols Check: 1) Code quality issues 2) Edge cases 3) Potential bugs 4) Integration risks"
   })
 ])
@@ -152,14 +152,14 @@ Prioritized by severity:
 - `mcp__serena__get_symbols_overview` - Symbol-level overview (95% token savings)
 - `mcp__serena__find_symbol` - Targeted function reading (94% token savings)
 - `mcp__serena__find_referencing_symbols` - Impact analysis (find all call sites)
-- `mcp__unified-ai-mcp__ask-gemini` - Deep validation (architecture, security)
-- `mcp__unified-ai-mcp__ask-qwen` - Fast validation (quality, edge cases)
+- `mcp__unitAI__ask-gemini` - Deep validation (architecture, security)
+- `mcp__unitAI__ask-qwen` - Fast validation (quality, edge cases)
 - `mcp__claude-context__search_code` - Semantic search for related code
 
 ### File Reference Syntax
 Use `@filename` to include context in AI prompts:
 ```
-mcp__unified-ai-mcp__ask-gemini --prompt "@src/module.ts Validate error handling"
+mcp__unitAI__ask-gemini --prompt "@src/module.ts Validate error handling"
 ```
 
 ## Example Workflow
@@ -176,10 +176,10 @@ mcp__serena__find_referencing_symbols --name_path "authenticateUser" --relative_
 
 # 4. Parallel AI validation (complementary perspectives)
 Promise.all([
-  mcp__unified-ai-mcp__ask-gemini({
+  mcp__unitAI__ask-gemini({
     prompt: "@auth-symbols Validate: architecture, security, error handling"
   }),
-  mcp__unified-ai-mcp__ask-qwen({
+  mcp__unitAI__ask-qwen({
     prompt: "@auth-symbols Check: edge cases, bugs, integration risks"
   })
 ])

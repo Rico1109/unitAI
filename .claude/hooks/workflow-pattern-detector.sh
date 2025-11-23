@@ -69,7 +69,7 @@ suggest_workflow() {
   echo "Pattern detected: $reason"
   echo ""
   echo "Consider using smart-workflows:"
-  echo "  mcp__unified-ai-mcp__smart-workflows --workflow \"$workflow\""
+  echo "  mcp__unitAI__smart-workflows --workflow \"$workflow\""
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }

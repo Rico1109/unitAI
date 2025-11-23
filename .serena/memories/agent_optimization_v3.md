@@ -11,7 +11,7 @@
 ### Agents Updated (5/5)
 
 1. **gemini-codebase-analyzer.md** (37 → 175 lines)
-   - Replaced gemini-cli with `mcp__unified-ai-mcp__ask-gemini`
+   - Replaced gemini-cli with `mcp__unitAI__ask-gemini`
    - Added `ask-qwen` for parallel validation
    - Added Serena integration (75-80% token savings)
    - Model: Sonnet (retained)
@@ -29,7 +29,7 @@
    - Model: Sonnet (retained)
 
 4. **rovodev-task-handler.md** (80 → 220 lines)
-   - Replaced `acli rovodev` with `mcp__unified-ai-mcp__ask-rovodev`
+   - Replaced `acli rovodev` with `mcp__unitAI__ask-rovodev`
    - Added optional parallel multi-model validation
    - **Model: Haiku** (CHANGED from Sonnet - 70% cost reduction)
    - Rationale: Delegation agent, simple task, rovodev handles heavy lifting
@@ -96,9 +96,9 @@ mcp__serena__find_referencing_symbols --name_path "Function"
 
 ```javascript
 Promise.all([
-  mcp__unified-ai-mcp__ask-gemini({ prompt: "@code/ Architecture, security" }),
-  mcp__unified-ai-mcp__ask-qwen({ prompt: "@code/ Quality, edge cases" }),
-  mcp__unified-ai-mcp__ask-rovodev({ prompt: "@code/ Production readiness" })
+  mcp__unitAI__ask-gemini({ prompt: "@code/ Architecture, security" }),
+  mcp__unitAI__ask-qwen({ prompt: "@code/ Quality, edge cases" }),
+  mcp__unitAI__ask-rovodev({ prompt: "@code/ Production readiness" })
 ])
 ```
 
@@ -108,14 +108,14 @@ Promise.all([
 
 ```bash
 # Include files in prompts without reading manually
-mcp__unified-ai-mcp__ask-gemini --prompt "@src/auth/ Validate security"
+mcp__unitAI__ask-gemini --prompt "@src/auth/ Validate security"
 ```
 
 **Result**: AI reads files selectively, token-efficient
 
 ## MCP Tools Used
 
-### Unified-AI-MCP
+### unitAI
 - `ask-gemini`: Deep reasoning (architecture, security, scalability)
 - `ask-qwen`: Fast iteration (quality, edge cases, performance)
 - `ask-rovodev`: Production code (deployment, implementation)
@@ -137,8 +137,8 @@ mcp__unified-ai-mcp__ask-gemini --prompt "@src/auth/ Validate security"
 ## Deprecated Tools
 
 **Never use these** (removed from all agents):
-- ❌ `gemini-cli` → Use `mcp__unified-ai-mcp__ask-gemini`
-- ❌ `acli rovodev` → Use `mcp__unified-ai-mcp__ask-rovodev`
+- ❌ `gemini-cli` → Use `mcp__unitAI__ask-gemini`
+- ❌ `acli rovodev` → Use `mcp__unitAI__ask-rovodev`
 
 ## Agent Usage Guidelines
 
@@ -202,7 +202,7 @@ mcp__unified-ai-mcp__ask-gemini --prompt "@src/auth/ Validate security"
 
 From previous session analysis:
 - 5/5 agents using deprecated gemini-cli
-- 0% utilization of unified-ai-mcp tools
+- 0% utilization of unitAI tools
 - 80-90% redundancy between agents and skills
 - No parallel execution
 - No Serena integration
@@ -211,7 +211,7 @@ From previous session analysis:
 ### Post-Migration Status
 
 - ✅ 5/5 agents updated with MCP tools
-- ✅ 100% unified-ai-mcp utilization
+- ✅ 100% unitAI utilization
 - ✅ Parallel execution in all applicable agents
 - ✅ Serena integration in all code analysis agents
 - ✅ Model optimization (Haiku for delegation)

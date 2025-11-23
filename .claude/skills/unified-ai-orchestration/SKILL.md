@@ -1,6 +1,6 @@
 ---
 name: unified-ai-orchestration
-description: Multi-model AI analysis via unified-ai-mcp. Use Gemini for architecture, Qwen for quick checks, Rovodev for code generation. Run parallel for comprehensive validation.
+description: Multi-model AI analysis via unitAI. Use Gemini for architecture, Qwen for quick checks, Rovodev for code generation. Run parallel for comprehensive validation.
 relatedSkills:
   - name: code-validation
     when: Part of validation workflow
@@ -14,7 +14,7 @@ relatedSkills:
 
 ## Purpose
 
-Leverage multiple AI backends through unified-ai-mcp MCP server for robust analysis, implementation, and validation.
+Leverage multiple AI backends through unitAI MCP server for robust analysis, implementation, and validation.
 
 ## Model Strengths (Guidelines, Not Rules)
 
@@ -39,8 +39,8 @@ Leverage multiple AI backends through unified-ai-mcp MCP server for robust analy
 ### Parallel Execution (Comprehensive Validation)
 Run Gemini + Qwen simultaneously for different perspectives:
 ```bash
-mcp__unified-ai-mcp__ask-gemini --prompt "@file.ts Validate architecture, security, performance"
-mcp__unified-ai-mcp__ask-qwen --prompt "@file.ts Check quality, edge cases, bugs"
+mcp__unitAI__ask-gemini --prompt "@file.ts Validate architecture, security, performance"
+mcp__unitAI__ask-qwen --prompt "@file.ts Check quality, edge cases, bugs"
 ```
 Use when: pre-commit review, critical changes, multiple perspectives needed
 

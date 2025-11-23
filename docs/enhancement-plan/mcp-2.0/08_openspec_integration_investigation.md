@@ -55,7 +55,7 @@ The unitai has partial OpenSpec integration, but it's **fundamentally broken**:
 - Long-term decision storage
 - Context preservation
 
-**Unified-AI-MCP Workflows:**
+**unitAI Workflows:**
 - `feature-design`: Architect → Implementer → Tester (3-phase)
 - `parallel_review`: Multi-backend validation (Gemini + Cursor + Droid)
 - `triangulated_review`: 3-way cross-validation
@@ -644,7 +644,7 @@ This is a request for thorough investigation and expert architectural guidance.
 
 2. **If Proceeding:**
    - Break down into implementable tasks
-   - Add to unified-ai-mcp roadmap
+   - Add to unitAI roadmap
    - Assign priorities and timeline
 
 3. **If Not Proceeding:**
@@ -657,7 +657,7 @@ This is a request for thorough investigation and expert architectural guidance.
 ## Contact & Collaboration
 
 **Investigation Lead:** [To be assigned to external agentic tool]
-**Stakeholders:** unified-ai-mcp maintainers, MCP 2.0 team
+**Stakeholders:** unitAI maintainers, MCP 2.0 team
 **Timeline:** Investigation to be completed within 1-2 weeks
 **Reporting:** Create follow-up document in `docs/enhancement-plan/mcp-2.0/`
 

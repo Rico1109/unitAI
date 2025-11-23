@@ -15,7 +15,7 @@ Token Waste Analysis
     - The specialized parameters (methodology, domain, etc.) add complexity without real
   benefit
 
-  Immediate savings: ~2.7k tokens (from current unified-ai-mcp)
+  Immediate savings: ~2.7k tokens (from current unitAI)
   Additional savings: ~1k tokens (by not importing brainstorm from gemini)
 
   Essential Tools (Keep These):
@@ -27,7 +27,7 @@ Token Waste Analysis
 
   Optimized Architecture
 
-  // unified-ai-mcp tools (minimal)
+  // unitAI tools (minimal)
   {
     "ask-qwen": "Query Qwen with @file syntax, approval modes",
     "ask-rovodev": "Query Rovodev with shadow/restore modes",
@@ -112,7 +112,7 @@ Token Waste Analysis
 
   That's enough tokens to read ~10-15 additional source files in every conversation! 🎯
 
-  Want me to help implement these optimizations in the unified-ai-mcp codebase?
+  Want me to help implement these optimizations in the unitAI codebase?
 
 ---
 

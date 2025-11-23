@@ -89,7 +89,7 @@ export const STATUS_MESSAGES = {
 } as const;
 
 export const MCP_CONFIG = {
-  SERVER_NAME: "unified-ai-mcp",
+  SERVER_NAME: "unitAI",
   VERSION: "1.0.0",
   CAPABILITIES: {
     tools: {},

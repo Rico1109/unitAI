@@ -261,7 +261,7 @@ LSP-based            Embedding-based    Live libs      GitHub wiki
 
     ═══════════════════════════════════════════════
     🔥 RECURSIVE ARCHITECTURE 🔥
-    unified-ai-mcp CAN INVOKE ALL MCP SERVERS!
+    unitAI CAN INVOKE ALL MCP SERVERS!
     ═══════════════════════════════════════════════
 
     Unified AI MCP ──┐
@@ -276,7 +276,7 @@ LSP-based            Embedding-based    Live libs      GitHub wiki
 
 **Insight Chiave:** `unitai`, essendo esso stesso un MCP server che gira nel contesto di Claude Code, **ha accesso completo a tutti gli altri MCP servers**.
 
-Questo significa che quando Claude invoca uno smart-workflow tramite `unified-ai-mcp`, il workflow può a sua volta invocare:
+Questo significa che quando Claude invoca uno smart-workflow tramite `unitAI`, il workflow può a sua volta invocare:
 - Serena per navigazione semantica
 - claude-context per ricerche
 - context7/deepwiki per documentazione
@@ -330,12 +330,12 @@ async function refactorWithResearch(params) {
 
 Senza architettura ricorsiva:
 ```
-Claude → unified-ai-mcp → [Qwen/Gemini/Rovo] → Response
+Claude → unitAI → [Qwen/Gemini/Rovo] → Response
 ```
 
 Con architettura ricorsiva:
 ```
-Claude → unified-ai-mcp → ┌─> claude-context (ricerca)
+Claude → unitAI → ┌─> claude-context (ricerca)
                           ├─> Serena (analisi simboli)
                           ├─> context7 (docs)
                           ├─> Qwen (quick analysis)
@@ -362,7 +362,7 @@ Claude → unified-ai-mcp → ┌─> claude-context (ricerca)
 | **claude-context** | Code Discovery | Natural language query | Ranked code chunks | "Dove viene gestito X?" | ✅ Sì |
 | **context7** | External Docs | Library name + topic | API documentation | "Come si usa libreria Y?" | ✅ Sì |
 | **deepwiki** | Repo Analysis | GitHub repo | Architecture docs | "Come funziona progetto Z?" | ✅ Sì |
-| **unified-ai-mcp** | AI Execution + Orchestration | Prompt + backend | AI response + MCP calls | Meta-orchestrazione | N/A (è l'orchestratore) |
+| **unitAI** | AI Execution + Orchestration | Prompt + backend | AI response + MCP calls | Meta-orchestrazione | N/A (è l'orchestratore) |
 | **openmemory-local** | Long-term Memory | Content + metadata | Persisted memories | Learning from experience | ✅ Sì |
 
 ### Workflow Pattern: "Implementa Feature Complessa" (Con Recursion)
@@ -375,7 +375,7 @@ User: "Aggiungi autenticazione OAuth a questo progetto"
 Claude invoca: smart-workflows("implement-oauth")
 
 ┌─────────────────────────────────────────────────┐
-│ unified-ai-mcp Workflow: implement-oauth        │
+│ unitAI Workflow: implement-oauth        │
 │ (Esegue TUTTI questi passi autonomamente!)      │
 └─────────────────────────────────────────────────┘
 
@@ -448,7 +448,7 @@ Claude invoca: smart-workflows("implement-oauth")
 |----------|---------------|------------------|--------------|------|----------|
 | Manual (Read all files) | ~45,000 | 0 (Claude fa tutto) | 60% | 15 min | 0% |
 | claude-context only | ~20,000 | 0 (Claude orchestra) | 75% | 10 min | 20% |
-| unified-ai-mcp (no recursion) | ~12,000 | AI exec only | 85% | 8 min | 50% |
+| unitAI (no recursion) | ~12,000 | AI exec only | 85% | 8 min | 50% |
 | **Recursive MCP Stack** | **~500-2000** | **15-20 MCP calls** | **95%+** | **3-5 min** | **90%** |
 
 **Spiegazione:**
@@ -482,11 +482,11 @@ Need external knowledge?
 
 Need AI reasoning?
 ├─ Complex analysis
-│  └─> unified-ai-mcp (Gemini)
+│  └─> unitAI (Gemini)
 ├─ Fast iteration
-│  └─> unified-ai-mcp (Qwen)
+│  └─> unitAI (Qwen)
 └─ Production code
-   └─> unified-ai-mcp (Rovodev)
+   └─> unitAI (Rovodev)
 
 Need to remember for later?
 └─> openmemory-local write_memory
@@ -499,7 +499,7 @@ Need to remember for later?
 claude-context      ✓ Connected  # Semantic search
 deepwiki           ✓ Connected  # GitHub wiki
 context7           ✓ Connected  # API docs
-unified-ai-mcp     ✓ Connected  # Multi-AI exec + MCP orchestrator
+unitAI     ✓ Connected  # Multi-AI exec + MCP orchestrator
 serena             ✓ Connected  # Symbol surgery
 openmemory         ✓ Connected  # Cloud memory
 openmemory-local   ✓ Connected  # Local memory
@@ -509,7 +509,7 @@ openmemory-local   ✓ Connected  # Local memory
 # Serena project: activated (TypeScript)
 
 # 🔥 RECURSIVE CAPABILITY ENABLED 🔥
-# unified-ai-mcp can invoke ALL other MCP servers!
+# unitAI can invoke ALL other MCP servers!
 ```
 
 ### 💡 Implicazioni Architetturali dell'MCP Recursion
@@ -527,7 +527,7 @@ User → Claude → Tool singolo → Response
 
 **Dopo (Con Recursion):**
 ```
-User → Claude → unified-ai-mcp → [Autonomous workflow]
+User → Claude → unitAI → [Autonomous workflow]
                                    ├─> MCP calls
                                    ├─> AI reasoning
                                    ├─> Code edits
