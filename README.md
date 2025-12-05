@@ -6,9 +6,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
-UnitAI is a unified **Model Context Protocol** server designed to orchestrate a multi-agent AI environment. It abstracts the complexity of managing distinct AI connections behind a single interface, allowing for seamless switching, fallback, and parallel execution across five powerful AI backends.
+UnitAI is a unified **Model Context Protocol** server designed primarily **for AI agents (like Claude) to use autonomously**. It abstracts the complexity of managing distinct AI connections behind a single interface, allowing Claude to offload heavy tasks to specialized backends (Gemini, Droid, Qwen) without user intervention.
 
-Unlike traditional tools that rely on static documentation or rigid rule-based systems, UnitAI promotes **iterative agentic coding**. By leveraging intelligent session initialization and context-aware workflows, it transforms the development lifecycle into a collaborative process between the human developer and a specialized team of AI agents. Think of it as automatically using sub-agents, offloading token usage for repetitive tasks, reading long files or folders... while Claude is still the BOSS.
+**This tool is for Claude, not just for you.** Unlike traditional CLI tools, UnitAI allows you to say *"Claude, refactor this entire module"* and have Claude autonomously orchestrate the compilation, error checking, and implementation using its specialized sub-agents. Think of it as automatically using sub-agents, offloading token usage for repetitive tasks, reading long files or folders... while Claude is still the BOSS.
+
+> **💡 Pro Tip:** See **[CLAUDE.MD](CLAUDE.MD)** in this repository for a comprehensive example of the "Iterative Development Workflow" instructions we use to guide Claude. You can adapt this for your own projects!
 
 ## System Architecture
 
@@ -37,7 +39,6 @@ UnitAI is built for reliability. It implements a **Circuit Breaker** pattern com
 
 If a primary backend (e.g., Gemini) becomes unresponsive or fails during a workflow, the system does not simply error out. Instead, it instantly triggers a fallback mechanism, retrying the operation with the next most capable available backend (e.g., Qwen or Cursor) based on the task type. This ensures that your coding sessions remain uninterrupted even when external API conditions are unstable.
 
-System Architecture
 
 ### Autonomy Levels & Permissions
 UnitAI enforces a strict 4-tier permission system (`permissionManager.ts`) to ensure agent safety and control:
@@ -148,10 +149,11 @@ npm install -g @jaggerxtrm/unitai
 > [!TIP]
 > Ensure all CLI tools for your active backends (`gemini`, `droid`, `qwen`, etc.) are installed and accessible in your system PATH.
 
-## Usage
 
 
-## Custom Slash Commands 💻
+## Extras: Custom Slash Commands 💻
+
+*Note: These commands are optional helpers. The core power of UnitAI lies in Claude's autonomous use of the underlying tools.*
 
 UnitAI includes a set of custom interactive commands (`.claude/commands`) that you can add to your project. Simply copy the `.claude/commands` folder to the root of your project to enable them.
 
@@ -200,8 +202,7 @@ Reusable, pre-packaged tool definitions that give the AI specialized capabilitie
 
 **How they work:**
 These scripts are located in your `.claude` folder. When you use the Claude CLI, it automatically loads them to enhance the AI's behavior, making it "smarter" and more context-aware without you having to prompt it explicitly.
- on `src/utils/aiExecutor.ts` to check for concurrency issues."
-> *(Triggers `triangulated-review` workflow)*
+
 
 ## Development
 
