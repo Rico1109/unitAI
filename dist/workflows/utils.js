@@ -6,7 +6,7 @@ import { createPermissionManager, getDefaultAutonomyLevel } from "../utils/permi
 export async function runAIAnalysis(backend, prompt, options = {}, onProgress) {
     try {
         onProgress?.(`Avvio analisi con ${backend}...`);
-        const { onProgress: optionProgress, model, ...restOptions } = options;
+        const { onProgress: optionProgress, ...restOptions } = options;
         const output = await executeAIClient({
             backend,
             prompt,
@@ -18,7 +18,6 @@ export async function runAIAnalysis(backend, prompt, options = {}, onProgress) {
         });
         return {
             backend,
-            model,
             output,
             success: true
         };
@@ -26,7 +25,6 @@ export async function runAIAnalysis(backend, prompt, options = {}, onProgress) {
     catch (error) {
         return {
             backend,
-            model: options.model,
             output: "",
             success: false,
             error: error instanceof Error ? error.message : String(error)
@@ -58,7 +56,7 @@ export function synthesizeResults(results) {
     if (successful.length > 0) {
         synthesis += "## Risultati delle Analisi\n\n";
         successful.forEach(result => {
-            synthesis += `### ${result.backend}${result.model ? ` (${result.model})` : ""}\n\n`;
+            synthesis += `### ${result.backend}\n\n`;
             synthesis += `${result.output}\n\n`;
         });
     }
@@ -66,7 +64,7 @@ export function synthesizeResults(results) {
     if (failed.length > 0) {
         synthesis += "## Errori Rilevati\n\n";
         failed.forEach(result => {
-            synthesis += `### ${result.backend}${result.model ? ` (${result.model})` : ""}\n\n`;
+            synthesis += `### ${result.backend}\n\n`;
             synthesis += `**Errore:** ${result.error}\n\n`;
         });
     }

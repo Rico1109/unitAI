@@ -30,11 +30,9 @@ export declare const CLI: {
         readonly GEMINI: {
             readonly SANDBOX: "-s";
             readonly HELP: "-help";
-            readonly MODEL: "-m";
         };
         readonly CURSOR: {
             readonly PROMPT: "-p";
-            readonly MODEL: "--model";
             readonly OUTPUT: "--output-format";
             readonly PRINT: "--print";
             readonly FORCE: "--force";
@@ -42,7 +40,6 @@ export declare const CLI: {
         };
         readonly DROID: {
             readonly EXEC: "exec";
-            readonly MODEL: "--model";
             readonly AUTO: "--auto";
             readonly OUTPUT: "--output-format";
             readonly SESSION: "--session-id";

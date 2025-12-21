@@ -3,7 +3,6 @@ import type { UnifiedTool } from "./registry.js";
 import { AutonomyLevel } from "../utils/permissionManager.js";
 declare const droidSchema: z.ZodObject<{
     prompt: z.ZodString;
-    model: z.ZodOptional<z.ZodEnum<["glm-4.6"]>>;
     auto: z.ZodDefault<z.ZodEnum<["low", "medium", "high"]>>;
     outputFormat: z.ZodDefault<z.ZodEnum<["text", "json"]>>;
     sessionId: z.ZodOptional<z.ZodString>;
@@ -17,14 +16,12 @@ declare const droidSchema: z.ZodObject<{
     auto: "low" | "medium" | "high";
     skipPermissionsUnsafe: boolean;
     autonomyLevel?: AutonomyLevel | undefined;
-    model?: "glm-4.6" | undefined;
     sessionId?: string | undefined;
     cwd?: string | undefined;
     files?: string[] | undefined;
 }, {
     prompt: string;
     autonomyLevel?: AutonomyLevel | undefined;
-    model?: "glm-4.6" | undefined;
     outputFormat?: "json" | "text" | undefined;
     auto?: "low" | "medium" | "high" | undefined;
     sessionId?: string | undefined;

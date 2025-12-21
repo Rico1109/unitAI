@@ -1,4 +1,4 @@
-import { CLI, AI_MODELS, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../constants.js";
+import { CLI, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../constants.js";
 // Re-export BACKENDS for convenience
 export { BACKENDS };
 import { executeCommand } from "./commandExecutor.js";
@@ -7,14 +7,15 @@ import { logger } from "./logger.js";
  * Execute Gemini CLI with the given options
  */
 export async function executeGeminiCLI(options) {
-    const { prompt, model, sandbox = false, onProgress } = options;
+    const { prompt, sandbox = false, onProgress } = options;
     if (!prompt || !prompt.trim()) {
         throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
     }
     const args = [];
     // Always pass a model: default to PRIMARY if none provided
-    const effectiveModel = model ?? AI_MODELS.GEMINI.PRIMARY;
-    args.push(CLI.FLAGS.GEMINI.MODEL, effectiveModel);
+    // const effectiveModel = model ?? AI_MODELS.GEMINI.PRIMARY;
+    // args.push(CLI.FLAGS.GEMINI.MODEL, effectiveModel);
+    // REMOVED: Rely on CLI default
     // Sandbox flag
     if (sandbox) {
         args.push(CLI.FLAGS.GEMINI.SANDBOX);
@@ -22,7 +23,7 @@ export async function executeGeminiCLI(options) {
     // Prompt as positional argument (FIXED: -p flag is deprecated in Gemini CLI)
     // No need to manually quote - spawn with shell:false handles special characters
     args.push(prompt);
-    logger.info(`Executing Gemini CLI with model: ${effectiveModel}`);
+    logger.info(`Executing Gemini CLI`);
     if (onProgress) {
         onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
     }
@@ -45,7 +46,9 @@ export async function executeGeminiCLI(options) {
  * Execute Cursor Agent CLI with the given options
  */
 export async function executeCursorAgentCLI(options) {
-    const { prompt, model = AI_MODELS.CURSOR_AGENT.GPT_5_1, outputFormat = "text", projectRoot, attachments = [], autoApprove = false, autonomyLevel, onProgress } = options;
+    const { prompt, 
+    // model = AI_MODELS.CURSOR_AGENT.GPT_5_1, // REMOVED
+    outputFormat = "text", projectRoot, attachments = [], autoApprove = false, autonomyLevel, onProgress } = options;
     if (!prompt || !prompt.trim()) {
         throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
     }
@@ -56,9 +59,9 @@ export async function executeCursorAgentCLI(options) {
     if (autoApprove) {
         args.push(CLI.FLAGS.CURSOR.FORCE);
     }
-    if (model) {
-        args.push(CLI.FLAGS.CURSOR.MODEL, model);
-    }
+    // if (model) {
+    //   args.push(CLI.FLAGS.CURSOR.MODEL, model);
+    // }
     if (outputFormat) {
         args.push(CLI.FLAGS.CURSOR.OUTPUT, outputFormat);
     }
@@ -69,7 +72,7 @@ export async function executeCursorAgentCLI(options) {
     }
     // Prompt is the last positional argument
     args.push(prompt);
-    logger.info(`Executing Cursor Agent CLI with model: ${model}`);
+    logger.info(`Executing Cursor Agent CLI`);
     if (onProgress) {
         onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
     }
@@ -94,7 +97,9 @@ export async function executeCursorAgentCLI(options) {
  * Execute Droid CLI (Factory Droid) with the given options
  */
 export async function executeDroidCLI(options) {
-    const { prompt, model = AI_MODELS.DROID.PRIMARY, outputFormat = "text", auto = "low", sessionId, skipPermissionsUnsafe = false, attachments = [], cwd, onProgress } = options;
+    const { prompt, 
+    // model = AI_MODELS.DROID.PRIMARY,
+    outputFormat = "text", auto = "low", sessionId, skipPermissionsUnsafe = false, attachments = [], cwd, onProgress } = options;
     if (!prompt || !prompt.trim()) {
         throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
     }
@@ -103,9 +108,9 @@ export async function executeDroidCLI(options) {
     if (outputFormat) {
         args.push(CLI.FLAGS.DROID.OUTPUT, outputFormat);
     }
-    if (model) {
-        args.push(CLI.FLAGS.DROID.MODEL, model);
-    }
+    // if (model) {
+    //   args.push(CLI.FLAGS.DROID.MODEL, model);
+    // }
     if (auto) {
         args.push(CLI.FLAGS.DROID.AUTO, auto);
     }
@@ -125,7 +130,7 @@ export async function executeDroidCLI(options) {
     }
     // Prompt is positional argument at end
     args.push(prompt);
-    logger.info(`Executing Droid CLI with model: ${model} (auto=${auto})`);
+    logger.info(`Executing Droid CLI (auto=${auto})`);
     if (onProgress) {
         onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
     }

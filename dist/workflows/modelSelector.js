@@ -74,34 +74,36 @@ export function selectOptimalBackend(task, allowedBackends) {
     // Filter out unavailable backends
     const availableCandidates = candidates.filter(b => circuitBreaker.isAvailable(b));
     if (availableCandidates.length === 0) {
-        // If all are down, return a default (likely Cursor) and let the circuit breaker throw the error
+        // If all are down, return a default (likely Gemini or Qwen) and let the circuit breaker throw the error
         // or return the "least failed" one. For now, return primary fallback.
-        return BACKENDS.CURSOR;
+        return BACKENDS.QWEN;
     }
     // Helper to check if a backend is available
     const isAvailable = (b) => availableCandidates.includes(b);
-    // 1. Architectural tasks -> Gemini > Qwen > Cursor
+    // 1. Architectural tasks -> Gemini > Qwen > Droid > Cursor
     if (task.requiresArchitecturalThinking || task.domain === 'architecture') {
         if (isAvailable(BACKENDS.GEMINI))
             return BACKENDS.GEMINI;
         if (isAvailable(BACKENDS.QWEN))
             return BACKENDS.QWEN;
+        if (isAvailable(BACKENDS.DROID))
+            return BACKENDS.DROID;
         return availableCandidates[0];
     }
     // 2. Code generation / Implementation -> Droid > Rovodev > Cursor
     if (task.requiresCodeGeneration && !task.requiresSpeed) {
-        if (isAvailable(BACKENDS.DROID))
-            return BACKENDS.DROID;
-        if (isAvailable(BACKENDS.ROVODEV))
-            return BACKENDS.ROVODEV;
+        if (isAvailable(BACKENDS.QWEN))
+            return BACKENDS.QWEN; // Prefer Qwen over others if Droid/Rovo unavailable
+        if (isAvailable(BACKENDS.CURSOR))
+            return BACKENDS.CURSOR;
         return availableCandidates[0];
     }
     // 3. Debugging / Testing / Refactoring -> Cursor Agent > Qwen
     if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
-        if (isAvailable(BACKENDS.CURSOR))
-            return BACKENDS.CURSOR;
         if (isAvailable(BACKENDS.QWEN))
             return BACKENDS.QWEN;
+        if (isAvailable(BACKENDS.CURSOR))
+            return BACKENDS.CURSOR;
         return availableCandidates[0];
     }
     // 4. Default fallback
@@ -112,10 +114,11 @@ export function selectOptimalBackend(task, allowedBackends) {
  */
 export function selectParallelBackends(task, count = 2) {
     const selections = [];
-    const allBackends = [BACKENDS.CURSOR, BACKENDS.GEMINI, BACKENDS.DROID, BACKENDS.QWEN, BACKENDS.ROVODEV];
+    // Updated Priority: Gemini -> Qwen -> Droid -> Cursor -> Rovodev
+    const allBackends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID, BACKENDS.CURSOR, BACKENDS.ROVODEV];
     const available = allBackends.filter(b => circuitBreaker.isAvailable(b));
     if (available.length === 0)
-        return [BACKENDS.CURSOR]; // Fallback
+        return [BACKENDS.QWEN]; // Fallback to Qwen
     // Strategy: diversify for different strengths
     if (count >= 1) {
         // First choice: optimal backend
@@ -128,13 +131,13 @@ export function selectParallelBackends(task, count = 2) {
         if (remaining.length > 0) {
             // Simple diversification logic
             if (selections[0] === BACKENDS.GEMINI || selections[0] === BACKENDS.QWEN) {
-                // If primary is "thinker", add "doer"
-                const doer = remaining.find(b => b === BACKENDS.DROID || b === BACKENDS.ROVODEV);
-                selections.push(doer || remaining[0]);
+                // If primary is "thinker", add "doer" (Qwen can be both, but prioritize it as secondary to Gemini)
+                const secondary = remaining.find(b => b === BACKENDS.QWEN || b === BACKENDS.DROID);
+                selections.push(secondary || remaining[0]);
             }
             else {
-                // If primary is "doer", add "thinker"
-                const thinker = remaining.find(b => b === BACKENDS.GEMINI || b === BACKENDS.QWEN);
+                // If primary is "doer", add "thinker" (Qwen/Gemini)
+                const thinker = remaining.find(b => b === BACKENDS.QWEN || b === BACKENDS.GEMINI);
                 selections.push(thinker || remaining[0]);
             }
         }
@@ -172,9 +175,9 @@ export function selectFallbackBackend(failedBackend) {
     // Priority order for fallbacks (most reliable first)
     const fallbackOrder = [
         BACKENDS.GEMINI,
-        BACKENDS.CURSOR,
-        BACKENDS.DROID,
         BACKENDS.QWEN,
+        BACKENDS.DROID,
+        BACKENDS.CURSOR,
         BACKENDS.ROVODEV
     ];
     // Filter out the failed backend and unavailable ones
