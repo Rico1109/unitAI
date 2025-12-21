@@ -18,22 +18,14 @@ export const askGeminiTool: UnifiedTool = {
       .describe(
         "Query for Gemini. Use @filename or #filename to include files"
       ),
-    model: z
-      .enum([
-        AI_MODELS.GEMINI.PRIMARY,
-        AI_MODELS.GEMINI.FLASH
-      ])
-      .optional()
-      .describe(
-        `Model to use (default: ${AI_MODELS.GEMINI.PRIMARY})`
-      ),
+    // model: z.enum([...]).optional(), // REMOVED
     sandbox: z
       .boolean()
       .default(false)
       .describe("Sandbox mode for safe execution"),
   }),
   execute: async (args, onProgress) => {
-    const { prompt, model, sandbox } = args;
+    const { prompt, sandbox } = args;
 
     if (!prompt || !prompt.trim()) {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
@@ -42,7 +34,7 @@ export const askGeminiTool: UnifiedTool = {
     const result = await executeAIClient({
       backend: BACKENDS.GEMINI,
       prompt,
-      model,
+      // model,
       sandbox,
       onProgress
     });
@@ -60,11 +52,11 @@ export const askGeminiTool: UnifiedTool = {
           "Query. Use @filename to reference files",
         required: true
       },
-      {
-        name: "model",
-        description: `Model (default: ${AI_MODELS.GEMINI.PRIMARY})`,
-        required: false
-      },
+      // {
+      //   name: "model",
+      //   description: "Model",
+      //   required: false
+      // },
       {
         name: "sandbox",
         description: "Sandbox mode",

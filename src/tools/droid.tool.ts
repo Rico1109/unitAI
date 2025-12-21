@@ -4,17 +4,14 @@ import { executeAIClient } from "../utils/aiExecutor.js";
 import type { UnifiedTool } from "./registry.js";
 import { AutonomyLevel } from "../utils/permissionManager.js";
 
-const droidModels = [AI_MODELS.DROID.PRIMARY] as const;
+// const droidModels = [AI_MODELS.DROID.PRIMARY] as const;
 
 const droidSchema = z.object({
   prompt: z
     .string()
     .min(1)
     .describe("Prompt da passare a droid exec"),
-  model: z
-    .enum(droidModels)
-    .optional()
-    .describe(`Modello GLM (default: ${AI_MODELS.DROID.PRIMARY})`),
+  // model: z.enum(droidModels).optional(), // REMOVED
   auto: z
     .enum(["low", "medium", "high"])
     .default("low")
@@ -55,7 +52,6 @@ export const droidTool: UnifiedTool = {
   execute: async (args, onProgress) => {
     const {
       prompt,
-      model,
       auto,
       outputFormat,
       sessionId,
@@ -78,7 +74,7 @@ export const droidTool: UnifiedTool = {
     return executeAIClient({
       backend: BACKENDS.DROID,
       prompt,
-      model,
+      // model,
       outputFormat,
       auto,
       sessionId,

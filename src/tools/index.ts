@@ -4,7 +4,7 @@
 import { registerTool } from "./registry.js";
 import { askGeminiTool } from "./ask-gemini.tool.js";
 import { smartWorkflowsTool } from "./smart-workflows.tool.js";
-import { cursorAgentTool } from "./ask-cursor.tool.js";
+import { askQwenTool } from "./ask-qwen.tool.js"; // REPLACED cursorAgentTool
 import { droidTool } from "./droid.tool.js";
 import {
   listWorkflowsTool,
@@ -26,7 +26,7 @@ import { initializeWorkflowRegistry } from "../workflows/index.js";
 
 // Register all tools
 registerTool(askGeminiTool);
-registerTool(cursorAgentTool);
+registerTool(askQwenTool); // REPLACED cursorAgentTool
 registerTool(droidTool);
 registerTool(smartWorkflowsTool);
 
@@ -58,7 +58,7 @@ initializeWorkflowRegistry();
 export * from "./registry.js";
 export { askGeminiTool } from "./ask-gemini.tool.js";
 export { smartWorkflowsTool } from "./smart-workflows.tool.js";
-export { cursorAgentTool } from "./ask-cursor.tool.js";
+export { askQwenTool } from "./ask-qwen.tool.js"; // REPLACED cursorAgentTool
 export { droidTool } from "./droid.tool.js";
 
 // Export Meta tools

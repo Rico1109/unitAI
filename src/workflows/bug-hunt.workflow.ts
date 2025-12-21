@@ -215,12 +215,20 @@ Provide root cause analysis and potential side effects.`,
 
   await Promise.all(analysisTasks);
 
-  let cursorHypothesis = '';
-  if (runCursor) {
-    onProgress?.('🧠 Generazione ipotesi con Cursor Agent...');
+  let hypothesis = '';
+  let hypothesisBackend = '';
+
+  if (runQwen) {
+    hypothesisBackend = BACKENDS.QWEN;
+  } else if (runCursor) {
+    hypothesisBackend = BACKENDS.CURSOR;
+  }
+
+  if (hypothesisBackend) {
+    onProgress?.(`🧠 Generazione ipotesi con ${hypothesisBackend}...`);
     try {
-      cursorHypothesis = await executeAIClient({
-        backend: BACKENDS.CURSOR,
+      hypothesis = await executeAIClient({
+        backend: hypothesisBackend,
         prompt: `Agisci come investigatore del codice. Hai i seguenti sintomi e file analizzati.
 Symptoms: ${symptoms}
 Files principali:
@@ -235,7 +243,7 @@ Genera:
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      cursorHypothesis = `Impossibile eseguire Cursor Agent: ${errorMsg}`;
+      hypothesis = `Impossibile eseguire ${hypothesisBackend}: ${errorMsg}`;
     }
   }
 
@@ -324,10 +332,10 @@ ${geminiAnalysis || qwenAnalysis}
 
 ---
 
-${cursorHypothesis ? `---
+${hypothesis ? `---
 
-## Hypothesis Exploration (Cursor Agent)
-${cursorHypothesis}
+## Hypothesis Exploration (Cursor Agent / Qwen)
+${hypothesis}
 ` : ''}
 
 ${remediationPlan ? `---

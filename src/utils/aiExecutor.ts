@@ -13,7 +13,7 @@ export interface AIExecutionOptions {
   backend: string;
   prompt: string;
   // Common options
-  model?: string; // Model name
+  // model?: string; // Model name - DEPRECATED/REMOVED
   sandbox?: boolean; // Sandbox flag (Gemini)
   outputFormat?: "text" | "json"; // Cursor Agent / Droid preferred format
   projectRoot?: string; // Cursor Agent working directory
@@ -34,7 +34,7 @@ export interface AIExecutionOptions {
 export async function executeGeminiCLI(
   options: Omit<AIExecutionOptions, 'backend'>
 ): Promise<string> {
-  const { prompt, model, sandbox = false, onProgress } = options;
+  const { prompt, sandbox = false, onProgress } = options;
 
   if (!prompt || !prompt.trim()) {
     throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
@@ -43,8 +43,9 @@ export async function executeGeminiCLI(
   const args: string[] = [];
 
   // Always pass a model: default to PRIMARY if none provided
-  const effectiveModel = model ?? AI_MODELS.GEMINI.PRIMARY;
-  args.push(CLI.FLAGS.GEMINI.MODEL, effectiveModel);
+  // const effectiveModel = model ?? AI_MODELS.GEMINI.PRIMARY;
+  // args.push(CLI.FLAGS.GEMINI.MODEL, effectiveModel);
+  // REMOVED: Rely on CLI default
 
   // Sandbox flag
   if (sandbox) {
@@ -55,7 +56,7 @@ export async function executeGeminiCLI(
   // No need to manually quote - spawn with shell:false handles special characters
   args.push(prompt);
 
-  logger.info(`Executing Gemini CLI with model: ${effectiveModel}`);
+  logger.info(`Executing Gemini CLI`);
 
   if (onProgress) {
     onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
@@ -83,7 +84,7 @@ export async function executeCursorAgentCLI(
 ): Promise<string> {
   const {
     prompt,
-    model = AI_MODELS.CURSOR_AGENT.GPT_5_1,
+    // model = AI_MODELS.CURSOR_AGENT.GPT_5_1, // REMOVED
     outputFormat = "text",
     projectRoot,
     attachments = [],
@@ -106,9 +107,9 @@ export async function executeCursorAgentCLI(
     args.push(CLI.FLAGS.CURSOR.FORCE);
   }
 
-  if (model) {
-    args.push(CLI.FLAGS.CURSOR.MODEL, model);
-  }
+  // if (model) {
+  //   args.push(CLI.FLAGS.CURSOR.MODEL, model);
+  // }
 
   if (outputFormat) {
     args.push(CLI.FLAGS.CURSOR.OUTPUT, outputFormat);
@@ -123,7 +124,7 @@ export async function executeCursorAgentCLI(
   // Prompt is the last positional argument
   args.push(prompt);
 
-  logger.info(`Executing Cursor Agent CLI with model: ${model}`);
+  logger.info(`Executing Cursor Agent CLI`);
 
   if (onProgress) {
     onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
@@ -156,7 +157,7 @@ export async function executeDroidCLI(
 ): Promise<string> {
   const {
     prompt,
-    model = AI_MODELS.DROID.PRIMARY,
+    // model = AI_MODELS.DROID.PRIMARY,
     outputFormat = "text",
     auto = "low",
     sessionId,
@@ -177,9 +178,9 @@ export async function executeDroidCLI(
     args.push(CLI.FLAGS.DROID.OUTPUT, outputFormat);
   }
 
-  if (model) {
-    args.push(CLI.FLAGS.DROID.MODEL, model);
-  }
+  // if (model) {
+  //   args.push(CLI.FLAGS.DROID.MODEL, model);
+  // }
 
   if (auto) {
     args.push(CLI.FLAGS.DROID.AUTO, auto);
@@ -206,7 +207,7 @@ export async function executeDroidCLI(
   // Prompt is positional argument at end
   args.push(prompt);
 
-  logger.info(`Executing Droid CLI with model: ${model} (auto=${auto})`);
+  logger.info(`Executing Droid CLI (auto=${auto})`);
 
   if (onProgress) {
     onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);

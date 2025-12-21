@@ -28,10 +28,9 @@ export async function runAIAnalysis(
 
     const {
       onProgress: optionProgress,
-      model,
       ...restOptions
     } = options;
-    
+
     const output = await executeAIClient({
       backend,
       prompt,
@@ -41,17 +40,15 @@ export async function runAIAnalysis(
         onProgress?.(`${backend}: ${msg}`);
       }
     });
-    
+
     return {
       backend,
-      model,
       output,
       success: true
     };
   } catch (error) {
     return {
       backend,
-      model: options.model,
       output: "",
       success: false,
       error: error instanceof Error ? error.message : String(error)
@@ -69,8 +66,8 @@ export async function runParallelAnalysis(
   optionsBuilder?: (backend: string) => Partial<Omit<AIExecutionOptions, "backend" | "prompt">>
 ): Promise<ParallelAnalysisResult> {
   onProgress?.(`Avvio analisi parallela con ${backends.length} backend...`);
-  
-  const promises = backends.map(backend => 
+
+  const promises = backends.map(backend =>
     runAIAnalysis(
       backend,
       promptBuilder(backend),
@@ -78,12 +75,12 @@ export async function runParallelAnalysis(
       onProgress
     )
   );
-  
+
   const results = await Promise.all(promises);
-  
+
   // Sintesi dei risultati
   const synthesis = synthesizeResults(results);
-  
+
   return {
     results,
     synthesis
@@ -96,29 +93,29 @@ export async function runParallelAnalysis(
 export function synthesizeResults(results: AIAnalysisResult[]): string {
   const successful = results.filter(r => r.success);
   const failed = results.filter(r => !r.success);
-  
+
   let synthesis = "# Analisi Combinata\n\n";
-  
+
   // Aggiungi risultati riusciti
   if (successful.length > 0) {
     synthesis += "## Risultati delle Analisi\n\n";
-    
+
     successful.forEach(result => {
-      synthesis += `### ${result.backend}${result.model ? ` (${result.model})` : ""}\n\n`;
+      synthesis += `### ${result.backend}\n\n`;
       synthesis += `${result.output}\n\n`;
     });
   }
-  
+
   // Aggiungi errori se presenti
   if (failed.length > 0) {
     synthesis += "## Errori Rilevati\n\n";
-    
+
     failed.forEach(result => {
-      synthesis += `### ${result.backend}${result.model ? ` (${result.model})` : ""}\n\n`;
+      synthesis += `### ${result.backend}\n\n`;
       synthesis += `**Errore:** ${result.error}\n\n`;
     });
   }
-  
+
   return synthesis;
 }
 
@@ -130,7 +127,7 @@ export function buildCodeReviewPrompt(
   focus: ReviewFocus = "all"
 ): string {
   let focusInstructions = "";
-  
+
   switch (focus) {
     case "architecture":
       focusInstructions = `
@@ -184,7 +181,7 @@ Analisi completa del codice includendo:
 `;
       break;
   }
-  
+
   return `
 Analizza i seguenti file: ${files.join(", ")}
 
@@ -214,7 +211,7 @@ File sospetti da analizzare:
 ${suspectedFiles.map(f => `- ${f}`).join("\n")}
 `;
   }
-  
+
   return `
 Sintomi del problema: ${symptoms}
 
@@ -245,7 +242,7 @@ export function formatWorkflowOutput(
   metadata?: Record<string, any>
 ): string {
   let output = `# ${title}\n\n`;
-  
+
   if (metadata) {
     output += "## Metadati\n\n";
     Object.entries(metadata).forEach(([key, value]) => {
@@ -253,9 +250,9 @@ export function formatWorkflowOutput(
     });
     output += "\n";
   }
-  
+
   output += content;
-  
+
   return output;
 }
 
