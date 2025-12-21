@@ -24,9 +24,10 @@
     },
     "unitAI": {
       "type": "stdio",
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/home/dawid/Projects/unitAI/dist/src/index.js"
+        "-y",
+        "@jaggerxtrm/unitai"
       ],
       "env": {}
     },

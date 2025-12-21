@@ -33,12 +33,10 @@ export const CLI = {
     // Gemini specific flags (based on gemini CLI help)
     GEMINI: {
       SANDBOX: "-s",
-      HELP: "-help",
-      MODEL: "-m"
+      HELP: "-help"
     },
     CURSOR: {
       PROMPT: "-p",
-      MODEL: "--model",
       OUTPUT: "--output-format",
       PRINT: "--print",
       FORCE: "--force",
@@ -46,7 +44,6 @@ export const CLI = {
     },
     DROID: {
       EXEC: "exec",
-      MODEL: "--model",
       AUTO: "--auto",
       OUTPUT: "--output-format",
       SESSION: "--session-id",
