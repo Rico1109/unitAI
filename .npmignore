@@ -1,0 +1,99 @@
+# Esclude TUTTO ciò che non è necessario per il funzionamento dell'MCP server
+
+# Python virtual environment (CRITICO!)
+venv/
+env/
+.venv/
+.env/
+
+# Node modules
+node_modules/
+
+# Database e dati locali (generati a runtime)
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+
+# Source files (non necessari a runtime, solo dist/ serve)
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+
+# Test files
+tests/
+test/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+test_*.ts
+test_*.js
+**/__tests__/
+**/__mocks__/
+coverage/
+
+# Development tools e configurazioni
+scripts/
+.vscode/
+.idea/
+.claude/
+.gemini/
+.serena/
+*.7z
+*.zip
+.mcp*.json
+vitest.config.ts
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Documentation (manteniamo solo README.md principale)
+docs/
+CLAUDE.MD
+beta-testing.md
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+circle.yml
+
+# Logs e cache
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+.pnpm-debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts non necessari
+*.tsbuildinfo
+
+# Settings locali
+settings.json
+.env*
+!.env.example
