@@ -28,18 +28,18 @@ describe('AIExecutor', () => {
       expect(result).toBe('Gemini response');
     });
 
-    it('should include model flag when specified', async () => {
+    it('should execute gemini with prompt as positional argument', async () => {
       const mockExecuteCommand = vi.fn().mockResolvedValue('Response');
       vi.doMock('../../src/utils/commandExecutor.js', () => ({
         executeCommand: mockExecuteCommand
       }));
 
       const { executeGeminiCLI } = await import('../../src/utils/aiExecutor.js');
-      await executeGeminiCLI({ prompt: 'Test', model: 'gemini-2.0-flash-exp' });
+      await executeGeminiCLI({ prompt: 'Test prompt' });
 
       const callArgs = mockExecuteCommand.mock.calls[0];
-      expect(callArgs[1]).toContain('-m');
-      expect(callArgs[1]).toContain('gemini-2.0-flash-exp');
+      // Prompt is passed as positional argument (not with -p flag)
+      expect(callArgs[1]).toContain('Test prompt');
     });
 
     it('should throw error for empty prompt', async () => {

@@ -55,7 +55,7 @@ describe('GitHelper', () => {
 
     it('should throw error when not in git repository', async () => {
       mockGitCommand('rev-parse --git-dir', '', 128);
-      
+
       const { getGitRepoInfo } = await import('../../src/utils/gitHelper.js');
       await expect(getGitRepoInfo()).rejects.toThrow('non è un repository Git');
     });
@@ -88,7 +88,7 @@ describe('GitHelper', () => {
 
       mockGitCommands([
         { command: 'rev-parse --git-dir', output: '.git' },
-        { 
+        {
           command: 'show --format=%H|%an|%ad|%s --date=iso HEAD',
           output: 'abc123|John Doe|2024-01-15 10:30:00 +0000|Fix bug\n' + mockDiff
         },
@@ -108,7 +108,7 @@ describe('GitHelper', () => {
 
     it('should throw error when not in git repository', async () => {
       mockGitCommand('rev-parse --git-dir', '', 128);
-      
+
       const { getGitCommitInfo } = await import('../../src/utils/gitHelper.js');
       await expect(getGitCommitInfo()).rejects.toThrow('non è un repository Git');
     });
@@ -122,7 +122,7 @@ describe('GitHelper', () => {
       mockGitCommands([
         { command: 'rev-parse --git-dir', output: '.git' },
         { command: 'log --oneline', output: 'abc123 Commit 1\ndef456 Commit 2' },
-        { 
+        {
           command: 'show --format=%H|%an|%ad|%s --date=iso abc123',
           output: 'abc123|Author1|2024-01-15 10:00:00 +0000|Commit 1\n' + mockDiff1
         },
@@ -148,7 +148,7 @@ describe('GitHelper', () => {
   describe('getStagedDiff', () => {
     it('should return staged changes diff', async () => {
       const mockDiff = createMockGitDiff('src/test.ts', ['+new code'], ['-old code']);
-      
+
       mockGitCommands([
         { command: 'rev-parse --git-dir', output: '.git' },
         { command: 'diff --cached', output: mockDiff }
@@ -196,7 +196,7 @@ describe('GitHelper', () => {
       const available = await checkCLIAvailability();
 
       // Function returns display-friendly keys (used for init-session display)
-      expect(available).toHaveProperty('cursor-agent');
+      expect(available).toHaveProperty('qwen');
       expect(available).toHaveProperty('gemini');
       expect(available).toHaveProperty('droid');
     });
@@ -208,7 +208,7 @@ describe('GitHelper', () => {
       const available = await checkCLIAvailability();
 
       // Function returns display-friendly keys (used for init-session display)
-      expect(available).toHaveProperty('cursor-agent');
+      expect(available).toHaveProperty('qwen');
       expect(available).toHaveProperty('gemini');
       expect(available).toHaveProperty('droid');
     });

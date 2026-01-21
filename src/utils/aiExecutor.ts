@@ -322,18 +322,16 @@ export async function executeQwenCLI(
   }
 
   try {
-    const result = await executeCommand(CLI.COMMANDS.GEMINI.replace("gemini", "qwen"), args, { // Hack: assuming qwen is in path as 'qwen'
-      onProgress,
-      timeout: 600000
-    });
-    // Correction: The command is just 'qwen'
-    // Re-doing the command execution cleanly:
-
-    return await executeCommand("qwen", args, {
+    const result = await executeCommand("qwen", args, {
       onProgress,
       timeout: 600000
     });
 
+    if (onProgress) {
+      onProgress(STATUS_MESSAGES.COMPLETED);
+    }
+
+    return result;
   } catch (error) {
     if (onProgress) {
       onProgress(STATUS_MESSAGES.FAILED);

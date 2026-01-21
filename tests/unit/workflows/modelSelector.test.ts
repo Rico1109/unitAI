@@ -3,19 +3,19 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { 
-  selectOptimalBackend, 
+import {
+  selectOptimalBackend,
   selectParallelBackends,
   recordBackendUsage,
   getBackendStats,
   createTaskCharacteristics,
-  type TaskCharacteristics 
+  type TaskCharacteristics
 } from '../../../src/workflows/modelSelector.js';
 import { BACKENDS } from '../../../src/utils/aiExecutor.js';
 
 describe('Model Selector', () => {
   describe('selectOptimalBackend', () => {
-    it('should select Cursor for fast + low complexity tasks', () => {
+    it('should select Qwen for fast + low complexity tasks', () => {
       const task: TaskCharacteristics = {
         complexity: 'low',
         tokenBudget: 5000,
@@ -26,7 +26,7 @@ describe('Model Selector', () => {
       };
 
       const backend = selectOptimalBackend(task);
-      expect(backend).toBe(BACKENDS.CURSOR);
+      expect(backend).toBe(BACKENDS.QWEN);
     });
 
     it('should select Gemini for architectural thinking', () => {
@@ -43,7 +43,7 @@ describe('Model Selector', () => {
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
-    it('should select Droid for code generation + high complexity', () => {
+    it('should select Qwen for code generation + high complexity', () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 40000,
@@ -54,10 +54,10 @@ describe('Model Selector', () => {
       };
 
       const backend = selectOptimalBackend(task);
-      expect(backend).toBe(BACKENDS.DROID);
+      expect(backend).toBe(BACKENDS.QWEN);
     });
 
-    it('should select by domain: security -> Cursor', () => {
+    it('should select by domain: security -> Qwen', () => {
       const task: TaskCharacteristics = {
         complexity: 'medium',
         tokenBudget: 20000,
@@ -69,7 +69,7 @@ describe('Model Selector', () => {
       };
 
       const backend = selectOptimalBackend(task);
-      expect(backend).toBe(BACKENDS.CURSOR);
+      expect(backend).toBe(BACKENDS.QWEN);
     });
 
     it('should select by domain: architecture -> Gemini', () => {
@@ -87,7 +87,7 @@ describe('Model Selector', () => {
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
-    it('should select by domain: debugging -> Cursor', () => {
+    it('should select by domain: debugging -> Qwen', () => {
       const task: TaskCharacteristics = {
         complexity: 'medium',
         tokenBudget: 30000,
@@ -99,7 +99,7 @@ describe('Model Selector', () => {
       };
 
       const backend = selectOptimalBackend(task);
-      expect(backend).toBe(BACKENDS.CURSOR);
+      expect(backend).toBe(BACKENDS.QWEN);
     });
 
     it('should respect allowed backends constraint', () => {
@@ -112,9 +112,9 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      // Only CURSOR and DROID are allowed, so one of them should be selected
-      const backend = selectOptimalBackend(task, [BACKENDS.CURSOR, BACKENDS.DROID]);
-      expect([BACKENDS.CURSOR, BACKENDS.DROID]).toContain(backend);
+      // Only QWEN and DROID are allowed, so one of them should be selected
+      const backend = selectOptimalBackend(task, [BACKENDS.QWEN, BACKENDS.DROID]);
+      expect([BACKENDS.QWEN, BACKENDS.DROID]).toContain(backend);
     });
   });
 
@@ -134,7 +134,7 @@ describe('Model Selector', () => {
       expect(new Set(backends).size).toBe(2); // No duplicates
     });
 
-    it('should complement Gemini with Droid', () => {
+    it('should complement Gemini with Qwen', () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -146,7 +146,7 @@ describe('Model Selector', () => {
 
       const backends = selectParallelBackends(task, 2);
       expect(backends[0]).toBe(BACKENDS.GEMINI);
-      expect(backends[1]).toBe(BACKENDS.DROID);
+      expect(backends[1]).toBe(BACKENDS.QWEN);
     });
 
     it('should select up to 3 backends', () => {
@@ -192,7 +192,7 @@ describe('Model Selector', () => {
   describe('createTaskCharacteristics', () => {
     it('should create characteristics for parallel-review', () => {
       const task = createTaskCharacteristics('parallel-review');
-      
+
       expect(task.complexity).toBe('high');
       expect(task.requiresArchitecturalThinking).toBe(true);
       expect(task.domain).toBe('architecture');
@@ -200,14 +200,14 @@ describe('Model Selector', () => {
 
     it('should create characteristics for pre-commit-validate', () => {
       const task = createTaskCharacteristics('pre-commit-validate');
-      
+
       expect(task.requiresSpeed).toBe(true);
       expect(task.domain).toBe('security');
     });
 
     it('should create characteristics for bug-hunt', () => {
       const task = createTaskCharacteristics('bug-hunt');
-      
+
       expect(task.complexity).toBe('high');
       expect(task.domain).toBe('debugging');
     });
@@ -217,7 +217,7 @@ describe('Model Selector', () => {
         complexity: 'low',
         requiresSpeed: true
       });
-      
+
       expect(task.complexity).toBe('low');
       expect(task.requiresSpeed).toBe(true);
       expect(task.requiresArchitecturalThinking).toBe(true); // Preserved from default
