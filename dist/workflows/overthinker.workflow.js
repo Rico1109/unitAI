@@ -2,7 +2,8 @@ import { z } from "zod";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/permissionManager.js";
-import { writeFileSync, existsSync, readFileSync } from "fs";
+import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
 /**
  * Overthinker Workflow
  *
@@ -16,7 +17,7 @@ const overthinkerSchema = z.object({
     contextFiles: z.array(z.string()).optional()
         .describe("List of file paths to provide as context"),
     outputFile: z.string().optional().default("overthinking.md")
-        .describe("Filename for the final output"),
+        .describe("Filename for the final output (saved under .unitai/ unless absolute path provided)"),
     modelOverride: z.string().optional()
         .describe("Specific model/backend to use for all steps (default: auto)"),
     autonomyLevel: z.nativeEnum(AutonomyLevel).optional()
@@ -210,8 +211,18 @@ ${content}
     }
     // Save to file
     try {
-        writeFileSync(outputFile, finalDocument);
-        onProgress?.(`💾 Saved final output to: ${outputFile}`);
+        const outputDir = ".unitai";
+        const finalOutputPath = outputFile.includes("/") ? outputFile : join(outputDir, outputFile);
+        if (!existsSync(dirname(finalOutputPath))) {
+            try {
+                mkdirSync(dirname(finalOutputPath), { recursive: true });
+            }
+            catch (e) {
+                onProgress?.(`⚠️ Could not create directory for ${finalOutputPath}`);
+            }
+        }
+        writeFileSync(finalOutputPath, finalDocument);
+        onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
     }
     catch (e) {
         onProgress?.(`⚠️ Could not write file: ${e.message}`);
