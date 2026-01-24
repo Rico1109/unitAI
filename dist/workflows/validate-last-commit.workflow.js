@@ -3,6 +3,7 @@ import { BACKENDS } from "../constants.js";
 import { getGitCommitInfo, isGitRepository } from "../utils/gitHelper.js";
 import { runParallelAnalysis, formatWorkflowOutput } from "./utils.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
+import { getDependencies } from '../dependencies.js';
 /**
  * Schema Zod per il workflow validate-last-commit
  */
@@ -108,9 +109,10 @@ Come Qwen, fornisci un'analisi logica:
     };
     // Esecuzione dell'analisi parallela
     onProgress?.("Avvio analisi parallela...");
+    const { circuitBreaker } = getDependencies();
     const task = createTaskCharacteristics('review');
     task.requiresArchitecturalThinking = true; // Commit validation often needs architectural context
-    const backendsToUse = selectParallelBackends(task, 2);
+    const backendsToUse = selectParallelBackends(task, circuitBreaker, 2);
     const analysisResult = await runParallelAnalysis(backendsToUse, promptBuilder, onProgress);
     // Analisi dei risultati
     const successful = analysisResult.results.filter(r => r.success);

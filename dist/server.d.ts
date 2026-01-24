@@ -11,6 +11,10 @@ export declare class UnitAIServer {
      */
     start(): Promise<void>;
     /**
+     * Setup graceful shutdown handlers for SIGINT and SIGTERM
+     */
+    private setupShutdownHandlers;
+    /**
      * Graceful shutdown
      */
     stop(): Promise<void>;

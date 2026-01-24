@@ -165,7 +165,7 @@ export async function executeDroidCLI(options) {
         throw error;
     }
 }
-import { circuitBreaker } from "./circuitBreaker.js";
+import { getDependencies } from "../dependencies.js";
 import { selectFallbackBackend } from "../workflows/modelSelector.js";
 /**
  * Execute Rovodev CLI with the given options
@@ -267,6 +267,7 @@ export async function executeSimpleCommand(command, args = []) {
  */
 export async function executeAIClient(options, retryConfig) {
     const { backend, ...rest } = options;
+    const { circuitBreaker } = getDependencies();
     // Initialize retry config
     const config = retryConfig || {
         maxRetries: 2,
@@ -279,7 +280,7 @@ export async function executeAIClient(options, retryConfig) {
     if (!circuitBreaker.isAvailable(backend)) {
         logger.warn(`Backend ${backend} is currently unavailable (Circuit Open).`);
         if (config.currentRetry < config.maxRetries) {
-            const fallback = selectFallbackBackend(backend);
+            const fallback = selectFallbackBackend(backend, circuitBreaker);
             // Avoid retrying already-tried backends
             if (config.triedBackends.includes(fallback)) {
                 const msg = `All available backends have been tried: ${config.triedBackends.join(', ')}`;
@@ -331,7 +332,7 @@ export async function executeAIClient(options, retryConfig) {
         }
         // Retry with fallback if we haven't exhausted retries
         if (config.currentRetry < config.maxRetries) {
-            const fallback = selectFallbackBackend(backend);
+            const fallback = selectFallbackBackend(backend, circuitBreaker);
             // Avoid retrying already-tried backends
             if (config.triedBackends.includes(fallback)) {
                 logger.error(`Fallback ${fallback} was already tried. Exhausted options.`);

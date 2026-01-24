@@ -3,6 +3,7 @@ import { BACKENDS } from "../constants.js";
 import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
 import { generateWorkflowId, structuredLogger } from "../utils/structuredLogger.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
+import { getDependencies } from '../dependencies.js';
 /**
  * Schema Zod per il workflow parallel-review
  */
@@ -102,6 +103,7 @@ Come Qwen, fornisci un'analisi logica e strutturata:
     }
     else {
         // Dynamic selection
+        const { circuitBreaker } = getDependencies();
         const task = createTaskCharacteristics('review');
         // Map focus to task characteristics
         if (focus === 'architecture')
@@ -109,7 +111,7 @@ Come Qwen, fornisci un'analisi logica e strutturata:
         if (focus === 'security')
             task.domain = 'security';
         const count = strategy === "double-check" ? 3 : 2;
-        backendsToUse = selectParallelBackends(task, count);
+        backendsToUse = selectParallelBackends(task, circuitBreaker, count);
     }
     logger.step('parallel-analysis-start', 'Starting parallel analysis', {
         backends: backendsToUse

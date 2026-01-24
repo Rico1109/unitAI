@@ -65,11 +65,7 @@ const backendStats = new BackendStats();
 /**
  * Select optimal backend based on task characteristics
  */
-import { circuitBreaker } from '../utils/circuitBreaker.js';
-/**
- * Select optimal backend based on task characteristics
- */
-export function selectOptimalBackend(task, allowedBackends) {
+export function selectOptimalBackend(task, circuitBreaker, allowedBackends) {
     const candidates = allowedBackends || Object.values(BACKENDS);
     // Filter out unavailable backends
     const availableCandidates = candidates.filter(b => circuitBreaker.isAvailable(b));
@@ -112,7 +108,7 @@ export function selectOptimalBackend(task, allowedBackends) {
 /**
  * Select multiple backends for parallel analysis
  */
-export function selectParallelBackends(task, count = 2) {
+export function selectParallelBackends(task, circuitBreaker, count = 2) {
     const selections = [];
     // Updated Priority: Gemini -> Qwen -> Droid -> Rovodev
     const allBackends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID, BACKENDS.ROVODEV];
@@ -122,7 +118,7 @@ export function selectParallelBackends(task, count = 2) {
     // Strategy: diversify for different strengths
     if (count >= 1) {
         // First choice: optimal backend
-        const primary = selectOptimalBackend(task, available);
+        const primary = selectOptimalBackend(task, circuitBreaker, available);
         selections.push(primary);
     }
     if (count >= 2 && selections.length < count) {
@@ -171,7 +167,7 @@ export function getBackendStats() {
  * Select a fallback backend when the primary fails
  * Returns a different backend from the failed one, prioritizing by reliability
  */
-export function selectFallbackBackend(failedBackend) {
+export function selectFallbackBackend(failedBackend, circuitBreaker) {
     // Priority order for fallbacks (most reliable first)
     const fallbackOrder = [
         BACKENDS.GEMINI,

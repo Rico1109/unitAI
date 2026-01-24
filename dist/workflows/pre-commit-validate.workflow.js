@@ -11,6 +11,7 @@
 import { z } from 'zod';
 import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
 import { selectOptimalBackend, createTaskCharacteristics } from './modelSelector.js';
+import { getDependencies } from '../dependencies.js';
 import { getStagedDiff } from '../utils/gitHelper.js';
 import { formatWorkflowOutput } from './utils.js';
 import { logAudit } from '../utils/auditTrail.js';
@@ -61,9 +62,10 @@ Produci un piano strutturato con:
 2. Step consigliati (max 5)
 3. Verifiche automatiche suggerite
 4. Rischi residui`;
+    const { circuitBreaker } = getDependencies();
     const task = createTaskCharacteristics('implementation');
     task.requiresCodeGeneration = true;
-    const backend = selectOptimalBackend(task);
+    const backend = selectOptimalBackend(task, circuitBreaker);
     return executeAIClient({
         backend,
         prompt,
@@ -106,7 +108,8 @@ Format as JSON:
 }`;
     const task = createTaskCharacteristics('security');
     task.domain = 'security';
-    const backend = selectOptimalBackend(task);
+    const { circuitBreaker } = getDependencies();
+    const backend = selectOptimalBackend(task, circuitBreaker);
     return await executeAIClient({
         backend,
         prompt
@@ -143,7 +146,8 @@ Respond with JSON:
   "positives": [string]
 }`;
     const task = createTaskCharacteristics('review');
-    const backend = selectOptimalBackend(task);
+    const { circuitBreaker } = getDependencies();
+    const backend = selectOptimalBackend(task, circuitBreaker);
     return await executeAIClient({
         backend,
         prompt
@@ -177,7 +181,8 @@ Respond with JSON:
 }`;
     const task = createTaskCharacteristics('architecture');
     task.requiresArchitecturalThinking = true;
-    const backend = selectOptimalBackend(task);
+    const { circuitBreaker } = getDependencies();
+    const backend = selectOptimalBackend(task, circuitBreaker);
     return await executeAIClient({
         backend,
         prompt

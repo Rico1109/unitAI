@@ -76,12 +76,38 @@ export class UnitAIServer {
             const transport = new StdioServerTransport();
             await this.server.connect(transport);
             logger.info("UnitAI MCP Server started (Stdio)");
+            this.setupShutdownHandlers();
         }
         catch (error) {
             logger.error("Failed to start server", error);
-            closeDependencies();
+            await this.stop();
             process.exit(1);
         }
+    }
+    /**
+     * Setup graceful shutdown handlers for SIGINT and SIGTERM
+     */
+    setupShutdownHandlers() {
+        const shutdown = async (signal) => {
+            logger.info(`Received ${signal}, initiating graceful shutdown...`);
+            // Set a timeout to force exit if graceful shutdown takes too long
+            const forceExitTimeout = setTimeout(() => {
+                logger.warn("Graceful shutdown grace period expired, forcing exit");
+                process.exit(1);
+            }, 10000); // 10 second grace period
+            try {
+                await this.stop();
+                clearTimeout(forceExitTimeout);
+                process.exit(0);
+            }
+            catch (error) {
+                logger.error("Error during shutdown", error);
+                clearTimeout(forceExitTimeout);
+                process.exit(1);
+            }
+        };
+        process.on('SIGINT', () => shutdown('SIGINT'));
+        process.on('SIGTERM', () => shutdown('SIGTERM'));
     }
     /**
      * Graceful shutdown

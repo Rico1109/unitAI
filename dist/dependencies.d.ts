@@ -4,10 +4,12 @@
  * Manages the lifecycle and injection of services, repositories, and databases.
  */
 import Database from 'better-sqlite3';
+import { CircuitBreaker } from './utils/circuitBreaker.js';
 export interface AppDependencies {
     activityDb: Database.Database;
     auditDb: Database.Database;
     tokenDb: Database.Database;
+    circuitBreaker: CircuitBreaker;
 }
 /**
  * Initialize all system dependencies

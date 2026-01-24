@@ -9,6 +9,7 @@ import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
 import { formatWorkflowOutput } from './utils.js';
 import { selectParallelBackends, createTaskCharacteristics } from './modelSelector.js';
 import { logAudit } from '../utils/auditTrail.js';
+import { getDependencies } from '../dependencies.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 /**
@@ -128,10 +129,11 @@ List only file paths, one per line, in order of likelihood.`
         .filter(f => existsSync(f))
         .map(f => ({ path: f, content: readFileSync(f, 'utf-8') }));
     // Dynamic Backend Selection
+    const { circuitBreaker } = getDependencies();
     const task = createTaskCharacteristics('bug-hunt');
     const selectedBackends = backendOverrides && backendOverrides.length > 0
         ? backendOverrides
-        : selectParallelBackends(task, 3); // Try to get up to 3 backends
+        : selectParallelBackends(task, circuitBreaker, 3); // Try to get up to 3 backends
     const runGemini = selectedBackends.includes(BACKENDS.GEMINI);
     const runCursor = selectedBackends.includes(BACKENDS.CURSOR);
     const runDroid = selectedBackends.includes(BACKENDS.DROID);

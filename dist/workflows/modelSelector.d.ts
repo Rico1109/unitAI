@@ -24,11 +24,15 @@ export interface BackendMetrics {
 /**
  * Select optimal backend based on task characteristics
  */
-export declare function selectOptimalBackend(task: TaskCharacteristics, allowedBackends?: string[]): string;
+import type { CircuitBreaker } from '../utils/circuitBreaker.js';
+/**
+ * Select optimal backend based on task characteristics
+ */
+export declare function selectOptimalBackend(task: TaskCharacteristics, circuitBreaker: CircuitBreaker, allowedBackends?: string[]): string;
 /**
  * Select multiple backends for parallel analysis
  */
-export declare function selectParallelBackends(task: TaskCharacteristics, count?: number): string[];
+export declare function selectParallelBackends(task: TaskCharacteristics, circuitBreaker: CircuitBreaker, count?: number): string[];
 /**
  * Record backend usage for learning
  */
@@ -41,7 +45,7 @@ export declare function getBackendStats(): BackendMetrics[];
  * Select a fallback backend when the primary fails
  * Returns a different backend from the failed one, prioritizing by reliability
  */
-export declare function selectFallbackBackend(failedBackend: string): string;
+export declare function selectFallbackBackend(failedBackend: string, circuitBreaker: CircuitBreaker): string;
 /**
  * Get recommendations for backend selection
  */

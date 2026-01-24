@@ -30,9 +30,10 @@ const AI_BACKEND_COMMANDS = new Set([
 ]);
 
 // SECURITY: Dangerous argument patterns that indicate injection attempts
-// NOTE: More relaxed for AI backend prompts (they use shell:false)
+// NOTE: Since we use shell:false, only truly dangerous patterns are blocked
+// Pipe (|) is safe because shell:false prevents shell interpretation
 const DANGEROUS_PATTERNS = [
-  /[;&|`]/,        // Shell metacharacters (removed $ and () for prompts)
+  /[;&`]/,         // Command chaining characters (removed | as it's safe with shell:false)
   /\.\.\//,        // Path traversal
 ];
 

@@ -7,6 +7,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { logger } from './utils/logger.js';
+import { CircuitBreaker } from './utils/circuitBreaker.js';
 let dependencies = null;
 /**
  * Initialize all system dependencies
@@ -36,10 +37,14 @@ export function initializeDependencies() {
     logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
     const tokenDb = new Database(tokenDbPath);
     tokenDb.pragma('journal_mode = WAL');
+    // Initialize Circuit Breaker with audit database for state persistence
+    logger.debug("Initializing Circuit Breaker");
+    const circuitBreaker = new CircuitBreaker(3, 5 * 60 * 1000, auditDb);
     dependencies = {
         activityDb,
         auditDb,
-        tokenDb
+        tokenDb,
+        circuitBreaker
     };
     return dependencies;
 }
@@ -58,9 +63,32 @@ export function getDependencies() {
 export function closeDependencies() {
     if (dependencies) {
         logger.info("Closing dependencies...");
-        dependencies.activityDb.close();
-        dependencies.auditDb.close();
-        dependencies.tokenDb.close();
+        // Persist circuit breaker state before closing
+        try {
+            dependencies.circuitBreaker.shutdown();
+        }
+        catch (error) {
+            logger.error("Error persisting circuit breaker state during shutdown", error);
+        }
+        // Close databases with individual error handling
+        try {
+            dependencies.activityDb.close();
+        }
+        catch (error) {
+            logger.error("Error closing activity database", error);
+        }
+        try {
+            dependencies.auditDb.close();
+        }
+        catch (error) {
+            logger.error("Error closing audit database", error);
+        }
+        try {
+            dependencies.tokenDb.close();
+        }
+        catch (error) {
+            logger.error("Error closing token database", error);
+        }
         dependencies = null;
     }
 }
