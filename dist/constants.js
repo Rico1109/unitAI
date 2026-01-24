@@ -17,6 +17,9 @@ export const AI_MODELS = {
     },
     DROID: {
         PRIMARY: "glm-4.6"
+    },
+    VIBE: {
+        PRIMARY: "mistral-vibe"
     }
 };
 export const CLI = {
@@ -24,6 +27,7 @@ export const CLI = {
         GEMINI: "gemini",
         CURSOR_AGENT: "cursor-agent",
         DROID: "droid",
+        VIBE: "vibe",
         ECHO: "echo"
     },
     FLAGS: {
@@ -59,6 +63,10 @@ export const CLI = {
             YOLO: "-y",
             OUTPUT: "-o",
             INTERACTIVE: "-i"
+        },
+        VIBE: {
+            MODEL: "--model",
+            OUTPUT: "--output"
         }
     }
 };
@@ -100,7 +108,8 @@ export const BACKENDS = {
     CURSOR: "ask-cursor",
     DROID: "ask-droid",
     ROVODEV: "ask-rovodev",
-    QWEN: "ask-qwen"
+    QWEN: "ask-qwen",
+    VIBE: "ask-vibe"
 };
 // Export BACKENDS values for easier importing
 export { BACKENDS as default };
@@ -127,9 +136,9 @@ export const AGENT_ROLES = {
     },
     TESTER: {
         name: "TesterAgent",
-        backend: BACKENDS.CURSOR,
+        backend: BACKENDS.QWEN,
         specialization: "Fast test generation and validation",
-        description: "Uses Cursor Agent (Sonnet 4.5) for rapid test case generation and validation"
+        description: "Uses Qwen for rapid test generation and validation"
     }
 };
 //# sourceMappingURL=constants.js.map

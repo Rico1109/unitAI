@@ -5,5 +5,8 @@
  * This server enables AI assistants like Claude to interact with multiple
  * AI coding assistants (Gemini, Cursor Agent, Droid) through the Model Context Protocol.
  */
-export {};
+/**
+ * Start the server
+ */
+export declare function startServer(): Promise<void>;
 //# sourceMappingURL=index.d.ts.map

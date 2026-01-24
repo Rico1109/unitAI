@@ -43,6 +43,16 @@ export declare abstract class BaseAgent<TInput, TOutput> implements IAgent<TInpu
      */
     abstract readonly fallbackBackend?: string;
     /**
+     * Optional override for the preferred backend
+     */
+    protected overrideBackend?: string;
+    /**
+     * Initialize the agent with optional configuration
+     */
+    constructor(config?: {
+        preferredBackend?: string;
+    });
+    /**
      * Main execution method - implements retry logic and error handling
      *
      * Flow:

@@ -224,7 +224,7 @@ export async function checkCLIAvailability() {
     // Keys match what init-session display code expects
     const backendToCommand = {
         "gemini": "gemini",
-        "cursor-agent": "cursor",
+        "qwen": "qwen",
         "droid": "droid"
     };
     const availability = {};

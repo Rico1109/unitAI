@@ -57,6 +57,20 @@ export abstract class BaseAgent<TInput, TOutput> implements IAgent<TInput, TOutp
   abstract readonly fallbackBackend?: string;
 
   /**
+   * Optional override for the preferred backend
+   */
+  protected overrideBackend?: string;
+
+  /**
+   * Initialize the agent with optional configuration
+   */
+  constructor(config?: { preferredBackend?: string }) {
+    if (config?.preferredBackend) {
+      this.overrideBackend = config.preferredBackend;
+    }
+  }
+
+  /**
    * Main execution method - implements retry logic and error handling
    *
    * Flow:
@@ -90,10 +104,10 @@ export abstract class BaseAgent<TInput, TOutput> implements IAgent<TInput, TOutp
       // Step 2: Build prompt for AI backend
       const prompt = await this.buildPrompt(input);
 
-      // Step 3: Execute with preferred backend
       let rawOutput: string;
       let backendUsed: string;
-      const targetBackend = config.backendOverride || this.preferredBackend;
+      // Priority: Config Override > Constructor Override > Default Preferred
+      const targetBackend = config.backendOverride || this.overrideBackend || this.preferredBackend;
 
       try {
         rawOutput = await this.executeWithBackend(

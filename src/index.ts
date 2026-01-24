@@ -13,15 +13,21 @@ import { logger } from "./utils/logger.js";
 /**
  * Start the server
  */
-async function main() {
+export async function startServer() {
   logger.info("Starting Unified AI MCP Tool server...");
 
   const server = new UnitAIServer();
   await server.start();
 }
 
-// Run the server
-main().catch((error) => {
-  logger.error(`Fatal error: ${error}`);
-  process.exit(1);
-});
+// Run the server if executed directly (not via CLI)
+// Check if this file is the entry point
+const isDirectExecution = process.argv[1]?.endsWith('index.js') &&
+  !process.argv[1]?.includes('/cli/');
+
+if (isDirectExecution) {
+  startServer().catch((error) => {
+    logger.error(`Fatal error: ${error}`);
+    process.exit(1);
+  });
+}

@@ -90,20 +90,20 @@ export function selectOptimalBackend(task, allowedBackends) {
             return BACKENDS.DROID;
         return availableCandidates[0];
     }
-    // 2. Code generation / Implementation -> Droid > Rovodev > Cursor
+    // 2. Code generation / Implementation -> Droid > Qwen
     if (task.requiresCodeGeneration && !task.requiresSpeed) {
         if (isAvailable(BACKENDS.QWEN))
-            return BACKENDS.QWEN; // Prefer Qwen over others if Droid/Rovo unavailable
-        if (isAvailable(BACKENDS.CURSOR))
-            return BACKENDS.CURSOR;
+            return BACKENDS.QWEN; // Prefer Qwen for code generation
+        if (isAvailable(BACKENDS.DROID))
+            return BACKENDS.DROID;
         return availableCandidates[0];
     }
-    // 3. Debugging / Testing / Refactoring -> Cursor Agent > Qwen
+    // 3. Debugging / Testing / Refactoring -> Qwen
     if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
         if (isAvailable(BACKENDS.QWEN))
             return BACKENDS.QWEN;
-        if (isAvailable(BACKENDS.CURSOR))
-            return BACKENDS.CURSOR;
+        if (isAvailable(BACKENDS.DROID))
+            return BACKENDS.DROID;
         return availableCandidates[0];
     }
     // 4. Default fallback
@@ -114,8 +114,8 @@ export function selectOptimalBackend(task, allowedBackends) {
  */
 export function selectParallelBackends(task, count = 2) {
     const selections = [];
-    // Updated Priority: Gemini -> Qwen -> Droid -> Cursor -> Rovodev
-    const allBackends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID, BACKENDS.CURSOR, BACKENDS.ROVODEV];
+    // Updated Priority: Gemini -> Qwen -> Droid -> Rovodev
+    const allBackends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID, BACKENDS.ROVODEV];
     const available = allBackends.filter(b => circuitBreaker.isAvailable(b));
     if (available.length === 0)
         return [BACKENDS.QWEN]; // Fallback to Qwen
@@ -177,7 +177,6 @@ export function selectFallbackBackend(failedBackend) {
         BACKENDS.GEMINI,
         BACKENDS.QWEN,
         BACKENDS.DROID,
-        BACKENDS.CURSOR,
         BACKENDS.ROVODEV
     ];
     // Filter out the failed backend and unavailable ones

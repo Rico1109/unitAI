@@ -1,10 +1,10 @@
 # CLAUDE (Compact)
 
 **Created:** 2025-11-07 00:00 UTC
-**Last Updated:** 2025-11-07 00:00 UTC
-**Version:** 3.0
+**Last Updated:** 2026-01-11 00:00 UTC
+**Version:** 3.1
 **Status:** Active
-**Supersedes:** 2.5
+**Supersedes:** 3.0
 
 SSOT: `CLAUDE.md`
 
@@ -34,8 +34,8 @@ mcp__unitAI__smart-workflows({
 - Shows repo status, branch, CLI availability
 
 **Then execute suggested memory queries:**
-- openmemory-search-memories "recent work on unitAI"
-- openmemory-search-memories "<YYYY-MM-DD> <topic>"
+- mcp__claude-mem__search "recent work on unitAI"
+- mcp__claude-mem__search "<YYYY-MM-DD> <topic>"
 
 ## 3) MCP TOOLS & WORKFLOWS
 
@@ -53,13 +53,13 @@ mcp__unitAI__smart-workflows({
 
 **unitAI** (Parallel analysis)
 - ask-gemini: Architecture, best practices, security
-- cursor-agent: Refactor plan, patch chirurgiche, bugfix guidati
+- ask-qwen: Refactor plan, patch chirurgiche, bugfix guidati
 - droid: Checklist autonome, remediation plan
 
 **3.1) MANUAL PATTERNS** (See 3.5 for automated workflows)
-*Feature:* claude-context → Serena → ask-gemini + cursor-agent → droid (piano) → Serena verify
-*Bug:* claude-context locate → Serena impact → cursor-agent (fix) → droid (remediation) → Serena apply
-*Refactor:* Serena find_referencing_symbols → cursor-agent (patch) → ask-gemini review → Serena rename_symbol
+*Feature:* claude-context → Serena → ask-gemini + ask-qwen → droid (piano) → Serena verify
+*Bug:* claude-context locate → Serena impact → ask-qwen (fix) → droid (remediation) → Serena apply
+*Refactor:* Serena find_referencing_symbols → ask-qwen (patch) → ask-gemini review → Serena rename_symbol
 
 **3.5) SMART WORKFLOWS** (Automated Multi-Agent Orchestration)
 
@@ -73,6 +73,9 @@ mcp__unitAI__smart-workflows({
 | `validate-last-commit` | Post-commit validation | `{ commit_ref: "HEAD" }` | Gemini + Qwen commit analysis → verdict |
 | `bug-hunt` | Bug unknown cause | `{ symptoms: "detailed description" }` | Root cause + fix + test plan |
 | `feature-design` | Complex feature design | `{ featureDescription: "...", targetFiles: [...] }` | Architect + Implementer + Tester phases |
+| `triangulated-review` | High-risk changes | `{ files: [...], goal: "refactor\|bugfix" }` | Gemini + Qwen + Droid consensus |
+| `refactor-sprint` | Organized refactor | `{ targetFiles: [...], scope: "..." }` | Qwen plan + Gemini review + Droid checklist |
+| `auto-remediation` | Incident/Crash | `{ symptoms: "..." }` | Droid remediation plan |
 
 **Invocation:**
 ```typescript
@@ -85,7 +88,7 @@ mcp__unitAI__smart-workflows({
 **Decision Tree:**
 ```
 Standard process (commit/bug/review/feature)? → smart-workflows
-Custom exploration? → Tool direct (Serena / claude-context / ask-gemini / cursor-agent / droid)
+Custom exploration? → Tool direct (Serena / claude-context / ask-gemini / ask-qwen / droid)
 ```
 
 **Auto-Suggestions:** `workflow-pattern-detector` hook suggests workflows on pattern match (always ask user before executing)
@@ -96,9 +99,13 @@ Custom exploration? → Tool direct (Serena / claude-context / ask-gemini / curs
 - mcp__deepwiki__ask_question "owner/repo" "question"
 - Use: architecture insights on dependencies
 
-**Open-Memory (decisions & changes):**
-- Search before answering: "recent work", "<YYYY-MM-DD> <topic>"
-- Add after changes: "Implemented X", "Fixed bug: Y", "Workflow update: Z"
+**claude-mem (cross-session memory - automatic):**
+- 3-layer progressive disclosure (token-efficient):
+  - Layer 1: mcp__claude-mem__search "query" → index only (~50-100 tokens/result)
+  - Layer 2: mcp__claude-mem__timeline "observation_id" → chronological context
+  - Layer 3: mcp__claude-mem__get_observations [ids] → full details only when needed
+- Web viewer: http://localhost:37777
+- Automatic session capture via lifecycle hooks
 
 **Context7 (external library API docs):**
 - mcp__context7__resolve-library-id "library"
@@ -123,7 +130,7 @@ Task({ subagent_type: "AGENT_NAME", prompt: "task description" })
 
 **Decision:**
 - Multi-phase complex task (architecture, high-risk refactor)? → Agent
-- Simple query/analysis? → Tool direct (Serena / ask-gemini / cursor-agent)
+- Simple query/analysis? → Tool direct (Serena / ask-gemini / ask-qwen)
 - See: docs/AGENT_MIGRATION_GUIDE.md
 
 ## 4) FILE SIZE DECISION TREE
@@ -173,8 +180,8 @@ mcp__unitAI__smart-workflows({
 **Manual (fallback if workflow unavailable):**
 1. Serena: find_referencing_symbols → ALL usages
 2. claude-context: "What depends on changes?"
-3. Parallel: ask-gemini + cursor-agent (aggiungi droid per checklist se necessario)
-4. openmemory-add-memory "Validated [scope]"
+3. Parallel: ask-gemini + ask-qwen (aggiungi droid per checklist se necessario)
+4. mcp__claude-mem__add "Validated [scope]"
 
 ## 10) KEY CONFIGS & LOCATIONS
 - package.json: Dependencies, scripts, MCP server entry
@@ -195,7 +202,7 @@ mcp__unitAI__smart-workflows({
 - Features: feature-design workflow
 - Before edit: Serena find_referencing_symbols (impact analysis)
 - Before implementation: claude-context (discover related code)
-- Complex analysis: ask-gemini + cursor-agent (parallel) + droid (checklist)
+- Complex analysis: ask-gemini + ask-qwen (parallel) + droid (checklist)
 - After changes: update memory
 
 **DON'T:**
@@ -220,7 +227,7 @@ mcp__unitAI__smart-workflows({
 | **Feature design** | feature-design workflow | Multi-agent orchestration |
 | **Complex multi-phase** | Task agents (5 types) | Specialized orchestration; parallel validation; 50-95% savings |
 | **Codebase search** | claude-context | Semantic; finds ALL related code |
-| **Custom AI analysis** | ask-gemini / cursor-agent / droid | Scegli tool in base a contesto (architettura vs refactor vs remediation) |
+| **Custom AI analysis** | ask-gemini / ask-qwen / droid | Scegli tool in base a contesto (architettura vs refactor vs remediation) |
 | **Simple non-code** | Read | Only if <300 LOC |
 
 **Decision Rules:**
@@ -228,7 +235,7 @@ mcp__unitAI__smart-workflows({
 2. Standard process (commit/bug/review/feature)? → **smart-workflows**
 3. Complex multi-phase (architecture/high-risk)? → **Task agents**
 4. Need to find related code? → **claude-context**
-5. Custom analysis? → **ask-gemini / cursor-agent / droid** (parallel)
+5. Custom analysis? → **ask-gemini / ask-qwen / droid** (parallel)
 6. Simple config file? → Read ok
 
 ## 13) AUTONOMOUS TOKEN-AWARE ENFORCEMENT

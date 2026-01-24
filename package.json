@@ -5,13 +5,15 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "unitai": "dist/index.js"
+    "unitai": "dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc && node dist/index.js",
     "lint": "tsc --noEmit",
     "start": "node dist/index.js",
+    "setup": "tsx src/cli/setup.tsx",
+    "health": "tsx src/cli/health.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -36,12 +38,18 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.0",
     "better-sqlite3": "^11.8.1",
+    "chalk": "^4.1.2",
+    "ink": "^6.6.0",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0",
+    "react": "^19.2.3",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^24.0.0",
+    "@types/react": "^19.2.9",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "^4.20.6",
     "typescript": "^5.0.0",
