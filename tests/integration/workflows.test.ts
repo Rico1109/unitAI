@@ -74,7 +74,8 @@ describe('Workflow Integration Tests', () => {
       mockAIExecutor({
         'ask-gemini': 'Gemini analysis: Good architecture, consider adding error handling',
         'ask-qwen': 'Qwen review: Refactoring suggestions for better maintainability',
-        'ask-droid': 'Droid review: Code is production-ready with minor improvements'
+        'ask-droid': 'Droid review: Code is production-ready with minor improvements',
+        'ask-cursor': 'Cursor Agent review: Code is clean and follows best practices.'
       });
 
       const { executeParallelReview } = await import('../../src/workflows/parallel-review.workflow.js');
@@ -83,7 +84,8 @@ describe('Workflow Integration Tests', () => {
       const result = await executeParallelReview({
         autonomyLevel: AutonomyLevel.READ_ONLY,
         files: ['src/index.ts', 'src/utils.ts'],
-        focus: 'security and performance'
+        focus: 'security and performance',
+        backendOverrides: ['ask-gemini', 'ask-cursor']
       }, callback);
 
       expect(result).toContain('Parallel Review');
