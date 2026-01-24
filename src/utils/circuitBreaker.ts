@@ -9,6 +9,7 @@
  */
 
 import { logger } from "./logger.js";
+import type Database from 'better-sqlite3';
 
 export enum CircuitState {
     CLOSED = "CLOSED",
@@ -27,22 +28,98 @@ interface BackendState {
     lastFailureTime: number;
 }
 
+interface CircuitStateRow {
+    backend: string;
+    state: string;
+    failures: number;
+    last_failure_time: number | null;
+}
+
 export class CircuitBreaker {
-    private static instance: CircuitBreaker;
     private states: Map<string, BackendState> = new Map();
+    private db: Database.Database | null = null;
 
     private config: CircuitConfig = {
         failureThreshold: 3,
         resetTimeoutMs: 5 * 60 * 1000 // 5 minutes
     };
 
-    private constructor() { }
+    constructor(
+        failureThreshold: number = 3,
+        resetTimeoutMs: number = 5 * 60 * 1000,
+        db?: Database.Database
+    ) {
+        this.config = {
+            failureThreshold,
+            resetTimeoutMs
+        };
 
-    public static getInstance(): CircuitBreaker {
-        if (!CircuitBreaker.instance) {
-            CircuitBreaker.instance = new CircuitBreaker();
+        if (db) {
+            this.db = db;
+            this.initializeTable();
+            this.loadState();
         }
-        return CircuitBreaker.instance;
+    }
+
+    /**
+     * Initialize circuit breaker state table
+     */
+    private initializeTable(): void {
+        if (!this.db) return;
+
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS circuit_breaker_state (
+                backend TEXT PRIMARY KEY,
+                state TEXT NOT NULL,
+                failures INTEGER NOT NULL DEFAULT 0,
+                last_failure_time INTEGER
+            )
+        `);
+    }
+
+    /**
+     * Load state from database
+     */
+    private loadState(): void {
+        if (!this.db) return;
+
+        try {
+            const rows = this.db.prepare(
+                'SELECT * FROM circuit_breaker_state'
+            ).all() as CircuitStateRow[];
+
+            for (const row of rows) {
+                this.states.set(row.backend, {
+                    state: row.state as CircuitState,
+                    failures: row.failures,
+                    lastFailureTime: row.last_failure_time || 0
+                });
+            }
+
+            logger.debug(`[CircuitBreaker] Loaded ${rows.length} backend states from database`);
+        } catch (error) {
+            logger.error('[CircuitBreaker] Error loading state from database', error);
+        }
+    }
+
+    /**
+     * Save state for a specific backend to database
+     */
+    private saveState(backend: string): void {
+        if (!this.db) return;
+
+        const state = this.states.get(backend);
+        if (!state) return;
+
+        try {
+            this.db.prepare(`
+                INSERT OR REPLACE INTO circuit_breaker_state
+                (backend, state, failures, last_failure_time)
+                VALUES (?, ?, ?, ?)
+            `).run(backend, state.state, state.failures, state.lastFailureTime || null);
+        } catch (error) {
+            logger.error(`[CircuitBreaker] Error saving state for ${backend}`, error);
+        }
     }
 
     /**
@@ -75,6 +152,7 @@ export class CircuitBreaker {
             // Reset failures on success in CLOSED state
             state.failures = 0;
             this.states.set(backend, state);
+            this.saveState(backend); // Persist state change
         }
     }
 
@@ -94,6 +172,7 @@ export class CircuitBreaker {
             logger.error(`[CircuitBreaker] Backend ${backend} reached failure threshold. Circuit OPEN.`);
         } else {
             this.states.set(backend, state);
+            this.saveState(backend); // Persist state change
         }
     }
 
@@ -121,14 +200,53 @@ export class CircuitBreaker {
             state.failures = 0;
         }
         this.states.set(backend, state);
+        this.saveState(backend); // Persist state transition
     }
 
     /**
-     * Reset all states (for testing)
+     * Reset all states (for testing and development)
      */
     public reset(): void {
         this.states.clear();
+        
+        // Clear database state too
+        if (this.db) {
+            try {
+                this.db.prepare('DELETE FROM circuit_breaker_state').run();
+                logger.debug('[CircuitBreaker] Cleared database state');
+            } catch (error) {
+                logger.error('[CircuitBreaker] Error clearing database state', error);
+            }
+        }
+        
+        logger.info("[CircuitBreaker] All circuits reset");
+    }
+
+    /**
+     * Shutdown - persist final state before closing
+     */
+    public shutdown(): void {
+        if (!this.db) return;
+
+        try {
+            // Persist all current states
+            for (const [backend, state] of this.states.entries()) {
+                this.db.prepare(`
+                    INSERT OR REPLACE INTO circuit_breaker_state
+                    (backend, state, failures, last_failure_time)
+                    VALUES (?, ?, ?, ?)
+                `).run(backend, state.state, state.failures, state.lastFailureTime || null);
+            }
+            logger.debug('[CircuitBreaker] Persisted final state to database');
+        } catch (error) {
+            logger.error('[CircuitBreaker] Error persisting final state', error);
+        }
+    }
+
+    /**
+     * Get current state for all backends (for debugging)
+     */
+    public getStates(): Map<string, BackendState> {
+        return new Map(this.states);
     }
 }
-
-export const circuitBreaker = CircuitBreaker.getInstance();

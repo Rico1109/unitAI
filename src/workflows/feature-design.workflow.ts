@@ -4,6 +4,7 @@ import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./u
 import { AutonomyLevel } from "../utils/permissionManager.js";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./modelSelector.js";
+import { getDependencies } from '../dependencies.js';
 import type {
   WorkflowDefinition,
   ProgressCallback
@@ -99,7 +100,8 @@ export async function executeFeatureDesign(
     // Dynamic Backend Selection for Architecture
     const archTask = createTaskCharacteristics('architecture');
     archTask.requiresArchitecturalThinking = true;
-    const archBackend = selectOptimalBackend(archTask);
+    const { circuitBreaker } = getDependencies();
+    const archBackend = selectOptimalBackend(archTask, circuitBreaker);
 
     const architect = AgentFactory.createArchitect();
     const architectResult = await architect.execute(
@@ -144,9 +146,10 @@ export async function executeFeatureDesign(
     onProgress?.("💻 Phase 2: Code Implementation");
 
     // Dynamic Backend Selection for Implementation
+    const { circuitBreaker } = getDependencies();
     const implTask = createTaskCharacteristics('implementation');
     implTask.requiresCodeGeneration = true;
-    const implBackend = selectOptimalBackend(implTask);
+    const implBackend = selectOptimalBackend(implTask, circuitBreaker);
 
     const implementer = AgentFactory.createImplementer();
     let implementerResult = await implementer.execute(
@@ -214,9 +217,10 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
     onProgress?.("🧪 Phase 3: Test Generation");
 
     // Dynamic Backend Selection for Testing
+    const { circuitBreaker } = getDependencies();
     const testTask = createTaskCharacteristics('testing');
     testTask.requiresSpeed = true; // Testing usually benefits from speed
-    const testBackend = selectOptimalBackend(testTask);
+    const testBackend = selectOptimalBackend(testTask, circuitBreaker);
 
     const tester = AgentFactory.createTester();
     const testerResult = await tester.execute(

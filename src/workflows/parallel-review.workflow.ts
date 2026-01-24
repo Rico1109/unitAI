@@ -9,6 +9,7 @@ import type {
   ReviewFocus
 } from "./types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
+import { getDependencies } from '../dependencies.js';
 
 /**
  * Schema Zod per il workflow parallel-review
@@ -126,13 +127,14 @@ Come Qwen, fornisci un'analisi logica e strutturata:
     backendsToUse = backendOverrides;
   } else {
     // Dynamic selection
+    const { circuitBreaker } = getDependencies();
     const task = createTaskCharacteristics('review');
     // Map focus to task characteristics
     if (focus === 'architecture') task.requiresArchitecturalThinking = true;
     if (focus === 'security') task.domain = 'security';
 
     const count = strategy === "double-check" ? 3 : 2;
-    backendsToUse = selectParallelBackends(task, count);
+    backendsToUse = selectParallelBackends(task, circuitBreaker, count);
   }
 
   logger.step('parallel-analysis-start', 'Starting parallel analysis', {

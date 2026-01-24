@@ -250,7 +250,8 @@ export async function executeDroidCLI(
   }
 }
 
-import { circuitBreaker } from "./circuitBreaker.js";
+import type { CircuitBreaker } from "./circuitBreaker.js";
+import { getDependencies } from "../dependencies.js";
 import { selectFallbackBackend } from "../workflows/modelSelector.js";
 
 /**
@@ -393,6 +394,7 @@ export async function executeAIClient(
   retryConfig?: RetryConfig
 ): Promise<string> {
   const { backend, ...rest } = options;
+  const { circuitBreaker } = getDependencies();
 
   // Initialize retry config
   const config: RetryConfig = retryConfig || {
@@ -409,7 +411,7 @@ export async function executeAIClient(
     logger.warn(`Backend ${backend} is currently unavailable (Circuit Open).`);
 
     if (config.currentRetry < config.maxRetries) {
-      const fallback = selectFallbackBackend(backend);
+      const fallback = selectFallbackBackend(backend, circuitBreaker);
 
       // Avoid retrying already-tried backends
       if (config.triedBackends.includes(fallback)) {
@@ -474,7 +476,7 @@ export async function executeAIClient(
 
     // Retry with fallback if we haven't exhausted retries
     if (config.currentRetry < config.maxRetries) {
-      const fallback = selectFallbackBackend(backend);
+      const fallback = selectFallbackBackend(backend, circuitBreaker);
 
       // Avoid retrying already-tried backends
       if (config.triedBackends.includes(fallback)) {
