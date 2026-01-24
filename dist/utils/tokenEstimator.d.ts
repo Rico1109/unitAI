@@ -4,6 +4,7 @@
  * Provides token cost estimation for files and tool operations
  * to enable intelligent, token-aware decision making.
  */
+import Database from 'better-sqlite3';
 /**
  * Token estimate result
  */
@@ -122,8 +123,7 @@ export declare function formatToolSuggestion(suggestion: ToolSuggestion): string
  */
 export declare class TokenSavingsMetrics {
     private db;
-    private dbPath;
-    constructor(dbPath?: string);
+    constructor(db: Database.Database);
     /**
      * Initialize database schema for metrics
      */

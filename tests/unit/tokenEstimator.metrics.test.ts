@@ -2,28 +2,34 @@
  * Tests for Token Savings Metrics Collection
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { TokenSavingsMetrics, getMetricsCollector } from '../../src/utils/tokenEstimator.js';
+import { createTestDependencies } from '../utils/testDependencies.js';
+import { initializeDependencies, closeDependencies } from '../../src/dependencies.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import type Database from 'better-sqlite3';
 
 describe('TokenSavingsMetrics', () => {
   let metrics: TokenSavingsMetrics;
-  const testDbPath = path.join(process.cwd(), 'data', 'token-metrics-test.sqlite');
+  let testDb: Database.Database;
 
   beforeEach(() => {
-    // Clean up test database if it exists
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
-    metrics = new TokenSavingsMetrics(testDbPath);
+    // Create in-memory test database
+    const testDeps = createTestDependencies();
+    testDb = testDeps.tokenDb;
+    metrics = new TokenSavingsMetrics(testDb);
   });
 
   afterEach(() => {
-    metrics.close();
-    // Clean up test database
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
+    // Cleanup
+    if (metrics && metrics.close) {
+      metrics.close();
+    }
+    if (testDb && !testDb.open) {
+      // Database already closed
+    } else if (testDb) {
+      testDb.close();
     }
   });
 
@@ -262,6 +268,16 @@ describe('TokenSavingsMetrics', () => {
   });
 
   describe('getMetricsCollector singleton', () => {
+    beforeAll(() => {
+      // Initialize dependencies for singleton test
+      initializeDependencies();
+    });
+
+    afterAll(() => {
+      // Cleanup dependencies
+      closeDependencies();
+    });
+
     it('should return the same instance', () => {
       const instance1 = getMetricsCollector();
       const instance2 = getMetricsCollector();

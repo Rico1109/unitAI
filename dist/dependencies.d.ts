@@ -6,6 +6,8 @@
 import Database from 'better-sqlite3';
 export interface AppDependencies {
     activityDb: Database.Database;
+    auditDb: Database.Database;
+    tokenDb: Database.Database;
 }
 /**
  * Initialize all system dependencies

@@ -3,6 +3,7 @@
  *
  * Tracks all autonomous decisions and operations for accountability and debugging.
  */
+import Database from 'better-sqlite3';
 import type { AutonomyLevel, OperationType } from './permissionManager.js';
 /**
  * Audit entry for tracking autonomous operations
@@ -52,8 +53,7 @@ export interface AuditStats {
  */
 export declare class AuditTrail {
     private db;
-    private dbPath;
-    constructor(dbPath?: string);
+    constructor(db: Database.Database);
     /**
      * Initialize database schema
      */
@@ -91,10 +91,11 @@ export declare class AuditTrail {
      */
     private rowToEntry;
 }
+export declare function getAuditTrail(): AuditTrail;
 /**
- * Singleton instance
+ * Reset singleton for testing
  */
-export declare const auditTrail: AuditTrail;
+export declare function resetAuditTrail(): void;
 /**
  * Helper function to log audit entries
  */

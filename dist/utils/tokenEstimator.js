@@ -9,9 +9,7 @@ import { promisify } from "util";
 import { stat, access } from "fs/promises";
 import { constants } from "fs";
 import { logger } from "./logger.js";
-import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as fs from 'fs';
+import { getDependencies } from '../dependencies.js';
 const execAsync = promisify(exec);
 /**
  * Average tokens per line for different file types (empirical data)
@@ -255,16 +253,8 @@ export function formatToolSuggestion(suggestion) {
  */
 export class TokenSavingsMetrics {
     db;
-    dbPath;
-    constructor(dbPath) {
-        this.dbPath = dbPath || path.join(process.cwd(), 'data', 'token-metrics.sqlite');
-        // Ensure data directory exists
-        const dataDir = path.dirname(this.dbPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        // Initialize database
-        this.db = new Database(this.dbPath);
+    constructor(db) {
+        this.db = db;
         this.initializeSchema();
     }
     /**
@@ -493,7 +483,8 @@ let metricsInstance = null;
  */
 export function getMetricsCollector() {
     if (!metricsInstance) {
-        metricsInstance = new TokenSavingsMetrics();
+        const deps = getDependencies();
+        metricsInstance = new TokenSavingsMetrics(deps.tokenDb);
     }
     return metricsInstance;
 }

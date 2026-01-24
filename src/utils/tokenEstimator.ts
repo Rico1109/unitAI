@@ -13,6 +13,7 @@ import { logger } from "./logger.js";
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getDependencies } from '../dependencies.js';
 
 const execAsync = promisify(exec);
 
@@ -370,19 +371,9 @@ export function formatToolSuggestion(suggestion: ToolSuggestion): string {
  */
 export class TokenSavingsMetrics {
   private db: Database.Database;
-  private dbPath: string;
 
-  constructor(dbPath?: string) {
-    this.dbPath = dbPath || path.join(process.cwd(), 'data', 'token-metrics.sqlite');
-
-    // Ensure data directory exists
-    const dataDir = path.dirname(this.dbPath);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Initialize database
-    this.db = new Database(this.dbPath);
+  constructor(db: Database.Database) {
+    this.db = db;
     this.initializeSchema();
   }
 
@@ -656,7 +647,8 @@ let metricsInstance: TokenSavingsMetrics | null = null;
  */
 export function getMetricsCollector(): TokenSavingsMetrics {
   if (!metricsInstance) {
-    metricsInstance = new TokenSavingsMetrics();
+    const deps = getDependencies();
+    metricsInstance = new TokenSavingsMetrics(deps.tokenDb);
   }
   return metricsInstance;
 }

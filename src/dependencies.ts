@@ -11,6 +11,8 @@ import { logger } from './utils/logger.js';
 // Define the shape of our dependencies
 export interface AppDependencies {
     activityDb: Database.Database;
+    auditDb: Database.Database;
+    tokenDb: Database.Database;
     // Add other shared DBs or services here as we migrate them
 }
 
@@ -32,16 +34,28 @@ export function initializeDependencies(): AppDependencies {
         fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    // Initialize Databases
+    // Initialize Activity Database
     const activityDbPath = path.join(dataDir, 'activity.sqlite');
     logger.debug(`Opening Activity DB at ${activityDbPath}`);
     const activityDb = new Database(activityDbPath);
-
-    // Enable WAL mode for better concurrency
     activityDb.pragma('journal_mode = WAL');
 
+    // Initialize Audit Database
+    const auditDbPath = path.join(dataDir, 'audit.sqlite');
+    logger.debug(`Opening Audit DB at ${auditDbPath}`);
+    const auditDb = new Database(auditDbPath);
+    auditDb.pragma('journal_mode = WAL');
+
+    // Initialize Token Metrics Database
+    const tokenDbPath = path.join(dataDir, 'token-metrics.sqlite');
+    logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
+    const tokenDb = new Database(tokenDbPath);
+    tokenDb.pragma('journal_mode = WAL');
+
     dependencies = {
-        activityDb
+        activityDb,
+        auditDb,
+        tokenDb
     };
 
     return dependencies;
@@ -64,6 +78,8 @@ export function closeDependencies(): void {
     if (dependencies) {
         logger.info("Closing dependencies...");
         dependencies.activityDb.close();
+        dependencies.auditDb.close();
+        dependencies.tokenDb.close();
         dependencies = null;
     }
 }

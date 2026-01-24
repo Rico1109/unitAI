@@ -7,8 +7,8 @@
  * - Workflow executions
  * - Agent performance
  */
-import { AuditStats } from '../utils/auditTrail.js';
-import { TokenSavingsStats } from '../utils/tokenEstimator.js';
+import { AuditTrail, AuditStats } from '../utils/auditTrail.js';
+import { TokenSavingsMetrics, TokenSavingsStats } from '../utils/tokenEstimator.js';
 import { ActivityRepository } from '../repositories/activity.js';
 /**
  * Time range for activity queries
@@ -85,7 +85,7 @@ export declare class ActivityAnalytics {
     private auditTrail;
     private tokenMetrics;
     private repository;
-    constructor(repository: ActivityRepository, auditDbPath?: string, tokenDbPath?: string);
+    constructor(repository: ActivityRepository, auditTrail: AuditTrail, tokenMetrics: TokenSavingsMetrics);
     /**
      * Record an MCP activity
      */

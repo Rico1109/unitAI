@@ -3,24 +3,14 @@
  *
  * Tracks all autonomous decisions and operations for accountability and debugging.
  */
-import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as fs from 'fs';
+import { getDependencies } from '../dependencies.js';
 /**
  * Audit Trail for tracking autonomous decisions
  */
 export class AuditTrail {
     db;
-    dbPath;
-    constructor(dbPath) {
-        this.dbPath = dbPath || path.join(process.cwd(), 'data', 'audit.sqlite');
-        // Ensure data directory exists
-        const dataDir = path.dirname(this.dbPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        // Initialize database
-        this.db = new Database(this.dbPath);
+    constructor(db) {
+        this.db = db;
         this.initializeSchema();
     }
     /**
@@ -324,14 +314,27 @@ export class AuditTrail {
     }
 }
 /**
- * Singleton instance
+ * Lazy singleton using DI container
  */
-export const auditTrail = new AuditTrail();
+let auditTrailInstance = null;
+export function getAuditTrail() {
+    if (!auditTrailInstance) {
+        const deps = getDependencies();
+        auditTrailInstance = new AuditTrail(deps.auditDb);
+    }
+    return auditTrailInstance;
+}
+/**
+ * Reset singleton for testing
+ */
+export function resetAuditTrail() {
+    auditTrailInstance = null;
+}
 /**
  * Helper function to log audit entries
  */
 export async function logAudit(params) {
-    auditTrail.record({
+    getAuditTrail().record({
         workflowName: params.workflowName || 'workflow',
         workflowId: params.workflowId,
         autonomyLevel: params.autonomyLevel,

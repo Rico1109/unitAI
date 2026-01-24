@@ -7,7 +7,7 @@
  * @module permissionManager
  */
 
-import { auditTrail } from './auditTrail.js';
+import { getAuditTrail } from './auditTrail.js';
 
 /**
  * Permission levels for autonomous operations
@@ -144,7 +144,7 @@ export function assertPermission(
   
   // Record audit entry
   try {
-    auditTrail.record({
+    getAuditTrail().record({
       workflowName: workflowName || 'unknown',
       workflowId,
       autonomyLevel: currentLevel,

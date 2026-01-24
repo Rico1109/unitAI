@@ -11,10 +11,11 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
-import { AuditTrail, AuditEntry, AuditStats } from '../utils/auditTrail.js';
+import { AuditTrail, AuditEntry, AuditStats, getAuditTrail } from '../utils/auditTrail.js';
 import { TokenSavingsMetrics, TokenSavingsStats } from '../utils/tokenEstimator.js';
 import { logger } from '../utils/logger.js';
 import { ActivityRepository } from '../repositories/activity.js';
+import { getDependencies } from '../dependencies.js';
 
 /**
  * Time range for activity queries
@@ -93,12 +94,12 @@ export class ActivityAnalytics {
 
   constructor(
     repository: ActivityRepository,
-    auditDbPath?: string,
-    tokenDbPath?: string
+    auditTrail: AuditTrail,
+    tokenMetrics: TokenSavingsMetrics
   ) {
-    // Initialize data sources
-    this.auditTrail = new AuditTrail(auditDbPath);
-    this.tokenMetrics = new TokenSavingsMetrics(tokenDbPath);
+    // Inject dependencies
+    this.auditTrail = auditTrail;
+    this.tokenMetrics = tokenMetrics;
     this.repository = repository;
 
     // Ensure schema is initialized
@@ -440,8 +441,6 @@ export class ActivityAnalytics {
 
 // Singleton instance
 let analyticsInstance: ActivityAnalytics | null = null;
-import { getDependencies } from "../dependencies.js";
-
 
 /**
  * Get or create the global analytics instance
@@ -452,7 +451,9 @@ export function getActivityAnalytics(): ActivityAnalytics {
     try {
       const deps = getDependencies();
       const repo = new ActivityRepository(deps.activityDb);
-      analyticsInstance = new ActivityAnalytics(repo);
+      const audit = getAuditTrail();
+      const tokens = new TokenSavingsMetrics(deps.tokenDb);
+      analyticsInstance = new ActivityAnalytics(repo, audit, tokens);
     } catch (e) {
       // Fallback for scripts/tests that might not have init dependencies
       // Ideally we should fix those call sites, but for now this is safter transition

@@ -7,10 +7,11 @@
  * - Workflow executions
  * - Agent performance
  */
-import { AuditTrail } from '../utils/auditTrail.js';
+import { getAuditTrail } from '../utils/auditTrail.js';
 import { TokenSavingsMetrics } from '../utils/tokenEstimator.js';
 import { logger } from '../utils/logger.js';
 import { ActivityRepository } from '../repositories/activity.js';
+import { getDependencies } from '../dependencies.js';
 /**
  * Activity Analytics Service
  *
@@ -20,10 +21,10 @@ export class ActivityAnalytics {
     auditTrail;
     tokenMetrics;
     repository;
-    constructor(repository, auditDbPath, tokenDbPath) {
-        // Initialize data sources
-        this.auditTrail = new AuditTrail(auditDbPath);
-        this.tokenMetrics = new TokenSavingsMetrics(tokenDbPath);
+    constructor(repository, auditTrail, tokenMetrics) {
+        // Inject dependencies
+        this.auditTrail = auditTrail;
+        this.tokenMetrics = tokenMetrics;
         this.repository = repository;
         // Ensure schema is initialized
         this.repository.initializeSchema();
@@ -300,7 +301,6 @@ export class ActivityAnalytics {
 }
 // Singleton instance
 let analyticsInstance = null;
-import { getDependencies } from "../dependencies.js";
 /**
  * Get or create the global analytics instance
  * Note: This relies on dependencies being initialized earlier in the lifecycle
@@ -310,7 +310,9 @@ export function getActivityAnalytics() {
         try {
             const deps = getDependencies();
             const repo = new ActivityRepository(deps.activityDb);
-            analyticsInstance = new ActivityAnalytics(repo);
+            const audit = getAuditTrail();
+            const tokens = new TokenSavingsMetrics(deps.tokenDb);
+            analyticsInstance = new ActivityAnalytics(repo, audit, tokens);
         }
         catch (e) {
             // Fallback for scripts/tests that might not have init dependencies

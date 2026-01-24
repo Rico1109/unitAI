@@ -8,6 +8,7 @@ import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
 import type { AutonomyLevel, OperationType } from './permissionManager.js';
+import { getDependencies } from '../dependencies.js';
 
 /**
  * Audit entry for tracking autonomous operations
@@ -60,19 +61,9 @@ export interface AuditStats {
  */
 export class AuditTrail {
   private db: Database.Database;
-  private dbPath: string;
 
-  constructor(dbPath?: string) {
-    this.dbPath = dbPath || path.join(process.cwd(), 'data', 'audit.sqlite');
-
-    // Ensure data directory exists
-    const dataDir = path.dirname(this.dbPath);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Initialize database
-    this.db = new Database(this.dbPath);
+  constructor(db: Database.Database) {
+    this.db = db;
     this.initializeSchema();
   }
 
@@ -428,9 +419,24 @@ export class AuditTrail {
 }
 
 /**
- * Singleton instance
+ * Lazy singleton using DI container
  */
-export const auditTrail = new AuditTrail();
+let auditTrailInstance: AuditTrail | null = null;
+
+export function getAuditTrail(): AuditTrail {
+  if (!auditTrailInstance) {
+    const deps = getDependencies();
+    auditTrailInstance = new AuditTrail(deps.auditDb);
+  }
+  return auditTrailInstance;
+}
+
+/**
+ * Reset singleton for testing
+ */
+export function resetAuditTrail(): void {
+  auditTrailInstance = null;
+}
 
 /**
  * Helper function to log audit entries
@@ -443,7 +449,7 @@ export async function logAudit(params: {
   workflowName?: string;
   workflowId?: string;
 }): Promise<void> {
-  auditTrail.record({
+  getAuditTrail().record({
     workflowName: params.workflowName || 'workflow',
     workflowId: params.workflowId,
     autonomyLevel: params.autonomyLevel as AutonomyLevel,

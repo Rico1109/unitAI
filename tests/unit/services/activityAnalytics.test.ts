@@ -4,29 +4,41 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ActivityAnalytics } from '../../../src/services/activityAnalytics.js';
+import { ActivityRepository } from '../../../src/repositories/activity.js';
+import { AuditTrail } from '../../../src/utils/auditTrail.js';
+import { TokenSavingsMetrics } from '../../../src/utils/tokenEstimator.js';
+import { createTestDependencies } from '../../utils/testDependencies.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import type Database from 'better-sqlite3';
 
 describe('ActivityAnalytics', () => {
   let analytics: ActivityAnalytics;
-  let testDbPath: string;
+  let testDeps: {
+    activityDb: Database.Database;
+    auditDb: Database.Database;
+    tokenDb: Database.Database;
+  };
 
   beforeEach(() => {
-    // Use temporary test database
-    testDbPath = path.join(process.cwd(), 'data', 'test-activity.sqlite');
-    analytics = new ActivityAnalytics(
-      undefined,
-      undefined,
-      testDbPath
-    );
+    // Create in-memory test databases
+    testDeps = createTestDependencies();
+
+    // Create dependencies
+    const repo = new ActivityRepository(testDeps.activityDb);
+    const audit = new AuditTrail(testDeps.auditDb);
+    const tokens = new TokenSavingsMetrics(testDeps.tokenDb);
+
+    // Create analytics instance with injected dependencies
+    analytics = new ActivityAnalytics(repo, audit, tokens);
   });
 
   afterEach(() => {
-    // Cleanup
+    // Cleanup in-memory databases
     analytics.close();
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
+    testDeps.activityDb.close();
+    testDeps.auditDb.close();
+    testDeps.tokenDb.close();
   });
 
   describe('recordActivity', () => {

@@ -21,14 +21,25 @@ export function initializeDependencies() {
     if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
     }
-    // Initialize Databases
+    // Initialize Activity Database
     const activityDbPath = path.join(dataDir, 'activity.sqlite');
     logger.debug(`Opening Activity DB at ${activityDbPath}`);
     const activityDb = new Database(activityDbPath);
-    // Enable WAL mode for better concurrency
     activityDb.pragma('journal_mode = WAL');
+    // Initialize Audit Database
+    const auditDbPath = path.join(dataDir, 'audit.sqlite');
+    logger.debug(`Opening Audit DB at ${auditDbPath}`);
+    const auditDb = new Database(auditDbPath);
+    auditDb.pragma('journal_mode = WAL');
+    // Initialize Token Metrics Database
+    const tokenDbPath = path.join(dataDir, 'token-metrics.sqlite');
+    logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
+    const tokenDb = new Database(tokenDbPath);
+    tokenDb.pragma('journal_mode = WAL');
     dependencies = {
-        activityDb
+        activityDb,
+        auditDb,
+        tokenDb
     };
     return dependencies;
 }
@@ -48,6 +59,8 @@ export function closeDependencies() {
     if (dependencies) {
         logger.info("Closing dependencies...");
         dependencies.activityDb.close();
+        dependencies.auditDb.close();
+        dependencies.tokenDb.close();
         dependencies = null;
     }
 }
