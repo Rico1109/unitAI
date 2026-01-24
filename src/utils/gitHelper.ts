@@ -249,7 +249,7 @@ export async function checkCLIAvailability(): Promise<Record<string, boolean>> {
   // Keys match what init-session display code expects
   const backendToCommand: Record<string, string> = {
     "gemini": "gemini",
-    "cursor-agent": "cursor",
+    "qwen": "qwen",
     "droid": "droid"
   };
 

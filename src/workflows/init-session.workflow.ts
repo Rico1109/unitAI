@@ -218,7 +218,7 @@ ${recentCommits.map((commit, i) => `${i + 1}. [${commit.hash.substring(0, 8)}] $
 
       // Analisi AI con fallback tra più backend
       const analysisPrompt = buildCommitAnalysisPrompt(recentCommits);
-      const analysisBackends = [BACKENDS.GEMINI, BACKENDS.CURSOR];
+      const analysisBackends = [BACKENDS.GEMINI, BACKENDS.QWEN];
       let aiAnalysis = "";
       let lastAnalysisError: string | undefined;
 
@@ -332,7 +332,7 @@ La directory corrente non è un repository Git.
 ## Disponibilità CLI
 
 - **Gemini**: ${cliAvailability.gemini ? "✅ Disponibile" : "❌ Non disponibile"}
-- **Cursor Agent**: ${cliAvailability['cursor-agent'] ? "✅ Disponibile" : "❌ Non disponibile"}
+- **Qwen**: ${cliAvailability.qwen ? "✅ Disponibile" : "❌ Non disponibile"}
 - **Droid**: ${cliAvailability.droid ? "✅ Disponibile" : "❌ Non disponibile"}
 `);
 

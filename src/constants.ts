@@ -141,8 +141,8 @@ export const AGENT_ROLES = {
   },
   TESTER: {
     name: "TesterAgent",
-    backend: BACKENDS.CURSOR,
+    backend: BACKENDS.QWEN,
     specialization: "Fast test generation and validation",
-    description: "Uses Cursor Agent (Sonnet 4.5) for rapid test case generation and validation"
+    description: "Uses Qwen for rapid test generation and validation"
   }
 } as const;

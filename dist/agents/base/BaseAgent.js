@@ -28,6 +28,18 @@ import { logger } from "../../utils/logger.js";
  */
 export class BaseAgent {
     /**
+     * Optional override for the preferred backend
+     */
+    overrideBackend;
+    /**
+     * Initialize the agent with optional configuration
+     */
+    constructor(config) {
+        if (config?.preferredBackend) {
+            this.overrideBackend = config.preferredBackend;
+        }
+    }
+    /**
      * Main execution method - implements retry logic and error handling
      *
      * Flow:
@@ -57,10 +69,10 @@ export class BaseAgent {
             logger.info(`[${this.name}] Executing with backend: ${this.preferredBackend}`);
             // Step 2: Build prompt for AI backend
             const prompt = await this.buildPrompt(input);
-            // Step 3: Execute with preferred backend
             let rawOutput;
             let backendUsed;
-            const targetBackend = config.backendOverride || this.preferredBackend;
+            // Priority: Config Override > Constructor Override > Default Preferred
+            const targetBackend = config.backendOverride || this.overrideBackend || this.preferredBackend;
             try {
                 rawOutput = await this.executeWithBackend(targetBackend, prompt, config);
                 backendUsed = targetBackend;

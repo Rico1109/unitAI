@@ -14,6 +14,22 @@ import { ArchitectAgent } from "./ArchitectAgent.js";
 import { ImplementerAgent } from "./ImplementerAgent.js";
 import { TesterAgent } from "./TesterAgent.js";
 import type { IAgent } from "./types.js";
+import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/index.js";
+
+/**
+ * Helper to map config backend name to internal backend ID
+ */
+function resolveBackend(configName: string): string {
+  switch (configName.toLowerCase()) {
+    case 'gemini': return BACKENDS.GEMINI;
+    case 'droid': return BACKENDS.DROID;
+    case 'qwen': return BACKENDS.QWEN;
+    case 'rovodev': return BACKENDS.ROVODEV;
+    case 'cursor': return BACKENDS.CURSOR;
+    default: return configName;
+  }
+}
 
 /**
  * Agent types supported by the factory
@@ -62,12 +78,13 @@ export class AgentFactory {
    * - Refactoring strategies
    * - Performance optimization
    *
-   * Backend: Gemini (no fallback)
+   * Backend: Configurable (default: Gemini)
    *
    * @returns New ArchitectAgent instance
    */
   static createArchitect(): ArchitectAgent {
-    return new ArchitectAgent();
+    const backend = resolveBackend(getRoleBackend('architect'));
+    return new ArchitectAgent({ preferredBackend: backend });
   }
 
   /**
@@ -79,12 +96,13 @@ export class AgentFactory {
    * - Incremental implementation
    * - Code quality and best practices
    *
-   * Backend: Droid (GLM-4.6)
+   * Backend: Configurable (default: Droid)
    *
    * @returns New ImplementerAgent instance
    */
   static createImplementer(): ImplementerAgent {
-    return new ImplementerAgent();
+    const backend = resolveBackend(getRoleBackend('implementer'));
+    return new ImplementerAgent({ preferredBackend: backend });
   }
 
   /**
@@ -96,12 +114,13 @@ export class AgentFactory {
    * - Test coverage analysis
    * - Fast iteration on test cases
    *
-   * Backend: Cursor Agent (no fallback - optimized for speed)
+   * Backend: Configurable (default: Cursor Agent)
    *
    * @returns New TesterAgent instance
    */
   static createTester(): TesterAgent {
-    return new TesterAgent();
+    const backend = resolveBackend(getRoleBackend('tester'));
+    return new TesterAgent({ preferredBackend: backend });
   }
 
   /**

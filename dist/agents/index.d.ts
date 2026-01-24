@@ -58,7 +58,7 @@ export declare class AgentFactory {
      * - Refactoring strategies
      * - Performance optimization
      *
-     * Backend: Gemini (no fallback)
+     * Backend: Configurable (default: Gemini)
      *
      * @returns New ArchitectAgent instance
      */
@@ -72,7 +72,7 @@ export declare class AgentFactory {
      * - Incremental implementation
      * - Code quality and best practices
      *
-     * Backend: Droid (GLM-4.6)
+     * Backend: Configurable (default: Droid)
      *
      * @returns New ImplementerAgent instance
      */
@@ -86,7 +86,7 @@ export declare class AgentFactory {
      * - Test coverage analysis
      * - Fast iteration on test cases
      *
-     * Backend: Cursor Agent (no fallback - optimized for speed)
+     * Backend: Configurable (default: Cursor Agent)
      *
      * @returns New TesterAgent instance
      */

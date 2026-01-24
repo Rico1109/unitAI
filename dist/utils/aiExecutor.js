@@ -218,16 +218,46 @@ export async function executeQwenCLI(options) {
         onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
     }
     try {
-        const result = await executeCommand(CLI.COMMANDS.GEMINI.replace("gemini", "qwen"), args, {
+        const result = await executeCommand("qwen", args, {
             onProgress,
             timeout: 600000
         });
-        // Correction: The command is just 'qwen'
-        // Re-doing the command execution cleanly:
-        return await executeCommand("qwen", args, {
+        if (onProgress) {
+            onProgress(STATUS_MESSAGES.COMPLETED);
+        }
+        return result;
+    }
+    catch (error) {
+        if (onProgress) {
+            onProgress(STATUS_MESSAGES.FAILED);
+        }
+        throw error;
+    }
+}
+/**
+ * Execute Mistral Vibe CLI with the given options
+ */
+export async function executeVibeCLI(options) {
+    const { prompt, onProgress } = options;
+    if (!prompt || !prompt.trim()) {
+        throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
+    }
+    const args = [];
+    // Prompt is positional argument at end
+    args.push(prompt);
+    logger.info(`Executing Vibe CLI`);
+    if (onProgress) {
+        onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
+    }
+    try {
+        const result = await executeCommand(CLI.COMMANDS.VIBE, args, {
             onProgress,
             timeout: 600000
         });
+        if (onProgress) {
+            onProgress(STATUS_MESSAGES.COMPLETED);
+        }
+        return result;
     }
     catch (error) {
         if (onProgress) {
@@ -290,6 +320,9 @@ export async function executeAIClient(options, retryConfig) {
                 break;
             case BACKENDS.QWEN:
                 result = await executeQwenCLI(rest);
+                break;
+            case BACKENDS.VIBE:
+                result = await executeVibeCLI(rest);
                 break;
             default:
                 throw new Error(`Unsupported backend: ${backend}`);

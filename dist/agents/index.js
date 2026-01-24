@@ -12,6 +12,22 @@
 import { ArchitectAgent } from "./ArchitectAgent.js";
 import { ImplementerAgent } from "./ImplementerAgent.js";
 import { TesterAgent } from "./TesterAgent.js";
+import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/index.js";
+/**
+ * Helper to map config backend name to internal backend ID
+ */
+function resolveBackend(configName) {
+    switch (configName.toLowerCase()) {
+        case 'gemini': return BACKENDS.GEMINI;
+        case 'droid': return BACKENDS.DROID;
+        case 'qwen': return BACKENDS.QWEN;
+        case 'vibe': return BACKENDS.VIBE;
+        case 'rovodev': return BACKENDS.ROVODEV;
+        case 'cursor': return BACKENDS.CURSOR;
+        default: return configName;
+    }
+}
 /**
  * Agent types supported by the factory
  */
@@ -47,12 +63,13 @@ export class AgentFactory {
      * - Refactoring strategies
      * - Performance optimization
      *
-     * Backend: Gemini (no fallback)
+     * Backend: Configurable (default: Gemini)
      *
      * @returns New ArchitectAgent instance
      */
     static createArchitect() {
-        return new ArchitectAgent();
+        const backend = resolveBackend(getRoleBackend('architect'));
+        return new ArchitectAgent({ preferredBackend: backend });
     }
     /**
      * Create an ImplementerAgent instance
@@ -63,12 +80,13 @@ export class AgentFactory {
      * - Incremental implementation
      * - Code quality and best practices
      *
-     * Backend: Droid (GLM-4.6)
+     * Backend: Configurable (default: Droid)
      *
      * @returns New ImplementerAgent instance
      */
     static createImplementer() {
-        return new ImplementerAgent();
+        const backend = resolveBackend(getRoleBackend('implementer'));
+        return new ImplementerAgent({ preferredBackend: backend });
     }
     /**
      * Create a TesterAgent instance
@@ -79,12 +97,13 @@ export class AgentFactory {
      * - Test coverage analysis
      * - Fast iteration on test cases
      *
-     * Backend: Cursor Agent (no fallback - optimized for speed)
+     * Backend: Configurable (default: Cursor Agent)
      *
      * @returns New TesterAgent instance
      */
     static createTester() {
-        return new TesterAgent();
+        const backend = resolveBackend(getRoleBackend('tester'));
+        return new TesterAgent({ preferredBackend: backend });
     }
     /**
      * Create an agent dynamically by type
