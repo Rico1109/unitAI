@@ -22,7 +22,6 @@ function resolveBackend(configName) {
         case 'gemini': return BACKENDS.GEMINI;
         case 'droid': return BACKENDS.DROID;
         case 'qwen': return BACKENDS.QWEN;
-        case 'vibe': return BACKENDS.VIBE;
         case 'rovodev': return BACKENDS.ROVODEV;
         case 'cursor': return BACKENDS.CURSOR;
         default: return configName;

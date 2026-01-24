@@ -18,22 +18,19 @@ export declare const AI_MODELS: {
     readonly DROID: {
         readonly PRIMARY: "glm-4.6";
     };
-    readonly VIBE: {
-        readonly PRIMARY: "mistral-vibe";
-    };
 };
 export declare const CLI: {
     readonly COMMANDS: {
         readonly GEMINI: "gemini";
         readonly CURSOR_AGENT: "cursor-agent";
         readonly DROID: "droid";
-        readonly VIBE: "vibe";
         readonly ECHO: "echo";
     };
     readonly FLAGS: {
         readonly GEMINI: {
             readonly SANDBOX: "-s";
             readonly HELP: "-help";
+            readonly MODEL: "--model";
         };
         readonly CURSOR: {
             readonly PROMPT: "-p";
@@ -62,10 +59,6 @@ export declare const CLI: {
             readonly YOLO: "-y";
             readonly OUTPUT: "-o";
             readonly INTERACTIVE: "-i";
-        };
-        readonly VIBE: {
-            readonly MODEL: "--model";
-            readonly OUTPUT: "--output";
         };
     };
 };
@@ -108,7 +101,6 @@ export declare const BACKENDS: {
     readonly DROID: "ask-droid";
     readonly ROVODEV: "ask-rovodev";
     readonly QWEN: "ask-qwen";
-    readonly VIBE: "ask-vibe";
 };
 export { BACKENDS as default };
 export type GeminiModel = typeof AI_MODELS.GEMINI[keyof typeof AI_MODELS.GEMINI];

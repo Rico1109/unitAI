@@ -1,4 +1,4 @@
-import { CLI, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../constants.js";
+import { CLI, AI_MODELS, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../constants.js";
 // Re-export BACKENDS for convenience
 export { BACKENDS };
 import { executeCommand } from "./commandExecutor.js";
@@ -13,9 +13,8 @@ export async function executeGeminiCLI(options) {
     }
     const args = [];
     // Always pass a model: default to PRIMARY if none provided
-    // const effectiveModel = model ?? AI_MODELS.GEMINI.PRIMARY;
-    // args.push(CLI.FLAGS.GEMINI.MODEL, effectiveModel);
-    // REMOVED: Rely on CLI default
+    const effectiveModel = options.model ?? AI_MODELS.GEMINI.PRIMARY;
+    args.push(CLI.FLAGS.GEMINI.MODEL, effectiveModel);
     // Sandbox flag
     if (sandbox) {
         args.push(CLI.FLAGS.GEMINI.SANDBOX);
@@ -235,38 +234,6 @@ export async function executeQwenCLI(options) {
     }
 }
 /**
- * Execute Mistral Vibe CLI with the given options
- */
-export async function executeVibeCLI(options) {
-    const { prompt, onProgress } = options;
-    if (!prompt || !prompt.trim()) {
-        throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-    }
-    const args = [];
-    // Prompt is positional argument at end
-    args.push(prompt);
-    logger.info(`Executing Vibe CLI`);
-    if (onProgress) {
-        onProgress(STATUS_MESSAGES.STARTING_ANALYSIS);
-    }
-    try {
-        const result = await executeCommand(CLI.COMMANDS.VIBE, args, {
-            onProgress,
-            timeout: 600000
-        });
-        if (onProgress) {
-            onProgress(STATUS_MESSAGES.COMPLETED);
-        }
-        return result;
-    }
-    catch (error) {
-        if (onProgress) {
-            onProgress(STATUS_MESSAGES.FAILED);
-        }
-        throw error;
-    }
-}
-/**
  * Execute a simple command (like echo or help)
  */
 export async function executeSimpleCommand(command, args = []) {
@@ -320,9 +287,6 @@ export async function executeAIClient(options, retryConfig) {
                 break;
             case BACKENDS.QWEN:
                 result = await executeQwenCLI(rest);
-                break;
-            case BACKENDS.VIBE:
-                result = await executeVibeCLI(rest);
                 break;
             default:
                 throw new Error(`Unsupported backend: ${backend}`);

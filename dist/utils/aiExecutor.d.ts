@@ -6,6 +6,7 @@ export { BACKENDS };
 export interface AIExecutionOptions {
     backend: string;
     prompt: string;
+    model?: string;
     sandbox?: boolean;
     outputFormat?: "text" | "json";
     projectRoot?: string;
@@ -38,10 +39,6 @@ export declare function executeRovodevCLI(options: Omit<AIExecutionOptions, 'bac
  * Execute Qwen CLI with the given options
  */
 export declare function executeQwenCLI(options: Omit<AIExecutionOptions, 'backend'>): Promise<string>;
-/**
- * Execute Mistral Vibe CLI with the given options
- */
-export declare function executeVibeCLI(options: Omit<AIExecutionOptions, 'backend'>): Promise<string>;
 /**
  * Execute a simple command (like echo or help)
  */

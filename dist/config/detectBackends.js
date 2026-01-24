@@ -26,11 +26,6 @@ export const BACKEND_METADATA = {
         description: 'Fast implementation, refactoring',
         recommended: { role: 'tester' }
     },
-    vibe: {
-        name: 'vibe',
-        command: 'vibe',
-        description: 'Mistral Vibe - minimal coding agent'
-    },
     rovodev: {
         name: 'rovodev',
         command: 'rovodev',

@@ -17,9 +17,6 @@ export const AI_MODELS = {
     },
     DROID: {
         PRIMARY: "glm-4.6"
-    },
-    VIBE: {
-        PRIMARY: "mistral-vibe"
     }
 };
 export const CLI = {
@@ -27,14 +24,14 @@ export const CLI = {
         GEMINI: "gemini",
         CURSOR_AGENT: "cursor-agent",
         DROID: "droid",
-        VIBE: "vibe",
         ECHO: "echo"
     },
     FLAGS: {
         // Gemini specific flags (based on gemini CLI help)
         GEMINI: {
             SANDBOX: "-s",
-            HELP: "-help"
+            HELP: "-help",
+            MODEL: "--model"
         },
         CURSOR: {
             PROMPT: "-p",
@@ -63,10 +60,6 @@ export const CLI = {
             YOLO: "-y",
             OUTPUT: "-o",
             INTERACTIVE: "-i"
-        },
-        VIBE: {
-            MODEL: "--model",
-            OUTPUT: "--output"
         }
     }
 };
@@ -108,8 +101,7 @@ export const BACKENDS = {
     CURSOR: "ask-cursor",
     DROID: "ask-droid",
     ROVODEV: "ask-rovodev",
-    QWEN: "ask-qwen",
-    VIBE: "ask-vibe"
+    QWEN: "ask-qwen"
 };
 // Export BACKENDS values for easier importing
 export { BACKENDS as default };
