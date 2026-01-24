@@ -65,9 +65,32 @@ export const droidTool: UnifiedTool = {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
     }
 
-    if (skipPermissionsUnsafe && autonomyLevel !== AutonomyLevel.HIGH) {
-      throw new Error(
-        "Flag --skip-permissions-unsafe consentito solo con autonomyLevel=high"
+    // SECURITY: Permission bypass validation
+    if (skipPermissionsUnsafe) {
+      // Check 1: Only allowed with HIGH autonomy level
+      if (autonomyLevel !== AutonomyLevel.HIGH) {
+        throw new Error(
+          "Flag --skip-permissions-unsafe consentito solo con autonomyLevel=high"
+        );
+      }
+
+      // Check 2: NEVER allow in production environment
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Permission bypass not allowed in production environment"
+        );
+      }
+
+      // Check 3: Require explicit opt-in via environment variable
+      if (process.env.UNITAI_ALLOW_PERMISSION_BYPASS !== "true") {
+        throw new Error(
+          "Permission bypass requires UNITAI_ALLOW_PERMISSION_BYPASS=true environment variable"
+        );
+      }
+
+      // Log warning if bypass is enabled
+      console.warn(
+        "⚠️  WARNING: Permission bypass enabled - NOT FOR PRODUCTION USE"
       );
     }
 

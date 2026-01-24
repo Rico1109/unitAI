@@ -32,8 +32,9 @@ Genera suggerimenti concreti di refactoring con priorità e rischi residui.`;
         }
     };
     const analysisResult = await runParallelAnalysis([BACKENDS.GEMINI, BACKENDS.CURSOR], promptBuilder, onProgress, (backend) => backend === BACKENDS.CURSOR
-        ? { attachments: files.slice(0, 5), outputFormat: "text" }
-        : {});
+        ? { attachments: files.slice(0, 5), outputFormat: "text", trustedSource: true }
+        : { trustedSource: true } // All internal workflows are trusted
+    );
     let droidVerification = "";
     try {
         droidVerification = await executeAIClient({
@@ -47,7 +48,8 @@ Restituisci:
 - Metriche/controlli per ciascun step
 - Rischi residui`,
             auto: "low",
-            outputFormat: "text"
+            outputFormat: "text",
+            trustedSource: true // Internal workflow - skip prompt blocking
         });
     }
     catch (error) {

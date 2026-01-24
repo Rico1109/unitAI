@@ -71,7 +71,7 @@ describe('AIExecutor', () => {
       const { executeCursorAgentCLI } = await import('../../src/utils/aiExecutor.js');
       await executeCursorAgentCLI({
         prompt: 'Plan refactor',
-        attachments: ['/repo/src/file.ts'],
+        attachments: ['tests/fixtures/test-file.ts'],
         autoApprove: true,
         outputFormat: 'json'
       });
@@ -80,7 +80,8 @@ describe('AIExecutor', () => {
       expect(args).toContain('--print'); // Required for headless mode
       expect(args).toContain('--force'); // Replaces --auto-approve
       expect(args).toContain('--file');
-      expect(args).toContain('/repo/src/file.ts');
+      // Path should be validated and resolved to absolute path
+      expect(args.some((arg: string) => arg.includes('test-file.ts'))).toBe(true);
       expect(args).toContain('--output-format');
       expect(args).toContain('json');
       // --cwd flag was removed (not supported by cursor-agent CLI)
@@ -117,7 +118,7 @@ describe('AIExecutor', () => {
         auto: 'medium',
         sessionId: 'session-123',
         skipPermissionsUnsafe: true,
-        attachments: ['/repo/log.txt'],
+        attachments: ['tests/fixtures/test-file.ts'],
         cwd: '/repo',
         outputFormat: 'json'
       });

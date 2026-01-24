@@ -15,18 +15,18 @@ declare const droidSchema: z.ZodObject<{
     outputFormat: "json" | "text";
     auto: "low" | "medium" | "high";
     skipPermissionsUnsafe: boolean;
+    cwd?: string | undefined;
     autonomyLevel?: AutonomyLevel | undefined;
     sessionId?: string | undefined;
-    cwd?: string | undefined;
     files?: string[] | undefined;
 }, {
     prompt: string;
+    cwd?: string | undefined;
     autonomyLevel?: AutonomyLevel | undefined;
     outputFormat?: "json" | "text" | undefined;
     auto?: "low" | "medium" | "high" | undefined;
     sessionId?: string | undefined;
     skipPermissionsUnsafe?: boolean | undefined;
-    cwd?: string | undefined;
     files?: string[] | undefined;
 }>;
 export type DroidToolParams = z.infer<typeof droidSchema>;

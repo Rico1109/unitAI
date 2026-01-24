@@ -1,12 +1,13 @@
 ---
 title: unitAI Known Issues Registry
-version: 1.1.0
-updated: 2026-01-24T17:20:00+01:00
+version: 2.0.0
+updated: 2026-01-24T17:40:00+01:00
 scope: unitai-issues
 category: ssot
 subcategory: issues
-domain: [di, testing, configuration, lifecycle, organization]
+domain: [di, testing, configuration, lifecycle, organization, security]
 changelog:
+  - 2.0.0 (2026-01-24): Add security audit findings (13 new issues).
   - 1.1.0 (2026-01-24): Mark DI-001, DI-002, TEST-001 as RESOLVED.
   - 1.0.0 (2026-01-24): Initial registry from architecture analysis.
 ---
@@ -187,6 +188,129 @@ private states: Map<string, BackendState> = new Map();
 
 ---
 
+## Security
+
+⚠️ **SECURITY AUDIT PERFORMED: 2026-01-24** (See `ssot_unitai_security_audit_2026-01-24.md` for full report)
+
+### SEC-001: Command Injection in detectBackends.ts
+
+**Severity:** 🔴 CRITICAL
+**Location:** `src/config/detectBackends.ts:56-62`
+
+**Observation**: The `isCommandAvailable()` function uses `execSync` with string interpolation, creating a command injection vulnerability.
+
+```typescript
+execSync(`which ${command}`, { stdio: 'ignore' });  // ⚠️ INJECTION RISK
+```
+
+**Attack Vector**: Malicious input like `"gemini; rm -rf /"` would execute arbitrary commands.
+
+**Context**: Called during backend detection at startup and in CLI wizard.
+
+**Impact**:
+- Arbitrary command execution
+- Potential system compromise
+- Data loss or corruption
+
+**Confirmed by**: Triangulated review (Qwen, Droid, Gemini backends)
+
+---
+
+### SEC-002: Unrestricted Command Execution
+
+**Severity:** 🔴 CRITICAL
+**Location:** `src/utils/commandExecutor.ts:45-60`
+
+**Observation**: `executeCommand()` accepts arbitrary commands and arguments without whitelist validation.
+
+```typescript
+const child = spawn(command, args, { ... });  // No validation!
+```
+
+**Context**: This is the central command execution function used by all AI backend executors.
+
+**Impact**:
+- Any caller can execute arbitrary system commands
+- File system access
+- Network exfiltration
+- Credential theft
+
+**Confirmed by**: Triangulated review (all 3 backends)
+
+---
+
+### SEC-003: Permission Bypass via Flag
+
+**Severity:** 🔴 CRITICAL
+**Location:** Multiple workflow files
+
+**Observation**: Usage of `--skip-permissions-unsafe` flag completely bypasses the permission system.
+
+```typescript
+args: ['exec', '--skip-permissions-unsafe']  // ⚠️ BYPASSES SECURITY
+```
+
+**Context**: Found in workflow definitions where Droid backend is used.
+
+**Impact**:
+- Permission system circumvented
+- Audit trail not recorded
+- Unauthorized operations allowed
+
+---
+
+### SEC-004: Path Traversal in File Attachments
+
+**Severity:** 🟠 HIGH
+**Location:** `src/utils/aiExecutor.ts:120-135`
+
+**Observation**: File attachment paths are passed to AI backends without validation.
+
+```typescript
+attachments.forEach(file => {
+  args.push('--file', file);  // ⚠️ No path validation
+});
+```
+
+**Attack Vector**: Paths like `'../../../etc/passwd'` could expose sensitive files.
+
+**Impact**:
+- Access to files outside project directory
+- Credential exposure
+- Information disclosure
+
+---
+
+### SEC-005: Prompt Injection Vulnerability
+
+**Severity:** 🟠 HIGH
+**Location:** `src/utils/aiExecutor.ts` (all backend executors)
+
+**Observation**: User prompts are passed directly to AI backends without sanitization.
+
+**Attack Vector**: Malicious prompts can attempt jailbreaking, data extraction, or command execution through AI interpretation.
+
+**Impact**:
+- AI model manipulation
+- Unintended operations
+- Information leakage
+
+---
+
+### SEC-006: Missing Rate Limiting
+
+**Severity:** 🟡 MEDIUM
+**Location:** `src/utils/aiExecutor.ts`, `src/server.ts`
+
+**Observation**: No rate limiting on AI backend calls or MCP server requests.
+
+**Impact**:
+- Resource exhaustion
+- DoS attacks
+- Cost inflation (API charges)
+
+---
+
 ## Code Organization
 
 ### ORG-001: BACKENDS Exported From Multiple Files
@@ -234,21 +358,36 @@ export const AGENT_ROLES = {
 
 | ID | Category | Severity | Location | Status |
 |----|----------|----------|----------|--------|
+| **SECURITY ISSUES (Audit: 2026-01-24)** |
+| SEC-001 | Security | 🔴 CRITICAL | `detectBackends.ts:56-62` | 🔶 OPEN |
+| SEC-002 | Security | 🔴 CRITICAL | `commandExecutor.ts:45-60` | 🔶 OPEN |
+| SEC-003 | Security | 🔴 CRITICAL | Multiple workflows | 🔶 OPEN |
+| SEC-004 | Security | 🟠 HIGH | `aiExecutor.ts:120-135` | 🔶 OPEN |
+| SEC-005 | Security | 🟠 HIGH | `aiExecutor.ts` (all) | 🔶 OPEN |
+| SEC-006 | Security | 🟡 MEDIUM | `aiExecutor.ts`, `server.ts` | 🔶 OPEN |
+| **DEPENDENCY INJECTION** |
 | ~~DI-001~~ | DI | High | `auditTrail.ts:75` | ✅ RESOLVED |
 | ~~DI-002~~ | DI | High | `activityAnalytics.ts:101` | ✅ RESOLVED |
+| **TESTING** |
 | ~~TEST-001~~ | Testing | High | `activityAnalytics.test.ts` | ✅ RESOLVED |
+| **CONFIGURATION** |
 | CFG-001 | Config | Medium | `config.ts:136` | 🔶 OPEN |
-| CFG-002 | Config | Low | `detectBackends.ts:56-62` | 🔶 OPEN |
+| CFG-002 | Config | Low | `detectBackends.ts:56-62` | 🔶 OPEN (⚠️ Also SEC-001) |
+| **LIFECYCLE** |
 | LCY-001 | Lifecycle | Medium | `server.ts` | 🔶 OPEN |
 | LCY-002 | Lifecycle | Low | `modelSelector.ts:91` | 🔶 OPEN |
 | LCY-003 | Lifecycle | Low | `circuitBreaker.ts` | 🔶 OPEN |
+| **CODE ORGANIZATION** |
 | ORG-001 | Organization | Low | `constants.ts`, `aiExecutor.ts` | 🔶 OPEN |
 | ORG-002 | Organization | Low | `constants.ts:127-148` | 🔶 OPEN |
 
-**Progress**: 3/10 issues resolved (30%)
+**Progress**: 3/16 issues resolved (19%)
+**Security Status**: ⚠️ **3 CRITICAL vulnerabilities require immediate attention**
+**Production Ready**: ❌ **NO** - Fix SEC-001, SEC-002, SEC-003 before deployment
 
 ---
 
 ## Related Documents
 
 - `ssot_unitai_architecture_2026-01-24.md` - System architecture
+- `ssot_unitai_security_audit_2026-01-24.md` - **Comprehensive security audit report**

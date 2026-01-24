@@ -4,7 +4,8 @@
  * Detects which AI CLI backends are available on the system.
  */
 
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
+import { logger } from '../utils/logger.js';
 
 export interface BackendInfo {
     name: string;
@@ -54,9 +55,29 @@ export const BACKEND_METADATA: Record<string, Omit<BackendInfo, 'available'>> = 
  * Check if a CLI command is available on the system
  */
 function isCommandAvailable(command: string): boolean {
+    // SECURITY: Whitelist of allowed backend commands to prevent command injection
+    const ALLOWED_BACKEND_COMMANDS = [
+        'gemini',
+        'droid',
+        'qwen',
+        'cursor-agent',
+        'rovodev'
+    ];
+
+    // 1. Whitelist check FIRST - reject unknown commands
+    if (!ALLOWED_BACKEND_COMMANDS.includes(command)) {
+        logger.warn(`Rejected unknown command: ${command}`);
+        return false;
+    }
+
     try {
-        execSync(`which ${command}`, { stdio: 'ignore' });
-        return true;
+        // 2. Use spawnSync with shell: false to prevent command injection
+        const result = spawnSync('which', [command], {
+            stdio: 'ignore',
+            shell: false,  // Critical: prevents shell interpretation
+            timeout: 5000  // 5 second timeout
+        });
+        return result.status === 0;
     } catch {
         return false;
     }

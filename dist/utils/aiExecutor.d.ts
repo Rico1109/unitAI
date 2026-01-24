@@ -18,6 +18,7 @@ export interface AIExecutionOptions {
     skipPermissionsUnsafe?: boolean;
     cwd?: string;
     onProgress?: (output: string) => void;
+    trustedSource?: boolean;
 }
 /**
  * Execute Gemini CLI with the given options

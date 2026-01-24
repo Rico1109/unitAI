@@ -6,7 +6,7 @@
  * Run with: unitai health
  */
 
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { detectBackends, BACKEND_METADATA } from '../config/detectBackends.js';
 import { loadConfig, getConfigPath, getConfigAge } from '../config/config.js';
 
@@ -23,9 +23,16 @@ interface BackendStatus {
 async function testBackend(command: string): Promise<{ success: boolean; timeMs: number; error?: string }> {
     const start = Date.now();
     try {
-        // Just check if command exists and is responsive
-        execSync(`which ${command}`, { stdio: 'ignore', timeout: 5000 });
-        return { success: true, timeMs: Date.now() - start };
+        // SECURITY: Use spawnSync with shell:false to prevent command injection (SEC-005)
+        const result = spawnSync('which', [command], {
+            stdio: 'ignore',
+            shell: false,  // Prevents shell interpretation
+            timeout: 5000
+        });
+        return {
+            success: result.status === 0,
+            timeMs: Date.now() - start
+        };
     } catch (error) {
         return { success: false, timeMs: Date.now() - start, error: 'not installed' };
     }

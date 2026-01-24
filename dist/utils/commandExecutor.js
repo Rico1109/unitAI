@@ -1,14 +1,95 @@
 import { spawn } from "child_process";
+import path from "path";
 import { logger } from "./logger.js";
+/**
+ * Execute a command and return the output
+ */
+// SECURITY: Whitelist of allowed executables to prevent arbitrary command execution
+const ALLOWED_COMMANDS = {
+    gemini: "gemini",
+    droid: "droid",
+    qwen: "qwen",
+    "cursor-agent": "cursor-agent",
+    rovodev: "rovodev",
+    acli: "acli", // Rovodev wrapper
+    git: "git",
+    npm: "npm",
+    which: "which",
+};
+// Commands that accept free-form prompts (exempt from strict arg validation)
+const AI_BACKEND_COMMANDS = new Set([
+    "gemini",
+    "droid",
+    "qwen",
+    "cursor-agent",
+    "rovodev",
+    "acli"
+]);
+// SECURITY: Dangerous argument patterns that indicate injection attempts
+// NOTE: More relaxed for AI backend prompts (they use shell:false)
+const DANGEROUS_PATTERNS = [
+    /[;&|`]/, // Shell metacharacters (removed $ and () for prompts)
+    /\.\.\//, // Path traversal
+];
+/**
+ * SECURITY: Validate command against whitelist
+ */
+function validateCommand(command) {
+    const allowed = ALLOWED_COMMANDS[command];
+    if (!allowed) {
+        throw new Error(`Command not allowed: ${command}`);
+    }
+    return allowed;
+}
+/**
+ * SECURITY: Validate arguments for dangerous patterns
+ * AI backend commands are exempt since they accept natural language prompts
+ */
+function validateArgs(command, args) {
+    // Skip validation for AI backends (they accept prompts with parentheses, etc.)
+    if (AI_BACKEND_COMMANDS.has(command)) {
+        return args;
+    }
+    // Strict validation for system commands (git, npm, etc.)
+    return args.map((arg) => {
+        for (const pattern of DANGEROUS_PATTERNS) {
+            if (pattern.test(arg)) {
+                throw new Error(`Dangerous argument pattern detected: ${arg}`);
+            }
+        }
+        return arg;
+    });
+}
+/**
+ * SECURITY: Validate working directory to prevent path traversal
+ */
+function validateCwd(cwd) {
+    if (!cwd)
+        return process.cwd();
+    const resolved = path.resolve(cwd);
+    const projectRoot = path.resolve(process.cwd());
+    if (!resolved.startsWith(projectRoot)) {
+        throw new Error(`Working directory outside project: ${cwd}`);
+    }
+    if (resolved.includes("..")) {
+        throw new Error(`Path traversal in cwd: ${cwd}`);
+    }
+    return resolved;
+}
 export async function executeCommand(command, args, options = {}) {
-    const { onProgress, timeout = 600000 } = options; // 10 minute default timeout
+    const { onProgress, timeout = 600000, cwd } = options; // 10 minute default timeout
+    // SECURITY: Validate all inputs before execution
+    const safeCommand = validateCommand(command);
+    const safeArgs = validateArgs(command, args);
+    const safeCwd = validateCwd(cwd);
     return new Promise((resolve, reject) => {
-        logger.debug(`Executing: ${command} ${args.join(" ")}`);
+        logger.debug(`Executing: ${safeCommand} ${safeArgs.join(" ")}`);
         let stdout = "";
         let stderr = "";
         let progressInterval = null;
-        const child = spawn(command, args, {
+        const child = spawn(safeCommand, safeArgs, {
             shell: false,
+            cwd: safeCwd,
             stdio: ["pipe", "pipe", "pipe"] // Changed from "ignore" to "pipe" for stdin
         });
         // Close stdin immediately - we don't need to send input

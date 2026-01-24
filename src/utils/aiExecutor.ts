@@ -4,6 +4,8 @@ import { CLI, AI_MODELS, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../co
 export { BACKENDS };
 import { executeCommand } from "./commandExecutor.js";
 import { logger } from "./logger.js";
+import { validateFilePaths } from "./pathValidator.js";
+import { sanitizePrompt, validatePromptNotEmpty } from "./promptSanitizer.js";
 import type { GeminiModel } from "../constants.js";
 
 /**
@@ -26,6 +28,8 @@ export interface AIExecutionOptions {
   skipPermissionsUnsafe?: boolean;
   cwd?: string;
   onProgress?: (output: string) => void;
+  // Security options
+  trustedSource?: boolean; // Skip prompt sanitization blocking (for internal workflows)
 }
 
 /**
@@ -34,11 +38,14 @@ export interface AIExecutionOptions {
 export async function executeGeminiCLI(
   options: Omit<AIExecutionOptions, 'backend'>
 ): Promise<string> {
-  const { prompt, sandbox = false, onProgress } = options;
+  const { prompt, sandbox = false, onProgress, trustedSource = false } = options;
 
-  if (!prompt || !prompt.trim()) {
-    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-  }
+  // SECURITY: Validate and sanitize prompt
+  validatePromptNotEmpty(prompt);
+  const { sanitized } = sanitizePrompt(prompt, {
+    skipBlocking: trustedSource,
+    skipRedaction: trustedSource
+  });
 
   const args: string[] = [];
 
@@ -53,7 +60,7 @@ export async function executeGeminiCLI(
 
   // Prompt as positional argument (FIXED: -p flag is deprecated in Gemini CLI)
   // No need to manually quote - spawn with shell:false handles special characters
-  args.push(prompt);
+  args.push(sanitized);
 
   logger.info(`Executing Gemini CLI`);
 
@@ -89,12 +96,16 @@ export async function executeCursorAgentCLI(
     attachments = [],
     autoApprove = false,
     autonomyLevel,
-    onProgress
+    onProgress,
+    trustedSource = false
   } = options;
 
-  if (!prompt || !prompt.trim()) {
-    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-  }
+  // SECURITY: Validate and sanitize prompt
+  validatePromptNotEmpty(prompt);
+  const { sanitized: sanitizedCursor } = sanitizePrompt(prompt, {
+    skipBlocking: trustedSource,
+    skipRedaction: trustedSource
+  });
 
   const args: string[] = [];
 
@@ -114,14 +125,16 @@ export async function executeCursorAgentCLI(
     args.push(CLI.FLAGS.CURSOR.OUTPUT, outputFormat);
   }
 
+  // SECURITY: Validate file paths before passing to CLI
   if (attachments.length > 0) {
-    attachments.forEach(file => {
+    const validatedPaths = validateFilePaths(attachments);
+    validatedPaths.forEach(file => {
       args.push(CLI.FLAGS.CURSOR.FILE, file);
     });
   }
 
   // Prompt is the last positional argument
-  args.push(prompt);
+  args.push(sanitizedCursor);
 
   logger.info(`Executing Cursor Agent CLI`);
 
@@ -163,12 +176,16 @@ export async function executeDroidCLI(
     skipPermissionsUnsafe = false,
     attachments = [],
     cwd,
-    onProgress
+    onProgress,
+    trustedSource = false
   } = options;
 
-  if (!prompt || !prompt.trim()) {
-    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-  }
+  // SECURITY: Validate and sanitize prompt
+  validatePromptNotEmpty(prompt);
+  const { sanitized: sanitizedDroid } = sanitizePrompt(prompt, {
+    skipBlocking: trustedSource,
+    skipRedaction: trustedSource
+  });
 
   const args: string[] = [];
   args.push(CLI.FLAGS.DROID.EXEC);
@@ -197,14 +214,16 @@ export async function executeDroidCLI(
     args.push(CLI.FLAGS.DROID.CWD, cwd);
   }
 
+  // SECURITY: Validate file paths before passing to CLI
   if (attachments.length > 0) {
-    attachments.forEach(file => {
+    const validatedPaths = validateFilePaths(attachments);
+    validatedPaths.forEach(file => {
       args.push(CLI.FLAGS.DROID.FILE, file);
     });
   }
 
   // Prompt is positional argument at end
-  args.push(prompt);
+  args.push(sanitizedDroid);
 
   logger.info(`Executing Droid CLI (auto=${auto})`);
 
@@ -240,11 +259,14 @@ import { selectFallbackBackend } from "../workflows/modelSelector.js";
 export async function executeRovodevCLI(
   options: Omit<AIExecutionOptions, 'backend'>
 ): Promise<string> {
-  const { prompt, autoApprove, onProgress } = options;
+  const { prompt, autoApprove, onProgress, trustedSource = false } = options;
 
-  if (!prompt || !prompt.trim()) {
-    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-  }
+  // SECURITY: Validate and sanitize prompt
+  validatePromptNotEmpty(prompt);
+  const { sanitized: sanitizedRovo } = sanitizePrompt(prompt, {
+    skipBlocking: trustedSource,
+    skipRedaction: trustedSource
+  });
 
   const args: string[] = [];
   args.push(CLI.FLAGS.ROVODEV.RUN);
@@ -255,7 +277,7 @@ export async function executeRovodevCLI(
   }
 
   // Prompt is positional argument at end
-  args.push(prompt);
+  args.push(sanitizedRovo);
 
   logger.info(`Executing Rovodev CLI`);
 
@@ -288,11 +310,14 @@ export async function executeRovodevCLI(
 export async function executeQwenCLI(
   options: Omit<AIExecutionOptions, 'backend'>
 ): Promise<string> {
-  const { prompt, sandbox, autoApprove, outputFormat, onProgress } = options;
+  const { prompt, sandbox, autoApprove, outputFormat, onProgress, trustedSource = false } = options;
 
-  if (!prompt || !prompt.trim()) {
-    throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-  }
+  // SECURITY: Validate and sanitize prompt
+  validatePromptNotEmpty(prompt);
+  const { sanitized: sanitizedQwen } = sanitizePrompt(prompt, {
+    skipBlocking: trustedSource,
+    skipRedaction: trustedSource
+  });
 
   const args: string[] = [];
 
@@ -312,7 +337,7 @@ export async function executeQwenCLI(
   }
 
   // Prompt is positional argument at end
-  args.push(prompt);
+  args.push(sanitizedQwen);
 
   logger.info(`Executing Qwen CLI`);
 
