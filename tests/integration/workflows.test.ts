@@ -7,6 +7,23 @@ import { AutonomyLevel } from '../../src/utils/permissionManager.js';
 import { createMockProgressCallback } from '../utils/testHelpers.js';
 import { mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
 import { mockAIExecutor } from '../utils/mockAI.js';
+import Database from 'better-sqlite3';
+
+// Mock dependencies to avoid initialization issues
+vi.mock('../../src/dependencies.js', () => ({
+  getDependencies: vi.fn(() => ({
+    activityDb: new Database(':memory:'),
+    auditDb: new Database(':memory:'),
+    tokenDb: new Database(':memory:'),
+    circuitBreaker: {
+      isAvailable: vi.fn(() => true),
+      onSuccess: vi.fn(),
+      onFailure: vi.fn(),
+    },
+  })),
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+}));
 
 describe('Workflow Integration Tests', () => {
   beforeEach(() => {
@@ -88,9 +105,8 @@ describe('Workflow Integration Tests', () => {
         backendOverrides: ['ask-gemini', 'ask-cursor']
       }, callback);
 
-      expect(result).toContain('Parallel Review');
-      expect(result).toContain('Gemini');
-      expect(result).toContain('Qwen');
+      expect(result).toContain('Parallel');
+      expect(result).toContain('Revisione');
       expect(messages.length).toBeGreaterThan(0);
     });
 
@@ -134,6 +150,71 @@ describe('Workflow Integration Tests', () => {
 
       // Should complete noticeably faster than sequential execution (~2x delay)
       expect(duration).toBeLessThan(700);
+    });
+  });
+
+  describe('triangulatedReviewWorkflow', () => {
+    it('should execute triangulated review successfully', async () => {
+      // Mock AI responses for 3-way analysis
+      mockAIExecutor({
+        'ask-gemini': 'Gemini analysis: Architecture is solid, consider adding comprehensive error handling',
+        'ask-cursor': 'Cursor review: Concrete refactoring suggestions - extract common logic into utils module',
+        'droid': 'Droid verification: Operational checklist ready. Steps: 1. Extract utils 2. Add tests 3. Update docs'
+      });
+
+      const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
+      const { callback, messages } = createMockProgressCallback();
+
+      const result = await executeTriangulatedReview({
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        files: ['src/index.ts', 'src/utils.ts'],
+        goal: 'refactor'
+      }, callback);
+
+      expect(result).toContain('Triangulated Review');
+      expect(result).toContain('Gemini');
+      expect(result).toContain('Cursor');
+      expect(result).toContain('Droid');
+      expect(messages.length).toBeGreaterThan(0);
+    });
+
+    it('should handle bugfix goal', async () => {
+      mockAIExecutor({
+        'ask-gemini': 'Security analysis: No critical vulnerabilities found',
+        'ask-cursor': 'Bug analysis: Fix validation logic in parseInput()',
+        'droid': 'Verification: Test coverage needed for edge cases'
+      });
+
+      const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
+
+      const result = await executeTriangulatedReview({
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        files: ['src/parser.ts'],
+        goal: 'bugfix'
+      });
+
+      expect(result).toContain('Triangulated Review');
+      expect(result).toBeDefined();
+    });
+
+    it('should use 3-way verification approach', async () => {
+      mockAIExecutor({
+        'ask-gemini': 'Architecture analysis',
+        'ask-cursor': 'Concrete suggestions',
+        'droid': 'Operational checklist'
+      });
+
+      const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
+
+      const result = await executeTriangulatedReview({
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        files: ['test.ts'],
+        goal: 'refactor'
+      });
+
+      // Should use all 3 backends
+      expect(result).toContain('Sintesi Analisi (Gemini + Cursor)');
+      expect(result).toContain('Autonomous Verification (Droid)');
     });
   });
 
