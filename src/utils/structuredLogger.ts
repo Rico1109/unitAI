@@ -43,7 +43,7 @@ export interface LogEntry {
   component: string;              // Nome workflow o modulo
   operation: string;              // Nome operazione specifica
   message: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   duration?: number;              // Millisecondi (per timing)
   workflowId?: string;            // Per correlare log stesso workflow
   parentSpanId?: string;          // Per distributed tracing (future)
@@ -92,23 +92,31 @@ export class StructuredLogger {
   /**
    * Gets or creates a write stream for a log file
    */
-  private getStream(filename: string): fs.WriteStream {
-    const filePath = path.join(this.logDir, filename);
+  private getStream(filename: string): fs.WriteStream | undefined {
+    try {
+      const filePath = path.join(this.logDir, filename);
 
-    // Check if file needs rotation
-    if (fs.existsSync(filePath)) {
-      const stats = fs.statSync(filePath);
-      if (stats.size >= this.maxFileSizeBytes) {
-        this.rotateFile(filename);
+      // Check if file needs rotation
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath);
+        if (stats.size >= this.maxFileSizeBytes) {
+          this.rotateFile(filename);
+        }
       }
-    }
 
-    if (!this.streams.has(filename)) {
-      const stream = fs.createWriteStream(filePath, { flags: 'a' });
-      this.streams.set(filename, stream);
-    }
+      if (!this.streams.has(filename)) {
+        // Ensure log directory exists before creating stream
+        this.ensureLogDirectory();
+        const stream = fs.createWriteStream(filePath, { flags: 'a' });
+        this.streams.set(filename, stream);
+      }
 
-    return this.streams.get(filename)!;
+      return this.streams.get(filename);
+    } catch (error) {
+      // If stream creation fails, log to stderr and return undefined
+      console.error(`Failed to create log stream for ${filename}:`, error);
+      return undefined;
+    }
   }
 
   /**
@@ -166,11 +174,16 @@ export class StructuredLogger {
 
     // Write to files
     const logLine = JSON.stringify(fullEntry) + '\n';
-    
+
     for (const file of files) {
       try {
         const stream = this.getStream(file);
-        stream.write(logLine);
+        if (stream) {
+          stream.write(logLine);
+        } else {
+          // Stream creation failed - log line is lost but we don't crash
+          console.error(`Failed to get stream for ${file}, log entry lost`);
+        }
       } catch (error) {
         // Fallback to stderr if file write fails
         console.error('Failed to write log:', error);
@@ -215,7 +228,7 @@ export class StructuredLogger {
     component: string,
     operation: string,
     message: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): void {
     this.log({
       level: LogLevel.DEBUG,
@@ -235,7 +248,7 @@ export class StructuredLogger {
     component: string,
     operation: string,
     message: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): void {
     this.log({
       level: LogLevel.INFO,
@@ -255,7 +268,7 @@ export class StructuredLogger {
     component: string,
     operation: string,
     message: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): void {
     this.log({
       level: LogLevel.WARN,
@@ -276,7 +289,7 @@ export class StructuredLogger {
     operation: string,
     message: string,
     error?: Error,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): void {
     this.log({
       level: LogLevel.ERROR,

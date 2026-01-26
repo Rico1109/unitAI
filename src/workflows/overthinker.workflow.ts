@@ -112,12 +112,25 @@ ${content}
     });
     history.push({ step: "Master Prompt", agent: "Prompt Refiner", content: masterPrompt });
     onProgress?.("✅ Master Prompt generated.");
-  } catch (e: any) {
-    throw new Error(`Failed in Phase 1: ${e.message}`);
+  } catch (e: unknown) {
+    throw new Error(`Failed in Phase 1: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  // Save Master Prompt immediately
-  writeFileSync(`master_prompt_${new Date().getTime()}.md`, masterPrompt);
+  // Save Master Prompt immediately (to .unitai directory)
+  try {
+    const outputDir = ".unitai";
+    const masterPromptFile = join(outputDir, `master_prompt_${new Date().getTime()}.md`);
+
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir, { recursive: true });
+    }
+
+    writeFileSync(masterPromptFile, masterPrompt);
+    onProgress?.(`💾 Saved master prompt to: ${masterPromptFile}`);
+  } catch (e: unknown) {
+    onProgress?.(`⚠️ Could not save master prompt: ${e instanceof Error ? e.message : String(e)}`);
+    // Don't fail the workflow if master prompt can't be saved (it's logged in history anyway)
+  }
 
 
   // ============================================================================ 
@@ -150,8 +163,8 @@ ${content}
     });
     history.push({ step: "Initial Reasoning", agent: "Lead Architect", content: currentThinking });
     onProgress?.("✅ Initial reasoning completed.");
-  } catch (e: any) {
-     throw new Error(`Failed in Phase 2: ${e.message}`);
+  } catch (e: unknown) {
+     throw new Error(`Failed in Phase 2: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // ============================================================================ 
@@ -191,9 +204,9 @@ ${content}
       currentThinking = improvedThinking;
       history.push({ step: `Iteration ${i}`, agent: `Reviewer #${i}`, content: currentThinking });
       onProgress?.(`✅ Iteration ${i} completed.`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // FAIL-FAST: Phase 3 iteration failure stops the entire workflow
-      throw new Error(`Failed in Phase 3, Iteration ${i}: ${e.message}`);
+      throw new Error(`Failed in Phase 3, Iteration ${i}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -234,9 +247,9 @@ ${content}
     });
     history.push({ step: "Final Synthesis", agent: "Consolidator", content: finalDocument });
     onProgress?.("✅ Final synthesis completed.");
-  } catch (e: any) {
+  } catch (e: unknown) {
     // FAIL-FAST: Phase 4 synthesis failure stops the entire workflow
-    throw new Error(`Failed in Phase 4 (Final Consolidation): ${e.message}`);
+    throw new Error(`Failed in Phase 4 (Final Consolidation): ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Save to file
@@ -254,8 +267,8 @@ ${content}
 
     writeFileSync(finalOutputPath, finalDocument);
     onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
-  } catch (e: any) {
-    onProgress?.(`⚠️ Could not write file: ${e.message}`);
+  } catch (e: unknown) {
+    onProgress?.(`⚠️ Could not write file: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   return formatWorkflowOutput(
