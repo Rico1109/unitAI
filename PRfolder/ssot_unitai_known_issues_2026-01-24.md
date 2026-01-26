@@ -1,12 +1,13 @@
 ---
 title: unitAI Known Issues Registry
-version: 2.3.0
-updated: 2026-01-24T23:45:00+01:00
+version: 2.4.0
+updated: 2026-01-26T13:05:00+01:00
 scope: unitai-issues
 category: ssot
 subcategory: issues
 domain: [di, testing, configuration, lifecycle, organization, security]
 changelog:
+  - 2.4.0 (2026-01-26): Mark OBS-001, OBS-002, OBS-003 as RESOLVED (commit 80d328e - FAIL-FAST/FAIL-CLOSED implementation).
   - 2.3.0 (2026-01-24): Mark SEC-001 to SEC-006 as RESOLVED (security implementation from previous session).
   - 2.2.0 (2026-01-24): Mark LCY-001, LCY-003 as RESOLVED (reliability implementation).
   - 2.1.0 (2026-01-24): Add CFG-003 for hardcoded workflow backend selection.
@@ -403,6 +404,57 @@ export const AGENT_ROLES = {
 
 ---
 
+
+## Observability (Layer 5 Audit)
+
+### ~~OBS-001: Silent Audit Trail Failures~~ ✅ RESOLVED
+
+**Status**: Fixed in commit 80d328e (feat/di-lifecycle branch)
+
+**Severity**: 🔴 CRITICAL
+**Location**: `src/utils/permissionManager.ts:146-164`
+**Observation**: Tests pass but silently fail to record audit entries with "Error: Dependencies not initialized".
+**Context**: Critical for security compliance. Means actions are happening without immutable record.
+**Impact**: Security blindness, compliance failure.
+
+**Resolution**: Implemented FAIL-CLOSED policy - audit failures now throw `CRITICAL: Audit trail failure` and abort operations. Tests updated to initialize dependencies properly. "No record = No action" enforced.
+
+### ~~OBS-002: Cache Race Condition~~ ✅ RESOLVED
+
+**Status**: Fixed in commit 80d328e (feat/di-lifecycle branch)
+
+**Severity**: 🟠 HIGH
+**Location**: `src/workflows/cache.ts:195-209`
+**Observation**: `saveToDisk` is synchronous and lacks file locking. Multiple workflows writing simultaneously will corrupt cache.
+**Impact**: Data loss, corrupted workflow state.
+
+**Resolution**: Converted `saveToDisk()` to async with `isWriting` lock flag. Uses `fs/promises.writeFile` for non-blocking I/O. Breaking change: `cleanup()` and `clear()` now return `Promise<void>`.
+
+### ~~OBS-003: Inconsistent Error Handling~~ ✅ RESOLVED
+
+**Status**: Fixed in commit 80d328e (feat/di-lifecycle branch)
+
+**Severity**: 🟡 MEDIUM
+**Location**: `src/workflows/overthinker.workflow.ts`
+**Observation**: Phases use different error strategies (some fail hard, others fail silent).
+**Impact**: Unpredictable workflow behavior, hard to debug.
+
+**Resolution**: Implemented FAIL-FAST policy across all 4 phases. Phase 3 iterations and Phase 4 consolidation now throw errors immediately instead of using fallbacks. Data integrity prioritized over partial success.
+
+### OBS-004: Hardcoded File Writes
+**Severity**: 🟡 MEDIUM
+**Location**: `src/workflows/overthinker.workflow.ts:120`
+**Observation**: Writes `master_prompt_*.md` to CWD without validation.
+**Impact**: File clutter, potential overwrites, unpredictable artifacts.
+
+### OBS-005: Italian Error Messages
+**Severity**: ⚪ LOW
+**Location**: `src/utils/gitHelper.ts`
+**Observation**: "Errore nell'esecuzione di git..."
+**Impact**: Non-standard localization.
+
+---
+
 ## Summary Table
 
 | ID | Category | Severity | Location | Status |
@@ -414,6 +466,12 @@ export const AGENT_ROLES = {
 | ~~SEC-004~~ | Security | 🟠 HIGH | `aiExecutor.ts:120-135` | ✅ RESOLVED |
 | ~~SEC-005~~ | Security | 🟠 HIGH | `aiExecutor.ts` (all) | ✅ RESOLVED |
 | ~~SEC-006~~ | Security | 🟡 MEDIUM | `aiExecutor.ts`, `server.ts` | ✅ RESOLVED |
+| **OBSERVABILITY (Layer 5 Audit)** |
+| ~~OBS-001~~ | Audit | 🔴 CRITICAL | `permissionManager.ts` | ✅ RESOLVED |
+| ~~OBS-002~~ | Cache | 🟠 HIGH | `cache.ts` | ✅ RESOLVED |
+| ~~OBS-003~~ | Error | 🟡 MEDIUM | `overthinker.workflow.ts` | ✅ RESOLVED |
+| OBS-004 | File I/O | 🟡 MEDIUM | `overthinker.workflow.ts` | 🔶 OPEN |
+| OBS-005 | I18n | ⚪ LOW | `gitHelper.ts` | 🔶 OPEN |
 | **DEPENDENCY INJECTION** |
 | ~~DI-001~~ | DI | High | `auditTrail.ts:75` | ✅ RESOLVED |
 | ~~DI-002~~ | DI | High | `activityAnalytics.ts:101` | ✅ RESOLVED |
@@ -431,9 +489,9 @@ export const AGENT_ROLES = {
 | ORG-001 | Organization | Low | `constants.ts`, `aiExecutor.ts` | 🔶 OPEN |
 | ORG-002 | Organization | Low | `constants.ts:127-148` | 🔶 OPEN |
 
-**Progress**: 11/17 issues resolved (65%)
-**Security Status**: ✅ **All CRITICAL/HIGH vulnerabilities RESOLVED**
-**Production Ready**: ⚠️ **MOSTLY** - Remaining issues are Low/Medium priority
+**Progress**: 14/22 issues resolved (64%)
+**Security Status**: ✅ **ALL CRITICAL ISSUES RESOLVED**
+**Production Ready**: ⚠️ **ALMOST** - 2 medium issues (OBS-004, OBS-005) + 5 low-priority issues remain
 
 ---
 

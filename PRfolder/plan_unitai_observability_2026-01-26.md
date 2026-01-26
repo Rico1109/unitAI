@@ -1,12 +1,13 @@
 ---
 title: Layer 5 Observability Implementation Plan
-version: 1.0.0
-updated: 2026-01-26T11:03:00+01:00
+version: 1.1.0
+updated: 2026-01-26T13:10:00+01:00
 scope: unitai-observability
 category: plan
 subcategory: implementation
 domain: [observability, logging, metrics]
 changelog:
+  - 1.1.0 (2026-01-26): Mark critical fixes complete (commit 80d328e). Update remaining tasks.
   - 1.0.0 (2026-01-26): Completion plan for Layer 5.
 ---
 
@@ -14,6 +15,43 @@ changelog:
 
 ## Goal
 Complete remaining 40% of observability layer to reach commit-ready state.
+
+---
+
+## ✅ Completed Tasks (Commit 80d328e - 2026-01-26)
+
+### Critical Fixes via Refactor Sprint Workflow
+**Execution Time:** ~2 hours
+**Methodology:** Multi-agent analysis (Cursor + Gemini + Droid)
+
+- ✅ **Audit Trail FAIL-CLOSED** - Silent failures eliminated (`permissionManager.ts`)
+- ✅ **Cache Race Condition** - Async I/O with locking (`cache.ts`)
+- ✅ **Error Handling FAIL-FAST** - Consistent error propagation (`overthinker.workflow.ts`)
+- ✅ **Test Suite Updated** - Dependency initialization in `permissionManager.test.ts`, async calls in `cache.test.ts`
+- ✅ **SSOT Documentation** - Updated `ssot_unitai_known_issues_2026-01-24.md` with resolutions
+- ✅ **Build Verification** - TypeScript compiles without errors
+- ✅ **Test Verification** - 45/45 permissionManager tests pass
+
+**Commit Message:**
+```
+fix(observability): enforce FAIL-FAST and FAIL-CLOSED policies
+
+Critical fixes from refactor-sprint workflow analysis:
+
+1. Race Condition (cache.ts)
+   - saveToDisk() → async with isWriting lock
+   - Breaking: cleanup()/clear() now async
+
+2. Audit Trail (permissionManager.ts)
+   - FAIL-CLOSED: audit failure aborts operation
+   - "No record = No action" security requirement
+
+3. Error Handling (overthinker.workflow.ts)
+   - FAIL-FAST: all phases throw on error
+   - Data integrity over partial success
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
 
 ---
 
