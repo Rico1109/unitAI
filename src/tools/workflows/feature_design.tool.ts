@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { featureDesignWorkflow } from "../../workflows/feature-design.workflow.js";
 
 export const workflowFeatureDesignTool: UnifiedTool = {
@@ -44,8 +44,8 @@ Use for complex features requiring multiple files or careful architectural plann
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await featureDesignWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await featureDesignWorkflow.execute(args, context.onProgress);
   }
 };
 

@@ -2,7 +2,7 @@
  * Tests for model selector
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterAll } from 'vitest';
 import {
   selectOptimalBackend,
   selectParallelBackends,
@@ -12,8 +12,17 @@ import {
   type TaskCharacteristics
 } from '../../../src/workflows/modelSelector.js';
 import { BACKENDS } from '../../../src/utils/aiExecutor.js';
+import { CircuitBreaker } from '../../../src/utils/circuitBreaker.js';
+import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
 describe('Model Selector', () => {
+  let mockCB: CircuitBreaker;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCB = new CircuitBreaker(3, 1000);
+  });
+
   describe('selectOptimalBackend', () => {
     it('should select Qwen for fast + low complexity tasks', () => {
       const task: TaskCharacteristics = {
@@ -25,7 +34,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backend = selectOptimalBackend(task);
+      const backend = selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
@@ -39,7 +48,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backend = selectOptimalBackend(task);
+      const backend = selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
@@ -53,7 +62,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backend = selectOptimalBackend(task);
+      const backend = selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
@@ -68,7 +77,7 @@ describe('Model Selector', () => {
         domain: 'security'
       };
 
-      const backend = selectOptimalBackend(task);
+      const backend = selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
@@ -83,7 +92,7 @@ describe('Model Selector', () => {
         domain: 'architecture'
       };
 
-      const backend = selectOptimalBackend(task);
+      const backend = selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
@@ -98,7 +107,7 @@ describe('Model Selector', () => {
         domain: 'debugging'
       };
 
-      const backend = selectOptimalBackend(task);
+      const backend = selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
@@ -113,7 +122,7 @@ describe('Model Selector', () => {
       };
 
       // Only QWEN and DROID are allowed, so one of them should be selected
-      const backend = selectOptimalBackend(task, [BACKENDS.QWEN, BACKENDS.DROID]);
+      const backend = selectOptimalBackend(task, mockCB, [BACKENDS.QWEN, BACKENDS.DROID]);
       expect([BACKENDS.QWEN, BACKENDS.DROID]).toContain(backend);
     });
   });
@@ -129,7 +138,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backends = selectParallelBackends(task, 2);
+      const backends = selectParallelBackends(task, mockCB, 2);
       expect(backends).toHaveLength(2);
       expect(new Set(backends).size).toBe(2); // No duplicates
     });
@@ -144,7 +153,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backends = selectParallelBackends(task, 2);
+      const backends = selectParallelBackends(task, mockCB, 2);
       expect(backends[0]).toBe(BACKENDS.GEMINI);
       expect(backends[1]).toBe(BACKENDS.QWEN);
     });
@@ -159,7 +168,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backends = selectParallelBackends(task, 3);
+      const backends = selectParallelBackends(task, mockCB, 3);
       expect(backends.length).toBeLessThanOrEqual(3);
     });
   });
@@ -175,17 +184,23 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      recordBackendUsage(BACKENDS.GEMINI, task, true, 1500);
-      recordBackendUsage(BACKENDS.GEMINI, task, true, 1600);
-      recordBackendUsage(BACKENDS.GEMINI, task, false, 2000);
+      initializeDependencies();
 
-      const stats = getBackendStats();
-      const geminiStats = stats.find(s => s.backend === BACKENDS.GEMINI);
+      try {
+        recordBackendUsage(BACKENDS.GEMINI, task, true, 1500);
+        recordBackendUsage(BACKENDS.GEMINI, task, true, 1600);
+        recordBackendUsage(BACKENDS.GEMINI, task, false, 2000);
 
-      expect(geminiStats).toBeDefined();
-      expect(geminiStats?.totalCalls).toBe(3);
-      expect(geminiStats?.successfulCalls).toBe(2);
-      expect(geminiStats?.failedCalls).toBe(1);
+        const stats = getBackendStats();
+        const geminiStats = stats.find(s => s.backend === BACKENDS.GEMINI);
+
+        expect(geminiStats).toBeDefined();
+        expect(geminiStats?.totalCalls).toBe(3);
+        expect(geminiStats?.successfulCalls).toBe(2);
+        expect(geminiStats?.failedCalls).toBe(1);
+      } finally {
+        closeDependencies();
+      }
     });
   });
 

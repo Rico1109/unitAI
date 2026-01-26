@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { triangulatedReviewWorkflow } from "../../workflows/triangulated-review.workflow.js";
 
 export const workflowTriangulatedReviewTool: UnifiedTool = {
@@ -41,8 +41,8 @@ Best for critical refactors or complex bug fixes where you need high confidence.
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await triangulatedReviewWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await triangulatedReviewWorkflow.execute(args, context.onProgress);
   }
 };
 

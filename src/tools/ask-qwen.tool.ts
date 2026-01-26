@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BACKENDS, ERROR_MESSAGES } from "../constants.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
-import type { UnifiedTool } from "./registry.js";
+import type { UnifiedTool, ToolExecutionContext } from "./registry.js";
 
 const askQwenSchema = z.object({
     prompt: z
@@ -29,13 +29,14 @@ export const askQwenTool: UnifiedTool = {
     description: "Query Qwen via the qwen CLI with support for sandbox and YOLO mode",
     category: "ai-client",
     zodSchema: askQwenSchema,
-    execute: async (args, onProgress) => {
+    execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
         const {
             prompt,
             outputFormat,
             sandbox,
             yolo
         } = args;
+        const { onProgress } = context;
 
         if (!prompt || !prompt.trim()) {
             throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);

@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { validateLastCommitWorkflow } from "../../workflows/validate-last-commit.workflow.js";
 
 export const workflowValidateLastCommitTool: UnifiedTool = {
@@ -49,8 +49,8 @@ Use this in CI pipelines or for post-commit reviews. Defaults to HEAD (most rece
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await validateLastCommitWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await validateLastCommitWorkflow.execute(args, context.onProgress);
   }
 };
 

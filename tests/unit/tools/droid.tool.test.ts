@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+const createMockContext = () => ({
+  requestId: "test-request-id",
+  onProgress: vi.fn()
+});
+
 describe("droidTool", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -33,7 +38,7 @@ describe("droidTool", () => {
       sessionId: "session-1",
       skipPermissionsUnsafe: false,
       cwd: "/repo"
-    });
+    }, createMockContext());
 
     expect(result).toBe("droid-ok");
     expect(mockExecuteAIClient).toHaveBeenCalledWith(
@@ -54,7 +59,7 @@ describe("droidTool", () => {
     );
 
     await expect(
-      droidTool.execute({ prompt: "" })
+      droidTool.execute({ prompt: "" }, createMockContext())
     ).rejects.toThrow();
   });
 });

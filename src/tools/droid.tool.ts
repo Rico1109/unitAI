@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AI_MODELS, BACKENDS, ERROR_MESSAGES } from "../constants.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
-import type { UnifiedTool } from "./registry.js";
+import type { UnifiedTool, ToolExecutionContext } from "./registry.js";
 import { AutonomyLevel } from "../utils/permissionManager.js";
 
 // const droidModels = [AI_MODELS.DROID.PRIMARY] as const;
@@ -49,7 +49,7 @@ export const droidTool: UnifiedTool = {
   description: "Factory Droid CLI (GLM-4.6) per task agentici con livelli di autonomia configurabili",
   category: "ai-client",
   zodSchema: droidSchema,
-  execute: async (args, onProgress) => {
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
     const {
       prompt,
       auto,
@@ -60,6 +60,7 @@ export const droidTool: UnifiedTool = {
       cwd,
       autonomyLevel
     } = args;
+    const { onProgress } = context;
 
     if (!prompt || !prompt.trim()) {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);

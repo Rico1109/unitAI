@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { bugHuntWorkflow } from "../../workflows/bug-hunt.workflow.js";
 
 export const workflowBugHuntTool: UnifiedTool = {
@@ -50,7 +50,7 @@ Use when you have a bug report or error message but don't know exactly where the
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await bugHuntWorkflow.execute(args, onProgress);
+    execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+        return await bugHuntWorkflow.execute(args, context.onProgress);
     }
 };

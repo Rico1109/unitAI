@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { parallelReviewWorkflow } from "../../workflows/parallel-review.workflow.js";
 
 export const workflowParallelReviewTool: UnifiedTool = {
@@ -52,8 +52,8 @@ Use this tool when you need a deep review of specific files, especially before m
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await parallelReviewWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await parallelReviewWorkflow.execute(args, context.onProgress);
   }
 };
 

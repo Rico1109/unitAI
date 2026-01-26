@@ -178,7 +178,8 @@ describe('server', () => {
       expect(mockExecuteTool).toHaveBeenCalledWith(
         'test-tool',
         { key: 'value' },
-        expect.any(Function)
+        expect.any(Function),
+        expect.stringMatching(/^mcp-/)
       );
       expect(result).toEqual({
         content: [

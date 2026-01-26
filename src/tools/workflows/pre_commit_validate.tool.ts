@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { preCommitValidateWorkflow } from "../../workflows/pre-commit-validate.workflow.js";
 
 export const workflowPreCommitValidateTool: UnifiedTool = {
@@ -49,8 +49,8 @@ Run this *after* 'git add' but *before* 'git commit'.
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await preCommitValidateWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await preCommitValidateWorkflow.execute(args, context.onProgress);
   }
 };
 

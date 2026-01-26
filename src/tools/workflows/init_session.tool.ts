@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { initSessionWorkflow } from "../../workflows/init-session.workflow.js";
 
 export const workflowInitSessionTool: UnifiedTool = {
@@ -48,8 +48,8 @@ Run this at the start of every session to get context.
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await initSessionWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await initSessionWorkflow.execute(args, context.onProgress);
   }
 };
 

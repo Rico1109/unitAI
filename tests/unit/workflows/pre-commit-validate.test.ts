@@ -2,11 +2,12 @@
  * Tests for pre-commit-validate workflow
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { preCommitValidateWorkflow } from '../../../src/workflows/pre-commit-validate.workflow.js';
 import * as gitHelper from '../../../src/utils/gitHelper.js';
 import * as aiExecutor from '../../../src/utils/aiExecutor.js';
 import * as auditTrail from '../../../src/utils/auditTrail.js';
+import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
 vi.mock('../../../src/utils/gitHelper.js');
 vi.mock('../../../src/utils/aiExecutor.js');
@@ -15,7 +16,12 @@ vi.mock('../../../src/utils/auditTrail.js');
 describe('pre-commit-validate workflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    initializeDependencies();
     vi.mocked(auditTrail.logAudit).mockResolvedValue(undefined);
+  });
+
+  afterAll(() => {
+    closeDependencies();
   });
 
   it('should return message when no staged files', async () => {
@@ -51,7 +57,7 @@ diff --git a/src/test.ts b/src/test.ts
       depth: 'thorough'
     });
 
-    expect(result).toContain('Pre-Commit Validation');
+    expect(result).toContain('Pre-Commit Validation Report');
     expect(aiExecutor.executeAIClient).toHaveBeenCalledTimes(3);
     expect(result).toContain('FAIL'); // Should fail due to secrets
   });

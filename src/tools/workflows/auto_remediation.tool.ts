@@ -1,4 +1,4 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { autoRemediationWorkflow } from "../../workflows/auto-remediation.workflow.js";
 
 export const workflowAutoRemediationTool: UnifiedTool = {
@@ -42,7 +42,7 @@ Use when you need a concrete, executable plan to fix a known issue or implement 
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await autoRemediationWorkflow.execute(args, onProgress);
+    execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+        return await autoRemediationWorkflow.execute(args, context.onProgress);
     }
 };

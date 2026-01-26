@@ -2,14 +2,12 @@
  * Tests for Activity Analytics Service
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActivityAnalytics } from '../../../src/services/activityAnalytics.js';
 import { ActivityRepository } from '../../../src/repositories/activity.js';
 import { AuditTrail } from '../../../src/utils/auditTrail.js';
 import { TokenSavingsMetrics } from '../../../src/utils/tokenEstimator.js';
 import { createTestDependencies } from '../../utils/testDependencies.js';
-import * as fs from 'fs';
-import * as path from 'path';
 import type Database from 'better-sqlite3';
 
 describe('ActivityAnalytics', () => {
@@ -313,7 +311,11 @@ describe('ActivityAnalytics', () => {
 
   describe('cleanup', () => {
     it('should remove old activities', () => {
-      // Record an activity
+      vi.useFakeTimers();
+      const now = new Date('2026-01-25T10:00:00Z');
+      vi.setSystemTime(now);
+
+      // Record an activity at current time
       analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'test-tool',
@@ -321,12 +323,18 @@ describe('ActivityAnalytics', () => {
         metadata: {}
       });
 
-      // Cleanup activities older than 0 days (should remove all)
-      const removed = analytics.cleanup(0);
+      // Advance time by 10 days
+      vi.setSystemTime(new Date('2026-02-04T10:00:00Z'));
+
+      // Cleanup activities older than 7 days (should remove our activity)
+      const removed = analytics.cleanup(7);
+      expect(removed).toBeGreaterThanOrEqual(1);
       
       // Check that activities were removed
       const activities = analytics.queryActivities();
       expect(activities.length).toBe(0);
+
+      vi.useRealTimers();
     });
   });
 });

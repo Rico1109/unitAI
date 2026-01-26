@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 
 export const getSystemInstructionsTool: UnifiedTool = {
   name: "get_system_instructions",
   description: "Get the 'System Instructions Manual', which provides essential information on how to use the Unified-AI tools effectively.",
   zodSchema: z.object({}),
   category: "meta",
-  execute: async () => {
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
     return `
 # Unified-AI System Instructions
 

@@ -1,18 +1,19 @@
 import { z } from "zod";
 import { executeWorkflow, smartWorkflowsSchema } from "../workflows/index.js";
-import type { ToolExecuteFunction } from "./registry.js";
+import type { ToolExecutionContext } from "./registry.js";
 
 /**
  * Esegue il workflow richiesto
  */
-const executeSmartWorkflow: ToolExecuteFunction = async (
-  args,
-  onProgress
+const executeSmartWorkflow = async (
+  args: Record<string, any>,
+  context: ToolExecutionContext
 ): Promise<string> => {
   const { workflow, params = {} } = args;
-  
+  const { onProgress } = context;
+
   onProgress?.(`Avvio del workflow: ${workflow}`);
-  
+
   try {
     const result = await executeWorkflow(workflow, params, onProgress);
     onProgress?.(`Workflow ${workflow} completato con successo`);

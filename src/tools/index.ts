@@ -11,6 +11,7 @@ import {
   describeWorkflowTool,
   getSystemInstructionsTool
 } from "./meta/index.js";
+import { redMetricsDashboardTool } from "./red-metrics-dashboard.tool.js";
 import {
   workflowParallelReviewTool,
   workflowPreCommitValidateTool,
@@ -34,6 +35,9 @@ registerTool(smartWorkflowsTool);
 registerTool(listWorkflowsTool);
 registerTool(describeWorkflowTool);
 registerTool(getSystemInstructionsTool);
+
+// Register Observability tools
+registerTool(redMetricsDashboardTool);
 
 // Register Workflow tools (Phase 2 Batch 1)
 registerTool(workflowParallelReviewTool);
@@ -67,6 +71,9 @@ export {
   describeWorkflowTool,
   getSystemInstructionsTool
 } from "./meta/index.js";
+
+// Export Observability tools
+export { redMetricsDashboardTool } from "./red-metrics-dashboard.tool.js";
 
 // Export Workflow tools
 export {

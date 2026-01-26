@@ -30,6 +30,7 @@ const mockDatabase = vi.fn();
 const mockDbInstance = {
   pragma: vi.fn(),
   close: vi.fn(),
+  exec: vi.fn(),
 };
 
 vi.mock('better-sqlite3', () => ({
@@ -146,12 +147,12 @@ describe('dependencies', () => {
   // Suite 3: Database Initialization
   // =================================================================
   describe('Database Initialization', () => {
-    it('should create three databases', () => {
+    it('should create four databases', () => {
       // Act
       dependencies.initializeDependencies();
 
-      // Assert: 3 Database instances created
-      expect(mockDatabase).toHaveBeenCalledTimes(3);
+      // Assert: 4 Database instances created
+      expect(mockDatabase).toHaveBeenCalledTimes(4);
       expect(mockDatabase).toHaveBeenCalledWith(
         expect.stringContaining('activity.sqlite')
       );
@@ -167,8 +168,8 @@ describe('dependencies', () => {
       // Act
       dependencies.initializeDependencies();
 
-      // Assert: pragma called 3 times (once per DB)
-      expect(mockDbInstance.pragma).toHaveBeenCalledTimes(3);
+      // Assert: pragma called 4 times (once per DB)
+      expect(mockDbInstance.pragma).toHaveBeenCalledTimes(4);
       expect(mockDbInstance.pragma).toHaveBeenCalledWith('journal_mode = WAL');
     });
 
@@ -180,6 +181,7 @@ describe('dependencies', () => {
       expect(deps).toHaveProperty('activityDb');
       expect(deps).toHaveProperty('auditDb');
       expect(deps).toHaveProperty('tokenDb');
+      expect(deps).toHaveProperty('metricsDb');
       expect(deps).toHaveProperty('circuitBreaker');
     });
   });
@@ -219,15 +221,15 @@ describe('dependencies', () => {
       expect(deps.circuitBreaker.shutdown).toHaveBeenCalled();
     });
 
-    it('should close all three databases', () => {
+    it('should close all four databases', () => {
       // Arrange
       dependencies.initializeDependencies();
 
       // Act
       dependencies.closeDependencies();
 
-      // Assert: close called 3 times (one per DB)
-      expect(mockDbInstance.close).toHaveBeenCalledTimes(3);
+      // Assert: close called 4 times (one per DB)
+      expect(mockDbInstance.close).toHaveBeenCalledTimes(4);
     });
 
     it('should handle circuit breaker shutdown errors gracefully', () => {
@@ -305,7 +307,7 @@ describe('dependencies', () => {
       const deps2 = dependencies.initializeDependencies();
 
       // Assert: New Database instances created
-      expect(mockDatabase).toHaveBeenCalledTimes(3);
+      expect(mockDatabase).toHaveBeenCalledTimes(4);
       // Note: In actual code these would be different instances,
       // but in our mock they point to the same mockDbInstance
     });

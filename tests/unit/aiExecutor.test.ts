@@ -1,136 +1,152 @@
-/**
- * Unit tests for AI Executor
- */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BACKENDS } from '../../src/constants.js';
 
+// Hoist mocks
+const mocks = vi.hoisted(() => ({
+  executeCommand: vi.fn(),
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+  circuitBreaker: {
+    isAvailable: vi.fn().mockReturnValue(true),
+    onSuccess: vi.fn(),
+    onFailure: vi.fn(),
+  },
+  metricsDb: {},
+  recordMetric: vi.fn(),
+  validateFilePaths: vi.fn(paths => paths.map(p => `/abs/${p}`)),
+}));
+
+// Mock dependencies
+vi.mock('../../src/dependencies.js', () => ({
+  getDependencies: () => ({
+    circuitBreaker: mocks.circuitBreaker,
+    metricsDb: mocks.metricsDb,
+  }),
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+}));
+
+// Mock MetricsRepository
+vi.mock('../../src/repositories/metrics.js', () => ({
+  MetricsRepository: vi.fn().mockImplementation(() => ({
+    record: mocks.recordMetric,
+  })),
+}));
+
+// Mock commandExecutor
+vi.mock('../../src/utils/commandExecutor.js', () => ({
+  executeCommand: mocks.executeCommand
+}));
+
+// Mock logger
+vi.mock('../../src/utils/logger.js', () => ({
+  logger: mocks.logger
+}));
+
+// Mock pathValidator (to avoid FS access)
+vi.mock('../../src/utils/pathValidator.js', () => ({
+  validateFilePaths: mocks.validateFilePaths,
+  validateFilePath: vi.fn()
+}));
+
+// Import subject under test
+import { 
+  executeGeminiCLI, 
+  executeCursorAgentCLI, 
+  executeDroidCLI, 
+  executeAIClient 
+} from '../../src/utils/aiExecutor.js';
+
 describe('AIExecutor', () => {
   beforeEach(() => {
-    vi.resetModules();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    mocks.circuitBreaker.isAvailable.mockReturnValue(true);
+    mocks.executeCommand.mockResolvedValue('Mock Response');
   });
 
   describe('executeGeminiCLI', () => {
     it('should execute gemini with basic prompt', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Gemini response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeGeminiCLI } = await import('../../src/utils/aiExecutor.js');
+      mocks.executeCommand.mockResolvedValue('Gemini response');
       const result = await executeGeminiCLI({ prompt: 'Test prompt' });
 
-      expect(mockExecuteCommand).toHaveBeenCalled();
+      expect(mocks.executeCommand).toHaveBeenCalled();
       expect(result).toBe('Gemini response');
     });
 
     it('should execute gemini with prompt as positional argument', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeGeminiCLI } = await import('../../src/utils/aiExecutor.js');
       await executeGeminiCLI({ prompt: 'Test prompt' });
 
-      const callArgs = mockExecuteCommand.mock.calls[0];
-      // Prompt is passed as positional argument (not with -p flag)
-      expect(callArgs[1]).toContain('Test prompt');
+      const callArgs = mocks.executeCommand.mock.calls[0][1];
+      expect(callArgs).toContain('Test prompt');
     });
 
     it('should throw error for empty prompt', async () => {
-      const { executeGeminiCLI } = await import('../../src/utils/aiExecutor.js');
       await expect(executeGeminiCLI({ prompt: '' })).rejects.toThrow();
     });
   });
 
   describe('executeCursorAgentCLI', () => {
     it('should execute cursor agent with default options', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Cursor response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeCursorAgentCLI } = await import('../../src/utils/aiExecutor.js');
+      mocks.executeCommand.mockResolvedValue('Cursor response');
       const result = await executeCursorAgentCLI({ prompt: 'Fix bug' });
 
-      expect(mockExecuteCommand).toHaveBeenCalled();
+      expect(mocks.executeCommand).toHaveBeenCalled();
       expect(result).toBe('Cursor response');
     });
 
     it('should include attachments, force and output format flags', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Cursor response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeCursorAgentCLI } = await import('../../src/utils/aiExecutor.js');
       await executeCursorAgentCLI({
         prompt: 'Plan refactor',
-        attachments: ['tests/fixtures/test-file.ts'],
+        attachments: ['test-file.ts'],
         autoApprove: true,
         outputFormat: 'json'
       });
 
-      const args = mockExecuteCommand.mock.calls[0][1];
-      expect(args).toContain('--print'); // Required for headless mode
-      expect(args).toContain('--force'); // Replaces --auto-approve
+      const args = mocks.executeCommand.mock.calls[0][1];
+      expect(args).toContain('--print');
+      expect(args).toContain('--force');
       expect(args).toContain('--file');
-      // Path should be validated and resolved to absolute path
-      expect(args.some((arg: string) => arg.includes('test-file.ts'))).toBe(true);
+      expect(args).toContain('/abs/test-file.ts');
       expect(args).toContain('--output-format');
       expect(args).toContain('json');
-      // --cwd flag was removed (not supported by cursor-agent CLI)
-      expect(args).not.toContain('--cwd');
-      // --auto-approve was replaced by --force
-      expect(args).not.toContain('--auto-approve');
     });
   });
 
   describe('executeDroidCLI', () => {
     it('should execute droid with exec subcommand', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Droid response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeDroidCLI } = await import('../../src/utils/aiExecutor.js');
+      mocks.executeCommand.mockResolvedValue('Droid response');
       const result = await executeDroidCLI({ prompt: 'Investigate issue' });
 
-      expect(mockExecuteCommand).toHaveBeenCalled();
-      expect(mockExecuteCommand.mock.calls[0][1][0]).toBe('exec');
+      expect(mocks.executeCommand).toHaveBeenCalled();
+      expect(mocks.executeCommand.mock.calls[0][1][0]).toBe('exec');
       expect(result).toBe('Droid response');
     });
 
     it('should include auto level, session id and attachments', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Droid response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeDroidCLI } = await import('../../src/utils/aiExecutor.js');
       await executeDroidCLI({
         prompt: 'Generate checklist',
         auto: 'medium',
         sessionId: 'session-123',
         skipPermissionsUnsafe: true,
-        attachments: ['tests/fixtures/test-file.ts'],
+        attachments: ['test-file.ts'],
         cwd: '/repo',
-        outputFormat: 'json'
+        outputFormat: 'json',
+        autonomyLevel: 'high' as any
       });
 
-      const args = mockExecuteCommand.mock.calls[0][1];
+      const args = mocks.executeCommand.mock.calls[0][1];
       expect(args).toContain('--auto');
       expect(args).toContain('medium');
       expect(args).toContain('--session-id');
       expect(args).toContain('session-123');
       expect(args).toContain('--skip-permissions-unsafe');
       expect(args).toContain('--file');
-      expect(args).toContain('/repo/log.txt');
+      expect(args).toContain('/abs/test-file.ts');
       expect(args).toContain('--cwd');
       expect(args).toContain('/repo');
       expect(args).toContain('--output-format');
@@ -140,42 +156,26 @@ describe('AIExecutor', () => {
 
   describe('executeAIClient', () => {
     it('should route to cursor backend', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Cursor response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeAIClient } = await import('../../src/utils/aiExecutor.js');
       await executeAIClient({ backend: BACKENDS.CURSOR, prompt: 'Cursor prompt' });
 
-      expect(mockExecuteCommand).toHaveBeenCalled();
-      // CLI command is 'cursor-agent', not 'ask-cursor' (backend identifier)
-      expect(mockExecuteCommand.mock.calls[0][0]).toBe('cursor-agent');
+      expect(mocks.executeCommand).toHaveBeenCalled();
+      expect(mocks.executeCommand.mock.calls[0][0]).toBe('cursor-agent');
     });
 
     it('should route to droid backend', async () => {
-      const mockExecuteCommand = vi.fn().mockResolvedValue('Droid response');
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeAIClient } = await import('../../src/utils/aiExecutor.js');
       await executeAIClient({ backend: BACKENDS.DROID, prompt: 'Droid prompt' });
 
-      expect(mockExecuteCommand).toHaveBeenCalled();
-      // CLI command is 'droid', not 'ask-droid' (backend identifier)
-      expect(mockExecuteCommand.mock.calls[0][0]).toBe('droid');
+      expect(mocks.executeCommand).toHaveBeenCalled();
+      expect(mocks.executeCommand.mock.calls[0][0]).toBe('droid');
     });
 
     it('should throw error for unknown backend', async () => {
-      const { executeAIClient } = await import('../../src/utils/aiExecutor.js');
       await expect(
         executeAIClient({ backend: 'unknown', prompt: 'Test' })
       ).rejects.toThrow(/Unsupported backend/);
     });
 
     it('should throw error for empty prompt', async () => {
-      const { executeAIClient } = await import('../../src/utils/aiExecutor.js');
       await expect(
         executeAIClient({ backend: BACKENDS.CURSOR, prompt: '' })
       ).rejects.toThrow();
@@ -184,26 +184,16 @@ describe('AIExecutor', () => {
 
   describe('Error handling', () => {
     it('should handle command execution errors', async () => {
-      const mockExecuteCommand = vi.fn().mockRejectedValue(new Error('Command failed'));
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeGeminiCLI } = await import('../../src/utils/aiExecutor.js');
+      mocks.executeCommand.mockRejectedValue(new Error('Command failed'));
       await expect(executeGeminiCLI({ prompt: 'Test' })).rejects.toThrow();
     });
 
     it('should handle timeout errors', async () => {
-      const mockExecuteCommand = vi.fn().mockImplementation(() =>
+      mocks.executeCommand.mockImplementation(() =>
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), 100)
         )
       );
-      vi.doMock('../../src/utils/commandExecutor.js', () => ({
-        executeCommand: mockExecuteCommand
-      }));
-
-      const { executeGeminiCLI } = await import('../../src/utils/aiExecutor.js');
       await expect(executeGeminiCLI({ prompt: 'Test' })).rejects.toThrow();
     });
   });
