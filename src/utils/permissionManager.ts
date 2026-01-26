@@ -142,7 +142,7 @@ export function assertPermission(
 ): void {
   const result = checkPermission(currentLevel, operation);
   
-  // Record audit entry
+  // Record audit entry (FAIL-CLOSED: audit failure = operation failure)
   try {
     getAuditTrail().record({
       workflowName: workflowName || 'unknown',
@@ -159,8 +159,9 @@ export function assertPermission(
       }
     });
   } catch (error) {
-    // Don't fail the operation if audit logging fails
-    console.error('Failed to record audit entry:', error);
+    // SECURITY REQUIREMENT: If audit fails, the entire operation MUST fail
+    // "No record = No action"
+    throw new Error(`CRITICAL: Audit trail failure - operation aborted. ${error instanceof Error ? error.message : String(error)}`);
   }
   
   if (!result.allowed) {

@@ -192,7 +192,8 @@ ${content}
       history.push({ step: `Iteration ${i}`, agent: `Reviewer #${i}`, content: currentThinking });
       onProgress?.(`✅ Iteration ${i} completed.`);
     } catch (e: any) {
-        onProgress?.(`⚠️ Iteration ${i} failed: ${e.message}. Continuing with previous thinking.`);
+      // FAIL-FAST: Phase 3 iteration failure stops the entire workflow
+      throw new Error(`Failed in Phase 3, Iteration ${i}: ${e.message}`);
     }
   }
 
@@ -234,8 +235,8 @@ ${content}
     history.push({ step: "Final Synthesis", agent: "Consolidator", content: finalDocument });
     onProgress?.("✅ Final synthesis completed.");
   } catch (e: any) {
-      // If synthesis fails, fallback to the last thinking state
-      finalDocument = `# Overthinking Output (Fallback)\n\nSynthesis failed. Here is the last thinking state:\n\n${currentThinking}`;
+    // FAIL-FAST: Phase 4 synthesis failure stops the entire workflow
+    throw new Error(`Failed in Phase 4 (Final Consolidation): ${e.message}`);
   }
 
   // Save to file

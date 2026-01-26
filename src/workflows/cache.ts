@@ -7,6 +7,7 @@
 
 import { createHash } from 'crypto';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
 export interface CacheEntry {
@@ -32,6 +33,7 @@ export class WorkflowCache {
   private cache = new Map<string, CacheEntry>();
   private stats = { hits: 0, misses: 0 };
   private cacheDir: string;
+  private isWriting = false;
 
   constructor(cacheDir = join(process.cwd(), '.cache', 'workflows')) {
     this.cacheDir = cacheDir;
@@ -123,7 +125,7 @@ export class WorkflowCache {
   /**
    * Clear expired entries
    */
-  cleanup(): number {
+  async cleanup(): Promise<number> {
     const now = Date.now();
     let removed = 0;
 
@@ -136,7 +138,7 @@ export class WorkflowCache {
     }
 
     if (removed > 0) {
-      this.saveToDisk();
+      await this.saveToDisk();
     }
 
     return removed;
@@ -145,10 +147,10 @@ export class WorkflowCache {
   /**
    * Clear all cache entries
    */
-  clear(): void {
+  async clear(): Promise<void> {
     this.cache.clear();
     this.stats = { hits: 0, misses: 0 };
-    this.saveToDisk();
+    await this.saveToDisk();
   }
 
   /**
@@ -190,21 +192,31 @@ export class WorkflowCache {
   }
 
   /**
-   * Save cache to disk
+   * Save cache to disk (async with locking to prevent race conditions)
    */
-  private saveToDisk(): void {
+  private async saveToDisk(): Promise<void> {
+    // Prevent concurrent writes
+    if (this.isWriting) {
+      console.warn('Cache write already in progress, skipping.');
+      return;
+    }
+
+    this.isWriting = true;
     const cacheFile = join(this.cacheDir, 'cache.json');
-    
+
     try {
       const data = {
         entries: Array.from(this.cache.values()),
         stats: this.stats,
         savedAt: new Date().toISOString()
       };
-      
-      writeFileSync(cacheFile, JSON.stringify(data, null, 2), 'utf-8');
+
+      await writeFile(cacheFile, JSON.stringify(data, null, 2), 'utf-8');
     } catch (error) {
-      console.warn('Failed to save cache to disk:', error);
+      console.error('Failed to save cache to disk:', error);
+      throw error; // Re-throw to make failures visible
+    } finally {
+      this.isWriting = false;
     }
   }
 }
@@ -230,8 +242,8 @@ export const workflowCache = new WorkflowCache();
  * Cleanup expired cache entries periodically
  * Runs every hour
  */
-setInterval(() => {
-  const removed = workflowCache.cleanup();
+setInterval(async () => {
+  const removed = await workflowCache.cleanup();
   if (removed > 0) {
     console.log(`Cache cleanup: removed ${removed} expired entries`);
   }

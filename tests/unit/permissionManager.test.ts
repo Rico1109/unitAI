@@ -2,7 +2,7 @@
  * Unit tests for Permission Manager
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import {
   AutonomyLevel,
   OperationType,
@@ -16,8 +16,17 @@ import {
   PermissionManager,
   createPermissionManager
 } from '../../src/utils/permissionManager.js';
+import { initializeDependencies, closeDependencies } from '../../src/dependencies.js';
 
 describe('PermissionManager', () => {
+  beforeEach(() => {
+    // Initialize dependencies to enable audit trail (FAIL-CLOSED policy requires it)
+    initializeDependencies();
+  });
+
+  afterAll(() => {
+    closeDependencies();
+  });
   describe('checkPermission', () => {
     it('should allow READ_FILE at READ_ONLY level', () => {
       const result = checkPermission(AutonomyLevel.READ_ONLY, OperationType.READ_FILE);

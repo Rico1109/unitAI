@@ -94,8 +94,8 @@ describe('WorkflowCache', () => {
     
     // Wait for first entry to expire
     await new Promise(resolve => setTimeout(resolve, 1100));
-    
-    const removed = cache.cleanup();
+
+    const removed = await cache.cleanup();
     expect(removed).toBe(1);
     expect(cache.getStats().entries).toBe(1);
   });
@@ -108,9 +108,9 @@ describe('WorkflowCache', () => {
     await cache.set(key2, 'result2', 'workflow2', 3600);
     
     expect(cache.getStats().entries).toBe(2);
-    
-    cache.clear();
-    
+
+    await cache.clear();
+
     expect(cache.getStats().entries).toBe(0);
     expect(cache.getStats().hits).toBe(0);
     expect(cache.getStats().misses).toBe(0);
