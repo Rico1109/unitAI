@@ -47,8 +47,8 @@ Run this *after* 'git add' but *before* 'git commit'.
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await preCommitValidateWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await preCommitValidateWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=pre_commit_validate.tool.js.map

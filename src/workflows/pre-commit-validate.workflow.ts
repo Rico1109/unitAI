@@ -74,7 +74,7 @@ Produci un piano strutturato con:
   const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('implementation');
   task.requiresCodeGeneration = true;
-  const backend = selectOptimalBackend(task, circuitBreaker);
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return executeAIClient({
     backend,
@@ -124,7 +124,7 @@ Format as JSON:
   const task = createTaskCharacteristics('security');
   task.domain = 'security';
   const { circuitBreaker } = getDependencies();
-  const backend = selectOptimalBackend(task, circuitBreaker);
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return await executeAIClient({
     backend,
@@ -166,7 +166,7 @@ Respond with JSON:
 
   const task = createTaskCharacteristics('review');
   const { circuitBreaker } = getDependencies();
-  const backend = selectOptimalBackend(task, circuitBreaker);
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return await executeAIClient({
     backend,
@@ -204,7 +204,7 @@ Respond with JSON:
   const task = createTaskCharacteristics('architecture');
   task.requiresArchitecturalThinking = true;
   const { circuitBreaker } = getDependencies();
-  const backend = selectOptimalBackend(task, circuitBreaker);
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return await executeAIClient({
     backend,

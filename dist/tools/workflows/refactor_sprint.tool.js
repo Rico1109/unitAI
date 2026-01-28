@@ -41,8 +41,8 @@ Use for significant code restructuring, technical debt reduction, or pattern mig
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await refactorSprintWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await refactorSprintWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=refactor_sprint.tool.js.map

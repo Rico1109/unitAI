@@ -264,10 +264,18 @@ export async function executeSimpleCommand(command, args = []) {
 /**
  * Main function to execute an AI command based on backend
  * Includes automatic retry-with-fallback when a backend fails
+ * WITH RED METRICS TRACKING
  */
 export async function executeAIClient(options, retryConfig) {
     const { backend, ...rest } = options;
-    const { circuitBreaker } = getDependencies();
+    const { circuitBreaker, metricsDb } = getDependencies();
+    // Import MetricsRepository dynamically to avoid circular deps
+    const { MetricsRepository } = await import('../repositories/metrics.js');
+    const metricsRepo = new MetricsRepository(metricsDb);
+    // Start timing for RED metrics
+    const startTime = Date.now();
+    let success = false;
+    let errorType;
     // Initialize retry config
     const config = retryConfig || {
         maxRetries: 2,
@@ -315,6 +323,7 @@ export async function executeAIClient(options, retryConfig) {
         }
         // Report success to Circuit Breaker
         circuitBreaker.onSuccess(backend);
+        success = true;
         // Log successful fallback if this wasn't the first try
         if (config.currentRetry > 0) {
             logger.info(`Successfully completed with fallback backend ${backend} after ${config.currentRetry} retries.`);
@@ -324,6 +333,8 @@ export async function executeAIClient(options, retryConfig) {
     catch (error) {
         // Report failure to Circuit Breaker
         circuitBreaker.onFailure(backend);
+        success = false;
+        errorType = error instanceof Error ? error.name : 'UnknownError';
         const errorMsg = error instanceof Error ? error.message : String(error);
         logger.warn(`Backend ${backend} failed: ${errorMsg}`);
         // Don't retry for configuration errors (unsupported backend)
@@ -344,6 +355,29 @@ export async function executeAIClient(options, retryConfig) {
         // All retries exhausted
         logger.error(`All ${config.maxRetries} retry attempts exhausted. Backends tried: ${config.triedBackends.join(', ')}`);
         throw error;
+    }
+    finally {
+        // Record RED metric (Rate, Errors, Duration)
+        const duration = Date.now() - startTime;
+        try {
+            metricsRepo.record({
+                metricType: 'request',
+                component: 'ai-executor',
+                backend,
+                duration,
+                success,
+                errorType,
+                requestId: options.requestId,
+                metadata: {
+                    retryCount: config.currentRetry,
+                    triedBackends: config.triedBackends
+                }
+            });
+        }
+        catch (metricsError) {
+            // Don't fail the request if metrics recording fails
+            logger.warn('Failed to record RED metric', metricsError);
+        }
     }
 }
 //# sourceMappingURL=aiExecutor.js.map

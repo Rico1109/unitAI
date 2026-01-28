@@ -419,11 +419,11 @@ export async function executeAIClient(
   config.triedBackends.push(backend);
 
   // Circuit Breaker Check - try fallback if blocked
-  if (!circuitBreaker.isAvailable(backend)) {
+  if (!(await circuitBreaker.isAvailable(backend))) {
     logger.warn(`Backend ${backend} is currently unavailable (Circuit Open).`);
 
     if (config.currentRetry < config.maxRetries) {
-      const fallback = selectFallbackBackend(backend, circuitBreaker);
+      const fallback = await selectFallbackBackend(backend, circuitBreaker);
 
       // Avoid retrying already-tried backends
       if (config.triedBackends.includes(fallback)) {
@@ -491,7 +491,7 @@ export async function executeAIClient(
 
     // Retry with fallback if we haven't exhausted retries
     if (config.currentRetry < config.maxRetries) {
-      const fallback = selectFallbackBackend(backend, circuitBreaker);
+      const fallback = await selectFallbackBackend(backend, circuitBreaker);
 
       // Avoid retrying already-tried backends
       if (config.triedBackends.includes(fallback)) {

@@ -94,10 +94,22 @@ ${content}
         onProgress?.("✅ Master Prompt generated.");
     }
     catch (e) {
-        throw new Error(`Failed in Phase 1: ${e.message}`);
+        throw new Error(`Failed in Phase 1: ${e instanceof Error ? e.message : String(e)}`);
     }
-    // Save Master Prompt immediately
-    writeFileSync(`master_prompt_${new Date().getTime()}.md`, masterPrompt);
+    // Save Master Prompt immediately (to .unitai directory)
+    try {
+        const outputDir = ".unitai";
+        const masterPromptFile = join(outputDir, `master_prompt_${new Date().getTime()}.md`);
+        if (!existsSync(outputDir)) {
+            mkdirSync(outputDir, { recursive: true });
+        }
+        writeFileSync(masterPromptFile, masterPrompt);
+        onProgress?.(`💾 Saved master prompt to: ${masterPromptFile}`);
+    }
+    catch (e) {
+        onProgress?.(`⚠️ Could not save master prompt: ${e instanceof Error ? e.message : String(e)}`);
+        // Don't fail the workflow if master prompt can't be saved (it's logged in history anyway)
+    }
     // ============================================================================ 
     // PHASE 2: INITIAL REASONING
     // ============================================================================ 
@@ -128,7 +140,7 @@ ${content}
         onProgress?.("✅ Initial reasoning completed.");
     }
     catch (e) {
-        throw new Error(`Failed in Phase 2: ${e.message}`);
+        throw new Error(`Failed in Phase 2: ${e instanceof Error ? e.message : String(e)}`);
     }
     // ============================================================================ 
     // PHASE 3: ITERATIVE REVIEW LOOP
@@ -166,7 +178,8 @@ ${content}
             onProgress?.(`✅ Iteration ${i} completed.`);
         }
         catch (e) {
-            onProgress?.(`⚠️ Iteration ${i} failed: ${e.message}. Continuing with previous thinking.`);
+            // FAIL-FAST: Phase 3 iteration failure stops the entire workflow
+            throw new Error(`Failed in Phase 3, Iteration ${i}: ${e instanceof Error ? e.message : String(e)}`);
         }
     }
     // ============================================================================ 
@@ -206,8 +219,8 @@ ${content}
         onProgress?.("✅ Final synthesis completed.");
     }
     catch (e) {
-        // If synthesis fails, fallback to the last thinking state
-        finalDocument = `# Overthinking Output (Fallback)\n\nSynthesis failed. Here is the last thinking state:\n\n${currentThinking}`;
+        // FAIL-FAST: Phase 4 synthesis failure stops the entire workflow
+        throw new Error(`Failed in Phase 4 (Final Consolidation): ${e instanceof Error ? e.message : String(e)}`);
     }
     // Save to file
     try {
@@ -225,7 +238,7 @@ ${content}
         onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
     }
     catch (e) {
-        onProgress?.(`⚠️ Could not write file: ${e.message}`);
+        onProgress?.(`⚠️ Could not write file: ${e instanceof Error ? e.message : String(e)}`);
     }
     return formatWorkflowOutput(`Overthinker: ${initialPrompt.slice(0, 30)}...`, finalDocument, { historyStepCount: history.length, outputFile });
 }

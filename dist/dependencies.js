@@ -8,6 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import { logger } from './utils/logger.js';
 import { CircuitBreaker } from './utils/circuitBreaker.js';
+import { MetricsRepository } from './repositories/metrics.js';
 let dependencies = null;
 /**
  * Initialize all system dependencies
@@ -37,6 +38,14 @@ export function initializeDependencies() {
     logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
     const tokenDb = new Database(tokenDbPath);
     tokenDb.pragma('journal_mode = WAL');
+    // Initialize RED Metrics Database
+    const metricsDbPath = path.join(dataDir, 'red-metrics.sqlite');
+    logger.debug(`Opening RED Metrics DB at ${metricsDbPath}`);
+    const metricsDb = new Database(metricsDbPath);
+    metricsDb.pragma('journal_mode = WAL');
+    // Initialize metrics repository and schema
+    const metricsRepo = new MetricsRepository(metricsDb);
+    metricsRepo.initializeSchema();
     // Initialize Circuit Breaker with audit database for state persistence
     logger.debug("Initializing Circuit Breaker");
     const circuitBreaker = new CircuitBreaker(3, 5 * 60 * 1000, auditDb);
@@ -44,6 +53,7 @@ export function initializeDependencies() {
         activityDb,
         auditDb,
         tokenDb,
+        metricsDb,
         circuitBreaker
     };
     return dependencies;
@@ -88,6 +98,12 @@ export function closeDependencies() {
         }
         catch (error) {
             logger.error("Error closing token database", error);
+        }
+        try {
+            dependencies.metricsDb.close();
+        }
+        catch (error) {
+            logger.error("Error closing metrics database", error);
         }
         dependencies = null;
     }

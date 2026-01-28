@@ -46,8 +46,8 @@ Run this at the start of every session to get context.
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await initSessionWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await initSessionWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=init_session.tool.js.map

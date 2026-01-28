@@ -39,8 +39,8 @@ Best for critical refactors or complex bug fixes where you need high confidence.
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await triangulatedReviewWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await triangulatedReviewWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=triangulated_review.tool.js.map

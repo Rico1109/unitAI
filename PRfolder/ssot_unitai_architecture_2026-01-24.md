@@ -1,12 +1,13 @@
 ---
 title: unitAI Architecture SSOT
-version: 2.1.0
-updated: 2026-01-24T17:00:00+01:00
+version: 2.2.0
+updated: 2026-01-28T12:00:00+01:00
 scope: unitai-architecture
 category: ssot
 subcategory: architecture
 domain: [mcp, typescript, ai-orchestration]
 changelog:
+  - 2.2.0 (2026-01-28): Updated project structure to include all missing folders and files.
   - 2.1.0 (2026-01-24): Updated DI container to include auditDb and tokenDb.
   - 2.0.0 (2026-01-24): Complete rewrite for zero-context readers.
   - 1.0.0 (2026-01-24): Initial draft.
@@ -82,6 +83,76 @@ unitAI/
 │   └── repositories/         # Data access layer
 │       ├── base.ts
 │       └── activity.ts
+│
+├── docs/                     # Major folder with extensive documentation
+│   ├── ARCHITECTURE.md       # High-level architecture overview
+│   ├── CONTRIBUTING.md       # Contribution guidelines
+│   ├── INTEGRATIONS.md       # Integration details
+│   ├── TOKEN_METRICS.md      # Token usage and savings metrics
+│   ├── WORKFLOWS.md          # Workflow documentation
+│   ├── README.md             # Project README
+│   ├── HANDOFF.md            # Handoff notes
+│   ├── logger-migration.md   # Migration guide for logger
+│   ├── task-da-fare.md       # Task list
+│   ├── advisory-prephase-review.md # Advisory review notes
+│   ├── deprecated/           # Deprecated documentation
+│   ├── guides/               # User and developer guides
+│   ├── history/              # Historical documentation
+│   ├── plans/                # Planning documents
+│   └── reference/            # API and reference documentation
+│
+├── tests/                    # Test suite folder
+│   ├── unit/                 # Unit tests
+│   ├── integration/          # Integration tests
+│   ├── fixtures/             # Test fixtures
+│   ├── utils/                # Test utilities
+│   └── testDependencies.ts   # Test infrastructure helper
+│
+├── .serena/                  # Serena LSP integration
+│   └── memories/             # Context memories
+│
+├── .unitai/                  # unitAI-specific configuration
+│
+├── .claude/                  # Claude Code integration
+│   ├── agents/               # Custom Claude agents
+│   ├── commands/             # Custom Claude commands
+│   ├── hooks/                # Lifecycle hooks
+│   ├── legacy-scripts/       # Legacy scripts
+│   ├── skills/               # Skill definitions
+│   └── skills-hooks/         # Skill hooks
+│
+├── .gemini/                  # Gemini CLI integration
+│
+├── PRfolder/                 # Pull request documentation
+│
+├── serena-ssot-documentation/ # SSOT documentation system
+│   ├── examples/             # SSOT examples
+│   ├── references/           # SSOT references
+│   └── scripts/              # SSOT maintenance scripts
+│
+├── scripts/                  # Build and automation scripts
+│
+├── logs/                     # Runtime logs directory
+│
+├── test-logs/                # Test execution logs
+│
+├── coverage/                 # Test coverage reports
+│   └── unitAI/               # Coverage for unitAI package
+│
+├── reports/                  # Generated reports
+│
+├── dist/                     # Build output (mirrors src/ structure)
+│   ├── agents/
+│   ├── cli/
+│   ├── config/
+│   ├── repositories/
+│   ├── services/
+│   ├── tools/
+│   ├── utils/
+│   └── workflows/
+│
+├── .cache/                   # Workflow cache
+│   └── workflows/            # Cached workflow state
 │
 ├── data/                     # Runtime data (SQLite DBs)
 ├── cli/                      # TUI wizard

@@ -101,7 +101,7 @@ export async function executeFeatureDesign(
     const archTask = createTaskCharacteristics('architecture');
     archTask.requiresArchitecturalThinking = true;
     const { circuitBreaker } = getDependencies();
-    const archBackend = selectOptimalBackend(archTask, circuitBreaker);
+    const archBackend = await selectOptimalBackend(archTask, circuitBreaker);
 
     const architect = AgentFactory.createArchitect();
     const architectResult = await architect.execute(
@@ -149,7 +149,7 @@ export async function executeFeatureDesign(
     const { circuitBreaker } = getDependencies();
     const implTask = createTaskCharacteristics('implementation');
     implTask.requiresCodeGeneration = true;
-    const implBackend = selectOptimalBackend(implTask, circuitBreaker);
+    const implBackend = await selectOptimalBackend(implTask, circuitBreaker);
 
     const implementer = AgentFactory.createImplementer();
     let implementerResult = await implementer.execute(
@@ -220,7 +220,7 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
     const { circuitBreaker } = getDependencies();
     const testTask = createTaskCharacteristics('testing');
     testTask.requiresSpeed = true; // Testing usually benefits from speed
-    const testBackend = selectOptimalBackend(testTask, circuitBreaker);
+    const testBackend = await selectOptimalBackend(testTask, circuitBreaker);
 
     const tester = AgentFactory.createTester();
     const testerResult = await tester.execute(

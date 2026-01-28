@@ -1,3 +1,16 @@
+---
+title: Advisory Pre-Phase Feature Design
+version: 1.0.0
+updated: 2026-01-26T21:00:00+01:00
+scope: unitai-advisory
+category: ssot
+subcategory: feature-design
+domain: [agents, workflows, architecture]
+status: planned
+changelog:
+  - 1.0.0 (2026-01-26): Initial design document.
+---
+
 # Advisory Pre-Phase Feature Design
 
 > **Status**: 📋 PLANNED (validated architecture, not implemented)  

@@ -48,8 +48,8 @@ Use when you have a bug report or error message but don't know exactly where the
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await bugHuntWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await bugHuntWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=bug_hunt.tool.js.map

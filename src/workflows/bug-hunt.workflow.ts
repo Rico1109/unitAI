@@ -161,7 +161,7 @@ List only file paths, one per line, in order of likelihood.`
   const task = createTaskCharacteristics('bug-hunt');
   const selectedBackends = backendOverrides && backendOverrides.length > 0
     ? backendOverrides
-    : selectParallelBackends(task, circuitBreaker, 3); // Try to get up to 3 backends
+    : await selectParallelBackends(task, circuitBreaker, 3); // Try to get up to 3 backends
 
   const runGemini = selectedBackends.includes(BACKENDS.GEMINI);
   const runCursor = selectedBackends.includes(BACKENDS.CURSOR);

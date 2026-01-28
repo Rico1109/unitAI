@@ -8,7 +8,7 @@
  *
  * Provides RED metrics: Rate, Error rate, Duration (P50/P95/P99)
  */
-import Database from 'better-sqlite3';
+import { AsyncDatabase } from '../lib/async-db.js';
 import { BaseRepository } from './base.js';
 
 export interface REDMetric {
@@ -28,8 +28,8 @@ export class MetricsRepository extends BaseRepository {
   /**
    * Initialize RED metrics database schema
    */
-  initializeSchema(): void {
-    this.db.exec(`
+  async initializeSchema(): Promise<void> {
+    await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS red_metrics (
         id TEXT PRIMARY KEY,
         timestamp INTEGER NOT NULL,
@@ -54,18 +54,17 @@ export class MetricsRepository extends BaseRepository {
   /**
    * Record a RED metric
    */
-  record(metric: Omit<REDMetric, 'id' | 'timestamp'>): string {
+  async record(metric: Omit<REDMetric, 'id' | 'timestamp'>): Promise<string> {
     const id = `red-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const timestamp = Date.now();
 
-    const stmt = this.db.prepare(`
+    const sql = `
       INSERT INTO red_metrics (
         id, timestamp, metric_type, component, backend,
         duration, success, error_type, request_id, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    stmt.run(
+    await this.db.runAsync(sql, [
       id,
       timestamp,
       metric.metricType,
@@ -76,7 +75,7 @@ export class MetricsRepository extends BaseRepository {
       metric.errorType || null,
       metric.requestId || null,
       JSON.stringify(metric.metadata || {})
-    );
+    ]);
 
     return id;
   }
@@ -84,7 +83,7 @@ export class MetricsRepository extends BaseRepository {
   /**
    * Query metrics with filters
    */
-  query(filters: {
+  async query(filters: {
     component?: string;
     backend?: string;
     startTime?: Date;
@@ -92,7 +91,7 @@ export class MetricsRepository extends BaseRepository {
     success?: boolean;
     requestId?: string;
     limit?: number;
-  }): REDMetric[] {
+  }): Promise<REDMetric[]> {
     let sql = 'SELECT * FROM red_metrics WHERE 1=1';
     const params: any[] = [];
 
@@ -133,8 +132,7 @@ export class MetricsRepository extends BaseRepository {
       params.push(filters.limit);
     }
 
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = await this.db.allAsync<any>(sql, params);
 
     return rows.map(row => ({
       id: row.id,
@@ -153,20 +151,20 @@ export class MetricsRepository extends BaseRepository {
   /**
    * Calculate RED statistics
    */
-  getREDStats(filters: {
+  async getREDStats(filters: {
     component?: string;
     backend?: string;
     startTime?: Date;
     endTime?: Date;
-  }): {
+  }): Promise<{
     rate: number;
     errorRate: number;
     p50: number;
     p95: number;
     p99: number;
     totalRequests: number;
-  } {
-    const metrics = this.query(filters);
+  }> {
+    const metrics = await this.query(filters);
 
     if (metrics.length === 0) {
       return {
@@ -208,12 +206,12 @@ export class MetricsRepository extends BaseRepository {
   /**
    * Get error breakdown
    */
-  getErrorBreakdown(filters: {
+  async getErrorBreakdown(filters: {
     component?: string;
     backend?: string;
     startTime?: Date;
     endTime?: Date;
-  }): Array<{ errorType: string; count: number }> {
+  }): Promise<Array<{ errorType: string; count: number }>> {
     let sql = `
       SELECT error_type, COUNT(*) as count
       FROM red_metrics
@@ -243,8 +241,7 @@ export class MetricsRepository extends BaseRepository {
 
     sql += ' GROUP BY error_type ORDER BY count DESC';
 
-    const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = await this.db.allAsync<any>(sql, params);
 
     return rows.map(row => ({
       errorType: row.error_type,

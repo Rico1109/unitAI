@@ -50,8 +50,8 @@ Use this tool when you need a deep review of specific files, especially before m
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await parallelReviewWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await parallelReviewWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=parallel_review.tool.js.map

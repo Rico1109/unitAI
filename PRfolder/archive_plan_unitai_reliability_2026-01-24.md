@@ -3,8 +3,10 @@ title: unitAI Reliability Remediation Plan
 version: 1.0.0
 updated: 2026-01-24T23:25:00+01:00
 scope: unitai-reliability
-category: plan
+category: archive
 subcategory: implementation
+status: completed
+archived_date: 2026-01-26
 domain: [reliability, graceful-shutdown, state-persistence, di-refactoring]
 source: triangulated-review (Gemini + Cursor + Droid)
 changelog:

@@ -1,0 +1,105 @@
+
+{
+  "analysisSummary": "The unitAI workflows are well-differentiated, each serving a distinct purpose in the development lifecycle (e.g., pre-commit validation, post-commit audit, feature design, bug investigation). The current modular 'toolbox' approach is effective, and merging workflows is not recommended as it would likely create a monolithic, less user-friendly tool. Each workflow leverages different AI backends and orchestration strategies tailored to its specific task.",
+  "workflows": [
+    {
+      "workflowName": "parallel-review",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/parallel-review.workflow.ts",
+      "coreSpecialization": "Performs a general-purpose, parallel code review on a specified set of files using multiple, dynamically selected AI backends.",
+      "keyDifferentiators": "Dynamically selects backends based on task characteristics and a circuit breaker status. Supports different strategies ('standard', 'double-check') that alter the number and configuration of AI backends. Provides highly customized prompts for each potential backend.",
+      "inputParameters": ["files", "focus (architecture, security, etc.)", "autonomyLevel", "strategy", "backendOverrides", "attachments"],
+      "backendUsage": "Dynamic selection from Gemini, Cursor, Droid, RovoDev, Qwen.",
+      "output": "A formatted report with a synthesized analysis from all successful backends, combined recommendations, and a summary of any backend failures.",
+      "useCases": "General code quality assessment, deep review of critical files before merging, getting multiple AI perspectives on a piece of code.",
+      "redundancyAssessment": "Distinct. Serves as the foundational, generalist review tool."
+    },
+    {
+      "workflowName": "pre-commit-validate",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/pre-commit-validate.workflow.ts",
+      "coreSpecialization": "Validates staged git changes before a commit is made.",
+      "keyDifferentiators": "Operates specifically on the output of 'git diff --staged'. It's not for arbitrary files. It runs a fixed set of three parallel checks: secret scanning, code quality, and breaking changes. The 'depth' parameter can trigger a more intense 'paranoid' mode that also generates a remediation plan.",
+      "inputParameters": ["depth (quick, thorough, paranoid)", "autonomyLevel"],
+      "backendUsage": "Selects an optimal backend for each of the three checks (security, review, architecture). Can use Droid or Rovodev for the optional remediation plan.",
+      "output": "A validation report with a final verdict (PASS/WARN/FAIL), a summary of findings in the three areas, and an optional remediation plan.",
+      "useCases": "Ideal for use as a pre-commit hook or as a manual check after 'git add' to prevent issues from entering the codebase.",
+      "redundancyAssessment": "Distinct. Its focus on the 'staged' git state makes it unique and different from post-commit or PR reviews."
+    },
+    {
+      "workflowName": "validate-last-commit",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/validate-last-commit.workflow.ts",
+      "coreSpecialization": "Analyzes and validates a specific, already existing git commit.",
+      "keyDifferentiators": "Targets a specific 'commit_ref' (e.g., HEAD, commit hash). It retrieves the commit's metadata and diff to perform its analysis.",
+      "inputParameters": ["commit_ref", "autonomyLevel"],
+      "backendUsage": "Uses 'selectParallelBackends' to choose two backends for analysis (e.g., Gemini for architecture, Cursor for technical correctness).",
+      "output": "A report containing the commit's information, the synthesized AI analysis, and a simplified verdict (APPROVED/REJECTED/NEEDS REVIEW).",
+      "useCases": "Post-commit auditing, CI/CD pipeline validation, reviewing a specific historical change for quality or security.",
+      "redundancyAssessment": "Distinct. Its focus on the 'committed' git state differentiates it from pre-commit validation and general file reviews."
+    },
+    {
+      "workflowName": "triangulated-review",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/triangulated-review.workflow.ts",
+      "coreSpecialization": "Performs a high-confidence, 3-way cross-check review using a fixed team of AIs (Gemini, Cursor, Droid) for a critical bugfix or refactor.",
+      "keyDifferentiators": "Uses a fixed, structured orchestration: Gemini and Cursor perform parallel analysis, and then Droid acts as a third-party verifier, generating an operational checklist based on the initial findings.",
+      "inputParameters": ["files", "goal (bugfix, refactor)", "autonomyLevel"],
+      "backendUsage": "Fixed combination: Gemini, Cursor, and Droid.",
+      "output": "A report combining the synthesized analysis from Gemini/Cursor with the autonomous verification checklist from Droid.",
+      "useCases": "High-stakes reviews where maximum confidence is required. Best for critical bug fixes or complex refactors before they are merged.",
+      "redundancyAssessment": "Distinct. While it's a review workflow, its rigid, three-step structure (Analyze -> Analyze -> Verify) provides a unique value proposition compared to the more flexible 'parallel-review'."
+    },
+    {
+      "workflowName": "init-session",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/init-session.workflow.ts",
+      "coreSpecialization": "Gathers and summarizes context about the current state of the repository to bootstrap a development session.",
+      "keyDifferentiators": "Purely an information-gathering workflow. It combines data from multiple sources: git status, recent commit history (with AI summarization), a search for relevant local documentation and memories, and a check for available CLI tool dependencies.",
+      "inputParameters": ["autonomyLevel", "commitCount"],
+      "backendUsage": "Uses a fallback chain (Gemini -> Qwen) for AI-powered summarization of recent commits.",
+      "output": "A comprehensive dashboard-like report summarizing the repository's status, recent work, suggested relevant documents, and tool availability.",
+      "useCases": "Run at the beginning of a coding session to quickly get up to speed with the project's current context, recent changes, and ongoing work.",
+      "redundancyAssessment": "Highly Distinct. Serves a unique purpose of context gathering that no other workflow does."
+    },
+    {
+      "workflowName": "feature-design",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/feature-design.workflow.ts",
+      "coreSpecialization": "Orchestrates a full, end-to-end feature development process using a sequence of specialized agents (Architect, Implementer, Tester).",
+      "keyDifferentiators": "A high-level meta-workflow that manages a multi-phase process (Design -> Implement -> Test). It uses an 'AgentFactory' to delegate tasks to specialized agents, representing a higher level of abstraction.",
+      "inputParameters": ["featureDescription", "targetFiles", "context", "architecturalFocus", "implementationApproach", "testType", "autonomyLevel", "validationBackends", "attachments"],
+      "backendUsage": "Dynamically selects the optimal backend for each phase (architecture, implementation, testing) and can use additional backends for a final validation step.",
+      "output": "A detailed report containing the outputs from each agent/phase, a final summary of the overall workflow success, and recommended next steps.",
+      "useCases": "For complex new features that require careful planning, architectural design, initial code scaffolding, and test generation.",
+      "redundancyAssessment": "Highly Distinct. It's a full lifecycle orchestrator, not a single-purpose analysis tool."
+    },
+    {
+      "workflowName": "bug-hunt",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/bug-hunt.workflow.ts",
+      "coreSpecialization": "Investigates a bug starting from symptoms, discovers relevant files, performs multi-agent analysis, and plans a fix.",
+      "keyDifferentiators": "Its starting point is 'symptoms', not code. It uses an initial AI call to identify potentially relevant files if none are provided. It employs a multi-stage investigation: root cause analysis (Gemini/Qwen), hypothesis generation (Cursor/Qwen), and remediation planning (Droid/Rovodev). It also tries to find and analyze related files.",
+      "inputParameters": ["symptoms", "suspected_files", "autonomyLevel", "attachments", "backendOverrides"],
+      "backendUsage": "A dynamic combination of Gemini, Qwen, Cursor, Droid, and Rovodev, each used for a specific stage of the investigation.",
+      "output": "A comprehensive bug report including root cause analysis, investigation hypotheses, a remediation plan, and an analysis of related file impacts.",
+      "useCases": "When you have a bug report or error message but are unsure where the problem lies in the codebase.",
+      "redundancyAssessment": "Distinct. It's an investigative workflow that works backward from a problem description, unlike other workflows that start with known code."
+    },
+    {
+      "workflowName": "auto-remediation",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/auto-remediation.workflow.ts",
+      "coreSpecialization": "Generates a focused, step-by-step operational plan to fix a known issue using Factory Droid.",
+      "keyDifferentiators": "Highly specialized and lightweight. It does one thing: calls the Droid agent to generate a remediation plan. It's a direct interface to Droid's planning capability.",
+      "inputParameters": ["symptoms", "maxActions", "autonomyLevel", "attachments"],
+      "backendUsage": "Exclusively uses Droid.",
+      "output": "A formatted report containing the problem symptoms and the step-by-step remediation plan generated by Droid.",
+      "useCases": "When the problem is already understood and you need a quick, executable action plan without further analysis.",
+      "redundancyAssessment": "Partially overlaps with planning capabilities in other workflows ('bug-hunt', 'pre-commit-validate'), but its value is its simplicity and directness. It's a useful primitive and distinct enough to keep."
+    },
+    {
+      "workflowName": "refactor-sprint",
+      "filePath": "/home/rico/Projects/CodeBase/unitAI/src/workflows/refactor-sprint.workflow.ts",
+      "coreSpecialization": "Coordinates a structured, multi-AI process to plan a complex code refactoring.",
+      "keyDifferentiators": "Follows a specific orchestration tailored for refactoring: Cursor generates a detailed plan with patch suggestions, Gemini reviews this plan for architectural risks, and Droid converts the validated plan into an operational checklist.",
+      "inputParameters": ["targetFiles", "scope", "depth", "autonomyLevel", "attachments"],
+      "backendUsage": "Fixed combination of Cursor, Gemini, and Droid, each with a specific role in the sequence.",
+      "output": "A comprehensive refactoring plan that includes Cursor's suggestions, Gemini's architectural review, and Droid's executable checklist.",
+      "useCases": "For planning significant code restructuring, addressing major technical debt, or migrating code to new patterns or frameworks.",
+      "redundancyAssessment": "Distinct. Its structured approach (Plan -> Review Plan -> Operationalize Plan) is unique and specifically tailored to the challenges of large-scale refactoring."
+    }
+  ]
+}

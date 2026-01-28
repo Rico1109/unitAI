@@ -6,26 +6,43 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MetricsRepository } from '../../../src/repositories/metrics.js';
+import { AsyncDatabase } from '../../../src/lib/async-db.js';
 import Database from 'better-sqlite3';
+
+interface RedMetricRow {
+  id: string;
+  timestamp: number;
+  metric_type: string;
+  component: string;
+  backend: string | null;
+  duration: number;
+  success: number; // SQLite stores boolean as 0/1
+  error_type: string | null;
+  request_id: string | null;
+  metadata: string; // JSON string
+}
 
 describe('MetricsRepository', () => {
   let db: Database.Database;
+  let asyncDb: AsyncDatabase;
   let repo: MetricsRepository;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create fresh in-memory database
     db = new Database(':memory:');
-    repo = new MetricsRepository(db);
-    repo.initializeSchema();
+    asyncDb = new AsyncDatabase(':memory:');
+    repo = new MetricsRepository(asyncDb);
+    await repo.initializeSchema();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await asyncDb.closeAsync();
     db.close();
   });
 
   describe('record()', () => {
-    it('should record a metric and return an ID', () => {
-      const id = repo.record({
+    it('should record a metric and return an ID', async () => {
+      const id = await repo.record({
         metricType: 'request',
         component: 'test-component',
         duration: 100,
@@ -36,12 +53,12 @@ describe('MetricsRepository', () => {
       expect(typeof id).toBe('string');
       expect(id.startsWith('red-')).toBe(true);
 
-      const rows = db.prepare('SELECT * FROM red_metrics').all();
+      const rows = await asyncDb.allAsync('SELECT * FROM red_metrics');
       expect(rows).toHaveLength(1);
     });
 
-    it('should record optional fields correctly', () => {
-      repo.record({
+    it('should record optional fields correctly', async () => {
+      await repo.record({
         metricType: 'workflow',
         component: 'my-workflow',
         backend: 'gemini',
@@ -52,7 +69,7 @@ describe('MetricsRepository', () => {
         metadata: { attempts: 3 }
       });
 
-      const row = db.prepare('SELECT * FROM red_metrics').get() as any;
+      const row = db.prepare('SELECT * FROM red_metrics').get() as RedMetricRow;
       expect(row.metric_type).toBe('workflow');
       expect(row.backend).toBe('gemini');
       expect(row.error_type).toBe('TimeoutError');
@@ -131,7 +148,7 @@ describe('MetricsRepository', () => {
     it('should return zeros for empty metrics', () => {
       const stats = repo.getREDStats({ component: 'non-existent' });
       expect(stats.totalRequests).toBe(0);
-      expect(stats.rate).toBe(0);
+      expect(stats.errorRate).toBe(0);
       expect(stats.p50).toBe(0);
     });
   });

@@ -4,7 +4,7 @@ export const getSystemInstructionsTool = {
     description: "Get the 'System Instructions Manual', which provides essential information on how to use the Unified-AI tools effectively.",
     zodSchema: z.object({}),
     category: "meta",
-    execute: async () => {
+    execute: async (args, context) => {
         return `
 # Unified-AI System Instructions
 

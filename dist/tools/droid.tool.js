@@ -43,8 +43,9 @@ export const droidTool = {
     description: "Factory Droid CLI (GLM-4.6) per task agentici con livelli di autonomia configurabili",
     category: "ai-client",
     zodSchema: droidSchema,
-    execute: async (args, onProgress) => {
+    execute: async (args, context) => {
         const { prompt, auto, outputFormat, sessionId, skipPermissionsUnsafe, files, cwd, autonomyLevel } = args;
+        const { onProgress } = context;
         if (!prompt || !prompt.trim()) {
             throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
         }

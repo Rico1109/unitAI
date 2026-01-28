@@ -7,6 +7,7 @@ import { smartWorkflowsTool } from "./smart-workflows.tool.js";
 import { askQwenTool } from "./ask-qwen.tool.js"; // REPLACED cursorAgentTool
 import { droidTool } from "./droid.tool.js";
 import { listWorkflowsTool, describeWorkflowTool, getSystemInstructionsTool } from "./meta/index.js";
+import { redMetricsDashboardTool } from "./red-metrics-dashboard.tool.js";
 import { workflowParallelReviewTool, workflowPreCommitValidateTool, workflowValidateLastCommitTool, workflowTriangulatedReviewTool, workflowInitSessionTool, workflowFeatureDesignTool, workflowBugHuntTool, workflowAutoRemediationTool, workflowRefactorSprintTool } from "./workflows/index.js";
 import { initializeWorkflowRegistry } from "../workflows/index.js";
 // Register all tools
@@ -18,6 +19,8 @@ registerTool(smartWorkflowsTool);
 registerTool(listWorkflowsTool);
 registerTool(describeWorkflowTool);
 registerTool(getSystemInstructionsTool);
+// Register Observability tools
+registerTool(redMetricsDashboardTool);
 // Register Workflow tools (Phase 2 Batch 1)
 registerTool(workflowParallelReviewTool);
 registerTool(workflowPreCommitValidateTool);
@@ -40,6 +43,8 @@ export { askQwenTool } from "./ask-qwen.tool.js"; // REPLACED cursorAgentTool
 export { droidTool } from "./droid.tool.js";
 // Export Meta tools
 export { listWorkflowsTool, describeWorkflowTool, getSystemInstructionsTool } from "./meta/index.js";
+// Export Observability tools
+export { redMetricsDashboardTool } from "./red-metrics-dashboard.tool.js";
 // Export Workflow tools
 export { workflowParallelReviewTool, workflowPreCommitValidateTool, workflowValidateLastCommitTool, workflowTriangulatedReviewTool, workflowInitSessionTool, workflowFeatureDesignTool, workflowBugHuntTool, workflowAutoRemediationTool, workflowRefactorSprintTool } from "./workflows/index.js";
 //# sourceMappingURL=index.js.map

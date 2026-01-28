@@ -25,6 +25,7 @@ export declare class WorkflowCache {
     private cache;
     private stats;
     private cacheDir;
+    private isWriting;
     constructor(cacheDir?: string);
     /**
      * Compute cache key from workflow name, params, and file contents
@@ -45,11 +46,11 @@ export declare class WorkflowCache {
     /**
      * Clear expired entries
      */
-    cleanup(): number;
+    cleanup(): Promise<number>;
     /**
      * Clear all cache entries
      */
-    clear(): void;
+    clear(): Promise<void>;
     /**
      * Get cache statistics
      */
@@ -59,7 +60,7 @@ export declare class WorkflowCache {
      */
     private loadFromDisk;
     /**
-     * Save cache to disk
+     * Save cache to disk (async with locking to prevent race conditions)
      */
     private saveToDisk;
 }

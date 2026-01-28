@@ -1,34 +1,34 @@
 import type { GitRepoInfo, GitCommitInfo } from "../workflows/types.js";
 /**
- * Verifica se la directory corrente è un repository Git
+ * Check if the current directory is a Git repository
  */
 export declare function isGitRepository(): Promise<boolean>;
 /**
- * Ottiene informazioni sul repository Git corrente
+ * Get information about the current Git repository
  */
 export declare function getGitRepoInfo(): Promise<GitRepoInfo>;
 /**
- * Restituisce il branch corrente
+ * Get the current branch name
  */
 export declare function getCurrentBranch(): Promise<string>;
 /**
- * Ottiene informazioni su un commit specifico
+ * Get information about a specific commit
  */
 export declare function getGitCommitInfo(commitRef?: string): Promise<GitCommitInfo>;
 /**
- * Ottiene il diff tra due commit
+ * Get the diff between two commits
  */
 export declare function getGitDiff(fromRef: string, toRef?: string): Promise<string>;
 /**
- * Ottiene il diff dei file staged
+ * Get the diff of staged files
  */
 export declare function getStagedDiff(): Promise<string>;
 /**
- * Ottiene lo stato del repository in formato dettagliato
+ * Get detailed repository status
  */
 export declare function getDetailedGitStatus(): Promise<string>;
 /**
- * Ottiene i branch locali e remoti
+ * Get local and remote branches
  */
 export declare function getGitBranches(): Promise<string>;
 /**
@@ -36,7 +36,7 @@ export declare function getGitBranches(): Promise<string>;
  */
 export declare function isFileTracked(filePath: string): Promise<boolean>;
 /**
- * Ottiene gli ultimi N commits con i loro diffs completi
+ * Get the last N commits with their complete diffs
  */
 export declare function getRecentCommitsWithDiffs(count?: number): Promise<GitCommitInfo[]>;
 /**

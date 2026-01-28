@@ -1,19 +1,19 @@
 import { executeCommand } from "./commandExecutor.js";
 import { logger } from "./logger.js";
 /**
- * Esegue un comando Git e restituisce l'output
+ * Execute a Git command and return the output
  */
 async function runGitCommand(args) {
     try {
         return await executeCommand("git", args);
     }
     catch (error) {
-        logger.error(`Errore nell'esecuzione di git ${args.join(" ")}:`, error);
+        logger.error(`Error executing git command '${args.join(" ")}':`, error);
         throw error;
     }
 }
 /**
- * Verifica se la directory corrente è un repository Git
+ * Check if the current directory is a Git repository
  */
 export async function isGitRepository() {
     try {
@@ -25,26 +25,26 @@ export async function isGitRepository() {
     }
 }
 /**
- * Ottiene informazioni sul repository Git corrente
+ * Get information about the current Git repository
  */
 export async function getGitRepoInfo() {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
-        // Branch corrente
+        // Current branch
         const branchOutput = await runGitCommand(["branch", "--show-current"]);
         const currentBranch = branchOutput.trim();
         // Status
         const statusOutput = await runGitCommand(["status", "--porcelain"]);
         const status = statusOutput.trim();
-        // Commit recenti
+        // Recent commits
         const logOutput = await runGitCommand(["log", "--oneline", "-5"]);
         const recentCommits = logOutput.trim().split("\n").filter(line => line.trim());
-        // File staged
+        // Staged files
         const stagedOutput = await runGitCommand(["diff", "--cached", "--name-only"]);
         const stagedFiles = stagedOutput.trim() ? stagedOutput.trim().split("\n") : [];
-        // File modificati
+        // Modified files
         const modifiedOutput = await runGitCommand(["diff", "--name-only"]);
         const modifiedFiles = modifiedOutput.trim() ? modifiedOutput.trim().split("\n") : [];
         return {
@@ -56,26 +56,26 @@ export async function getGitRepoInfo() {
         };
     }
     catch (error) {
-        logger.error("Errore nel recupero delle informazioni del repository Git:", error);
+        logger.error("Error retrieving Git repository information:", error);
         throw error;
     }
 }
 /**
- * Restituisce il branch corrente
+ * Get the current branch name
  */
 export async function getCurrentBranch() {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     const branchOutput = await runGitCommand(["branch", "--show-current"]);
     return branchOutput.trim();
 }
 /**
- * Ottiene informazioni su un commit specifico
+ * Get information about a specific commit
  */
 export async function getGitCommitInfo(commitRef = "HEAD") {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
         // Informazioni base del commit
@@ -84,7 +84,7 @@ export async function getGitCommitInfo(commitRef = "HEAD") {
         // Diff del commit
         const diffOutput = await runGitCommand(["show", "--format=", commitRef]);
         const diff = diffOutput;
-        // File modificati nel commit
+        // Files modified in the commit
         const nameOnlyOutput = await runGitCommand(["show", "--format=", "--name-only", commitRef]);
         const files = nameOnlyOutput.trim() ? nameOnlyOutput.trim().split("\n") : [];
         return {
@@ -97,67 +97,67 @@ export async function getGitCommitInfo(commitRef = "HEAD") {
         };
     }
     catch (error) {
-        logger.error(`Errore nel recupero delle informazioni del commit ${commitRef}:`, error);
+        logger.error(`Error retrieving commit information for '${commitRef}':`, error);
         throw error;
     }
 }
 /**
- * Ottiene il diff tra due commit
+ * Get the diff between two commits
  */
 export async function getGitDiff(fromRef, toRef = "HEAD") {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
         return await runGitCommand(["diff", `${fromRef}..${toRef}`]);
     }
     catch (error) {
-        logger.error(`Errore nel recupero del diff tra ${fromRef} e ${toRef}:`, error);
+        logger.error(`Error retrieving diff between '${fromRef}' and '${toRef}':`, error);
         throw error;
     }
 }
 /**
- * Ottiene il diff dei file staged
+ * Get the diff of staged files
  */
 export async function getStagedDiff() {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
         return await runGitCommand(["diff", "--cached"]);
     }
     catch (error) {
-        logger.error("Errore nel recupero del diff dei file staged:", error);
+        logger.error("Error retrieving diff of staged files:", error);
         throw error;
     }
 }
 /**
- * Ottiene lo stato del repository in formato dettagliato
+ * Get detailed repository status
  */
 export async function getDetailedGitStatus() {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
         return await runGitCommand(["status"]);
     }
     catch (error) {
-        logger.error("Errore nel recupero dello stato del repository:", error);
+        logger.error("Error retrieving repository status:", error);
         throw error;
     }
 }
 /**
- * Ottiene i branch locali e remoti
+ * Get local and remote branches
  */
 export async function getGitBranches() {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
         return await runGitCommand(["branch", "-vv"]);
     }
     catch (error) {
-        logger.error("Errore nel recupero dei branch:", error);
+        logger.error("Error retrieving branches:", error);
         throw error;
     }
 }
@@ -177,11 +177,11 @@ export async function isFileTracked(filePath) {
     }
 }
 /**
- * Ottiene gli ultimi N commits con i loro diffs completi
+ * Get the last N commits with their complete diffs
  */
 export async function getRecentCommitsWithDiffs(count = 10) {
     if (!await isGitRepository()) {
-        throw new Error("Directory corrente non è un repository Git");
+        throw new Error("Current directory is not a Git repository");
     }
     try {
         // Ottieni gli hash degli ultimi N commits
@@ -200,7 +200,7 @@ export async function getRecentCommitsWithDiffs(count = 10) {
         return commits;
     }
     catch (error) {
-        logger.error(`Errore nel recupero degli ultimi ${count} commits:`, error);
+        logger.error(`Error retrieving last ${count} commits:`, error);
         throw error;
     }
 }

@@ -3,9 +3,10 @@ title: DI Consistency Improvement Plan
 version: 1.0.0
 updated: 2026-01-24T16:10:00+01:00
 scope: unitai-di-plan
-category: plan
+category: archive
 subcategory: dependency-injection
-status: draft
+status: completed
+archived_date: 2026-01-26
 domain: [di, architecture, testing]
 related_issues: [DI-001, DI-002, TEST-001]
 changelog:

@@ -9,6 +9,7 @@ export interface AppDependencies {
     activityDb: Database.Database;
     auditDb: Database.Database;
     tokenDb: Database.Database;
+    metricsDb: Database.Database;
     circuitBreaker: CircuitBreaker;
 }
 /**

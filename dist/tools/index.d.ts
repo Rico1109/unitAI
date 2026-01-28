@@ -4,5 +4,6 @@ export { smartWorkflowsTool } from "./smart-workflows.tool.js";
 export { askQwenTool } from "./ask-qwen.tool.js";
 export { droidTool } from "./droid.tool.js";
 export { listWorkflowsTool, describeWorkflowTool, getSystemInstructionsTool } from "./meta/index.js";
+export { redMetricsDashboardTool } from "./red-metrics-dashboard.tool.js";
 export { workflowParallelReviewTool, workflowPreCommitValidateTool, workflowValidateLastCommitTool, workflowTriangulatedReviewTool, workflowInitSessionTool, workflowFeatureDesignTool, workflowBugHuntTool, workflowAutoRemediationTool, workflowRefactorSprintTool } from "./workflows/index.js";
 //# sourceMappingURL=index.d.ts.map

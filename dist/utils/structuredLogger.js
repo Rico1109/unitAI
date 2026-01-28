@@ -60,19 +60,28 @@ export class StructuredLogger {
      * Gets or creates a write stream for a log file
      */
     getStream(filename) {
-        const filePath = path.join(this.logDir, filename);
-        // Check if file needs rotation
-        if (fs.existsSync(filePath)) {
-            const stats = fs.statSync(filePath);
-            if (stats.size >= this.maxFileSizeBytes) {
-                this.rotateFile(filename);
+        try {
+            const filePath = path.join(this.logDir, filename);
+            // Check if file needs rotation
+            if (fs.existsSync(filePath)) {
+                const stats = fs.statSync(filePath);
+                if (stats.size >= this.maxFileSizeBytes) {
+                    this.rotateFile(filename);
+                }
             }
+            if (!this.streams.has(filename)) {
+                // Ensure log directory exists before creating stream
+                this.ensureLogDirectory();
+                const stream = fs.createWriteStream(filePath, { flags: 'a' });
+                this.streams.set(filename, stream);
+            }
+            return this.streams.get(filename);
         }
-        if (!this.streams.has(filename)) {
-            const stream = fs.createWriteStream(filePath, { flags: 'a' });
-            this.streams.set(filename, stream);
+        catch (error) {
+            // If stream creation fails, log to stderr and return undefined
+            console.error(`Failed to create log stream for ${filename}:`, error);
+            return undefined;
         }
-        return this.streams.get(filename);
     }
     /**
      * Rotates a log file when it reaches max size
@@ -120,7 +129,13 @@ export class StructuredLogger {
         for (const file of files) {
             try {
                 const stream = this.getStream(file);
-                stream.write(logLine);
+                if (stream) {
+                    stream.write(logLine);
+                }
+                else {
+                    // Stream creation failed - log line is lost but we don't crash
+                    console.error(`Failed to get stream for ${file}, log entry lost`);
+                }
             }
             catch (error) {
                 // Fallback to stderr if file write fails

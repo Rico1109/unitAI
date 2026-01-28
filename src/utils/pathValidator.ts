@@ -63,3 +63,42 @@ export function validateFilePath(filePath: string): string {
 export function validateFilePaths(filePaths: string[]): string[] {
   return filePaths.map((filePath) => validateFilePath(filePath));
 }
+
+/**
+ * SECURITY: Validate path for file writing operations
+ *
+ * Checks:
+ * 1. Path must be within allowed directory (or relative to it)
+ * 2. No path traversal sequences (..) in the path
+ * 3. Resolves to an absolute path within bounds
+ *
+ * Unlike validateFilePath, this does NOT check if the file exists,
+ * making it suitable for validating output file paths.
+ *
+ * @param filePath - Path to validate
+ * @param allowedBaseDir - Base directory that the path must be within (defaults to process.cwd())
+ * @returns Resolved absolute path if valid
+ * @throws Error if path is invalid or unsafe
+ */
+export function validatePath(filePath: string, allowedBaseDir: string = process.cwd()): string {
+  const resolved = path.resolve(allowedBaseDir, filePath);
+  const baseDir = path.resolve(allowedBaseDir);
+
+  // 1. Must be within allowed base directory
+  if (!resolved.startsWith(baseDir)) {
+    throw new Error(
+      `Invalid output path: path traversal attempt detected. ` +
+      `Path "${filePath}" resolves outside allowed directory "${baseDir}"`
+    );
+  }
+
+  // 2. No traversal sequences in the input
+  if (filePath.includes("..")) {
+    throw new Error(
+      `Invalid output path: path traversal attempt detected. ` +
+      `Path "${filePath}" contains ".." sequences`
+    );
+  }
+
+  return resolved;
+}

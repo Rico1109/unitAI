@@ -47,8 +47,8 @@ Use this in CI pipelines or for post-commit reviews. Defaults to HEAD (most rece
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await validateLastCommitWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await validateLastCommitWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=validate_last_commit.tool.js.map

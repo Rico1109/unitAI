@@ -2,8 +2,9 @@ import { executeWorkflow, smartWorkflowsSchema } from "../workflows/index.js";
 /**
  * Esegue il workflow richiesto
  */
-const executeSmartWorkflow = async (args, onProgress) => {
+const executeSmartWorkflow = async (args, context) => {
     const { workflow, params = {} } = args;
+    const { onProgress } = context;
     onProgress?.(`Avvio del workflow: ${workflow}`);
     try {
         const result = await executeWorkflow(workflow, params, onProgress);

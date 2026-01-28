@@ -24,8 +24,9 @@ export const askQwenTool = {
     description: "Query Qwen via the qwen CLI with support for sandbox and YOLO mode",
     category: "ai-client",
     zodSchema: askQwenSchema,
-    execute: async (args, onProgress) => {
+    execute: async (args, context) => {
         const { prompt, outputFormat, sandbox, yolo } = args;
+        const { onProgress } = context;
         if (!prompt || !prompt.trim()) {
             throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
         }

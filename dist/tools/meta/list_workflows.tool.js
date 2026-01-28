@@ -10,7 +10,8 @@ export const listWorkflowsTool = {
             .describe("Filter by category")
     }),
     category: "meta",
-    execute: async ({ category }) => {
+    execute: async (args, context) => {
+        const { category } = args;
         const workflows = toolRegistry.filter(t => (t.name.startsWith('workflow_') || t.category === 'workflow') &&
             (category === 'all' || t.metadata?.category === category));
         if (workflows.length === 0) {

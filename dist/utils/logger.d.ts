@@ -1,11 +1,14 @@
 /**
- * Logger utility for consistent logging across the application
+ * DEPRECATED: Use structuredLogger.ts directly for new code
+ *
+ * This file now re-exports legacyLogger for backward compatibility.
+ * All logs are now sent to both console (stderr) AND structured log files.
+ *
+ * Migration path:
+ * - Old code: import { logger } from './utils/logger.js';
+ * - New code: import { structuredLogger } from './utils/structuredLogger.js';
+ *
+ * The logger API remains unchanged for backward compatibility.
  */
-export declare const logger: {
-    info: (message: string, ...args: any[]) => void;
-    error: (message: string, ...args: any[]) => void;
-    warn: (message: string, ...args: any[]) => void;
-    debug: (message: string, ...args: any[]) => void;
-    progress: (message: string) => void;
-};
+export { logger } from './legacyLogger.js';
 //# sourceMappingURL=logger.d.ts.map

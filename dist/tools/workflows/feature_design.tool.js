@@ -42,8 +42,8 @@ Use for complex features requiring multiple files or careful architectural plann
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await featureDesignWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await featureDesignWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=feature_design.tool.js.map

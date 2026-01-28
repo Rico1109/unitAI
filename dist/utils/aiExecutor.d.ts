@@ -19,6 +19,7 @@ export interface AIExecutionOptions {
     cwd?: string;
     onProgress?: (output: string) => void;
     trustedSource?: boolean;
+    requestId?: string;
 }
 /**
  * Execute Gemini CLI with the given options
@@ -55,6 +56,7 @@ export interface RetryConfig {
 /**
  * Main function to execute an AI command based on backend
  * Includes automatic retry-with-fallback when a backend fails
+ * WITH RED METRICS TRACKING
  */
 export declare function executeAIClient(options: AIExecutionOptions, retryConfig?: RetryConfig): Promise<string>;
 //# sourceMappingURL=aiExecutor.d.ts.map

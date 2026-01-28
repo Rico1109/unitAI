@@ -2,7 +2,7 @@
  * Tests for workflow cache system
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WorkflowCache, DEFAULT_TTL } from '../../../src/workflows/cache.js';
 import { rmSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -33,6 +33,24 @@ describe('WorkflowCache', () => {
     expect(key1).not.toBe(key3);
   });
 
+  it('should produce identical keys for objects with different key orders', () => {
+    const key1 = cache.computeCacheKey('test-workflow', { a: 1, b: 2 });
+    const key2 = cache.computeCacheKey('test-workflow', { b: 2, a: 1 });
+
+    expect(key1).toBe(key2);
+  });
+
+  it('should normalize nested objects recursively', () => {
+    const key1 = cache.computeCacheKey('test', {
+      outer: { a: 1, b: { x: 10, y: 20 } }
+    });
+    const key2 = cache.computeCacheKey('test', {
+      outer: { b: { y: 20, x: 10 }, a: 1 }
+    });
+
+    expect(key1).toBe(key2);
+  });
+
   it('should store and retrieve cached results', async () => {
     const key = cache.computeCacheKey('test-workflow', { test: 'data' });
     
@@ -47,22 +65,49 @@ describe('WorkflowCache', () => {
     expect(result).toBeNull();
   });
 
-  it('should expire entries after TTL', async () => {
-    const key = cache.computeCacheKey('test-workflow', { test: 'data' });
-    
-    // Set with 1 second TTL
-    await cache.set(key, 'test result', 'test-workflow', 1);
-    
-    // Should be available immediately
-    let result = await cache.get(key);
-    expect(result).toBe('test result');
-    
-    // Wait for expiration
-    await new Promise(resolve => setTimeout(resolve, 1100));
-    
-    // Should be expired
-    result = await cache.get(key);
-    expect(result).toBeNull();
+  describe('with fake timers', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should expire entries after TTL', async () => {
+      const key = cache.computeCacheKey('test-workflow', { test: 'data' });
+
+      // Set with 1 second TTL
+      await cache.set(key, 'test result', 'test-workflow', 1);
+
+      // Should be available immediately
+      let result = await cache.get(key);
+      expect(result).toBe('test result');
+
+      // Wait for expiration
+      await vi.advanceTimersByTimeAsync(1100);
+
+      // Should be expired
+      result = await cache.get(key);
+      expect(result).toBeNull();
+    });
+
+    it('should cleanup expired entries', async () => {
+      const key1 = cache.computeCacheKey('workflow1', { test: '1' });
+      const key2 = cache.computeCacheKey('workflow2', { test: '2' });
+
+      await cache.set(key1, 'result1', 'workflow1', 1); // 1 second TTL
+      await cache.set(key2, 'result2', 'workflow2', 3600); // 1 hour TTL
+
+      expect(cache.getStats().entries).toBe(2);
+
+      // Wait for first entry to expire
+      await vi.advanceTimersByTimeAsync(1100);
+
+      const removed = await cache.cleanup();
+      expect(removed).toBe(1);
+      expect(cache.getStats().entries).toBe(1);
+    });
   });
 
   it('should track cache statistics', async () => {
@@ -81,23 +126,6 @@ describe('WorkflowCache', () => {
     expect(stats.misses).toBe(1);
     expect(stats.entries).toBe(1);
     expect(stats.hitRate).toBe(0.5);
-  });
-
-  it('should cleanup expired entries', async () => {
-    const key1 = cache.computeCacheKey('workflow1', { test: '1' });
-    const key2 = cache.computeCacheKey('workflow2', { test: '2' });
-    
-    await cache.set(key1, 'result1', 'workflow1', 1); // 1 second TTL
-    await cache.set(key2, 'result2', 'workflow2', 3600); // 1 hour TTL
-    
-    expect(cache.getStats().entries).toBe(2);
-    
-    // Wait for first entry to expire
-    await new Promise(resolve => setTimeout(resolve, 1100));
-
-    const removed = await cache.cleanup();
-    expect(removed).toBe(1);
-    expect(cache.getStats().entries).toBe(1);
   });
 
   it('should clear all cache', async () => {

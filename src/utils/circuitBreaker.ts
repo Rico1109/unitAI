@@ -38,11 +38,28 @@ interface CircuitStateRow {
 export class CircuitBreaker {
     private states: Map<string, BackendState> = new Map();
     private db: Database.Database | null = null;
+    private stateMutex: Promise<void> = Promise.resolve();
 
     private config: CircuitConfig = {
         failureThreshold: 3,
         resetTimeoutMs: 5 * 60 * 1000 // 5 minutes
     };
+
+    /**
+     * Execute a function with exclusive state lock
+     * Prevents race conditions in state transitions
+     */
+    private async withStateLock<T>(fn: () => T | Promise<T>): Promise<T> {
+        const prev = this.stateMutex;
+        let release!: () => void;
+        this.stateMutex = new Promise(r => release = r);
+        await prev;
+        try {
+            return await fn();
+        } finally {
+            release();
+        }
+    }
 
     constructor(
         failureThreshold: number = 3,
@@ -125,55 +142,61 @@ export class CircuitBreaker {
     /**
      * Check if a backend is available
      */
-    public isAvailable(backend: string): boolean {
-        const state = this.getState(backend);
+    public async isAvailable(backend: string): Promise<boolean> {
+        return this.withStateLock(async () => {
+            const state = this.getState(backend);
 
-        if (state.state === CircuitState.OPEN) {
-            const now = Date.now();
-            if (now - state.lastFailureTime > this.config.resetTimeoutMs) {
-                this.transitionTo(backend, CircuitState.HALF_OPEN);
-                return true; // Allow one trial request
+            if (state.state === CircuitState.OPEN) {
+                const now = Date.now();
+                if (now - state.lastFailureTime > this.config.resetTimeoutMs) {
+                    await this.transitionTo(backend, CircuitState.HALF_OPEN);
+                    return true; // Allow one trial request
+                }
+                return false;
             }
-            return false;
-        }
 
-        return true;
+            return true;
+        });
     }
 
     /**
      * Record a successful execution
      */
-    public onSuccess(backend: string): void {
-        const state = this.getState(backend);
-        if (state.state === CircuitState.HALF_OPEN) {
-            this.transitionTo(backend, CircuitState.CLOSED);
-            logger.info(`[CircuitBreaker] Backend ${backend} recovered. Circuit CLOSED.`);
-        } else if (state.failures > 0) {
-            // Reset failures on success in CLOSED state
-            state.failures = 0;
-            this.states.set(backend, state);
-            this.saveState(backend); // Persist state change
-        }
+    public async onSuccess(backend: string): Promise<void> {
+        await this.withStateLock(async () => {
+            const state = this.getState(backend);
+            if (state.state === CircuitState.HALF_OPEN) {
+                await this.transitionTo(backend, CircuitState.CLOSED);
+                logger.info(`[CircuitBreaker] Backend ${backend} recovered. Circuit CLOSED.`);
+            } else if (state.failures > 0) {
+                // Reset failures on success in CLOSED state
+                state.failures = 0;
+                this.states.set(backend, state);
+                this.saveState(backend); // Persist state change
+            }
+        });
     }
 
     /**
      * Record a failed execution
      */
-    public onFailure(backend: string): void {
-        const state = this.getState(backend);
-        state.failures++;
-        state.lastFailureTime = Date.now();
+    public async onFailure(backend: string): Promise<void> {
+        await this.withStateLock(async () => {
+            const state = this.getState(backend);
+            state.failures++;
+            state.lastFailureTime = Date.now();
 
-        if (state.state === CircuitState.HALF_OPEN) {
-            this.transitionTo(backend, CircuitState.OPEN);
-            logger.warn(`[CircuitBreaker] Backend ${backend} failed recovery check. Circuit OPEN.`);
-        } else if (state.state === CircuitState.CLOSED && state.failures >= this.config.failureThreshold) {
-            this.transitionTo(backend, CircuitState.OPEN);
-            logger.error(`[CircuitBreaker] Backend ${backend} reached failure threshold. Circuit OPEN.`);
-        } else {
-            this.states.set(backend, state);
-            this.saveState(backend); // Persist state change
-        }
+            if (state.state === CircuitState.HALF_OPEN) {
+                await this.transitionTo(backend, CircuitState.OPEN);
+                logger.warn(`[CircuitBreaker] Backend ${backend} failed recovery check. Circuit OPEN.`);
+            } else if (state.state === CircuitState.CLOSED && state.failures >= this.config.failureThreshold) {
+                await this.transitionTo(backend, CircuitState.OPEN);
+                logger.error(`[CircuitBreaker] Backend ${backend} reached failure threshold. Circuit OPEN.`);
+            } else {
+                this.states.set(backend, state);
+                this.saveState(backend); // Persist state change
+            }
+        });
     }
 
     /**
@@ -193,14 +216,16 @@ export class CircuitBreaker {
     /**
      * Transition backend to a new state
      */
-    private transitionTo(backend: string, newState: CircuitState): void {
-        const state = this.getState(backend);
-        state.state = newState;
-        if (newState === CircuitState.CLOSED) {
-            state.failures = 0;
-        }
-        this.states.set(backend, state);
-        this.saveState(backend); // Persist state transition
+    private async transitionTo(backend: string, newState: CircuitState): Promise<void> {
+        await this.withStateLock(() => {
+            const state = this.getState(backend);
+            state.state = newState;
+            if (newState === CircuitState.CLOSED) {
+                state.failures = 0;
+            }
+            this.states.set(backend, state);
+            this.saveState(backend); // Persist state transition
+        });
     }
 
     /**

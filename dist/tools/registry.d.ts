@@ -1,9 +1,24 @@
 import { z } from "zod";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 /**
- * Tool execution function type
+ * Tool execution context - provides requestId and progress callback
  */
-export type ToolExecuteFunction = (args: Record<string, any>, onProgress?: (message: string) => void) => Promise<string>;
+export interface ToolExecutionContext {
+    requestId: string;
+    onProgress?: (message: string) => void;
+}
+/**
+ * Progress callback type
+ */
+export type ProgressCallback = (message: string) => void;
+/**
+ * New tool execution function type with context
+ */
+export type ToolExecuteFunction = (args: Record<string, any>, context: ToolExecutionContext) => Promise<string>;
+/**
+ * Legacy tool execution function type (for backward compatibility)
+ */
+export type LegacyToolExecuteFunction = (args: Record<string, any>, onProgress?: ProgressCallback) => Promise<string>;
 /**
  * Unified tool definition
  */
@@ -11,7 +26,7 @@ export interface UnifiedTool {
     name: string;
     description: string;
     zodSchema: z.ZodObject<any>;
-    execute: ToolExecuteFunction;
+    execute: ToolExecuteFunction | LegacyToolExecuteFunction;
     category?: string;
     metadata?: {
         category?: string;
@@ -55,7 +70,7 @@ export declare function getToolDefinitions(): Tool[];
 /**
  * Execute a tool by name
  */
-export declare function executeTool(name: string, args: Record<string, any>, onProgress?: (message: string) => void): Promise<string>;
+export declare function executeTool(name: string, args: Record<string, any>, onProgress?: (message: string) => void, requestId?: string): Promise<string>;
 /**
  * Get prompt definitions for tools that have prompts
  */

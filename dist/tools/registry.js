@@ -38,17 +38,28 @@ export function getToolDefinitions() {
 /**
  * Execute a tool by name
  */
-export async function executeTool(name, args, onProgress) {
+export async function executeTool(name, args, onProgress, requestId) {
     // Find the tool
     const tool = toolRegistry.find(t => t.name === name);
     if (!tool) {
         throw new Error(`${ERROR_MESSAGES.TOOL_NOT_FOUND}: ${name}`);
     }
+    // Generate requestId if not provided
+    const effectiveRequestId = requestId || `req-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // Create execution context
+    const context = {
+        requestId: effectiveRequestId,
+        onProgress
+    };
     // Validate arguments
     try {
         const validatedArgs = tool.zodSchema.parse(args);
-        // Execute the tool
-        return await tool.execute(validatedArgs, onProgress);
+        // Simple approach: always pass both, tool can use what it needs
+        // Legacy tools will receive (args, onProgress) where second param is a function
+        // New tools will receive (args, context) where second param is an object with requestId
+        // We call with the context, and if the tool expects legacy signature,
+        // it will just use the onProgress property or ignore it
+        return await tool.execute(validatedArgs, context);
     }
     catch (error) {
         if (error instanceof z.ZodError) {

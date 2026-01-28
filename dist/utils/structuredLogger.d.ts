@@ -33,7 +33,7 @@ export interface LogEntry {
     component: string;
     operation: string;
     message: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     duration?: number;
     workflowId?: string;
     parentSpanId?: string;
@@ -84,19 +84,19 @@ export declare class StructuredLogger {
     /**
      * Debug level log
      */
-    debug(category: LogCategory, component: string, operation: string, message: string, metadata?: any): void;
+    debug(category: LogCategory, component: string, operation: string, message: string, metadata?: Record<string, unknown>): void;
     /**
      * Info level log
      */
-    info(category: LogCategory, component: string, operation: string, message: string, metadata?: any): void;
+    info(category: LogCategory, component: string, operation: string, message: string, metadata?: Record<string, unknown>): void;
     /**
      * Warn level log
      */
-    warn(category: LogCategory, component: string, operation: string, message: string, metadata?: any): void;
+    warn(category: LogCategory, component: string, operation: string, message: string, metadata?: Record<string, unknown>): void;
     /**
      * Error level log
      */
-    error(category: LogCategory, component: string, operation: string, message: string, error?: Error, metadata?: any): void;
+    error(category: LogCategory, component: string, operation: string, message: string, error?: Error, metadata?: Record<string, unknown>): void;
     /**
      * Crea workflow-scoped logger
      */

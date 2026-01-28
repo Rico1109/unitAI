@@ -7,7 +7,8 @@ export const describeWorkflowTool = {
         name: z.string().describe("The name of the workflow tool (e.g., 'workflow_parallel_review')")
     }),
     category: "meta",
-    execute: async ({ name }) => {
+    execute: async (args, context) => {
+        const { name } = args;
         const tool = toolRegistry.find(t => t.name === name);
         if (!tool) {
             return `Error: Workflow '${name}' not found. Use 'list_workflows' to see available options.`;

@@ -40,8 +40,8 @@ Use when you need a concrete, executable plan to fix a known issue or implement 
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await autoRemediationWorkflow.execute(args, onProgress);
+    execute: async (args, context) => {
+        return await autoRemediationWorkflow.execute(args, context.onProgress);
     }
 };
 //# sourceMappingURL=auto_remediation.tool.js.map

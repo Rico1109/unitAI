@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolExecuteFunction } from "./registry.js";
+import type { ToolExecutionContext } from "./registry.js";
 /**
  * Definizione dello strumento smart-workflows
  */
@@ -16,7 +16,7 @@ export declare const smartWorkflowsTool: {
         workflow: "parallel-review" | "pre-commit-validate" | "bug-hunt" | "feature-design" | "validate-last-commit" | "init-session" | "triangulated-review" | "auto-remediation" | "refactor-sprint" | "overthinker";
         params?: Record<string, any> | undefined;
     }>;
-    execute: ToolExecuteFunction;
+    execute: (args: Record<string, any>, context: ToolExecutionContext) => Promise<string>;
     category: string;
     prompt: {
         name: string;

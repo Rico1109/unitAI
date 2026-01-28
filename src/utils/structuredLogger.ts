@@ -60,39 +60,36 @@ export interface LoggerConfig {
 }
 
 /**
- * Structured Logger with file-based output
+ * StreamPool Configuration
  */
-export class StructuredLogger {
-  private logDir: string;
-  private minLevel: LogLevel;
-  private enableConsole: boolean;
+const MAX_STREAMS = 10;
+
+/**
+ * StreamPool class for LRU stream management
+ *
+ * Manages a pool of write streams with LRU eviction to prevent file handle leaks.
+ * Ensures no more than MAX_STREAMS are open simultaneously.
+ */
+class StreamPool {
   private streams: Map<string, fs.WriteStream>;
+  private accessOrder: string[]; // For LRU tracking
+  private maxStreams: number;
+  private logDir: string;
   private maxFileSizeBytes: number;
 
-  constructor(config?: LoggerConfig) {
-    this.logDir = config?.logDir || path.join(process.cwd(), 'logs');
-    this.minLevel = config?.minLevel ?? LogLevel.INFO;
-    this.enableConsole = config?.enableConsole ?? false;
-    this.maxFileSizeBytes = (config?.maxFileSizeMB || 10) * 1024 * 1024;
+  constructor(logDir: string, maxStreams: number, maxFileSizeBytes: number) {
     this.streams = new Map();
-
-    // Create log directory if it doesn't exist
-    this.ensureLogDirectory();
-  }
-
-  /**
-   * Ensures log directory exists
-   */
-  private ensureLogDirectory(): void {
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir, { recursive: true });
-    }
+    this.accessOrder = [];
+    this.maxStreams = maxStreams;
+    this.logDir = logDir;
+    this.maxFileSizeBytes = maxFileSizeBytes;
   }
 
   /**
    * Gets or creates a write stream for a log file
+   * Implements LRU eviction when max streams limit is reached
    */
-  private getStream(filename: string): fs.WriteStream | undefined {
+  getStream(filename: string): fs.WriteStream | undefined {
     try {
       const filePath = path.join(this.logDir, filename);
 
@@ -104,19 +101,54 @@ export class StructuredLogger {
         }
       }
 
-      if (!this.streams.has(filename)) {
-        // Ensure log directory exists before creating stream
-        this.ensureLogDirectory();
-        const stream = fs.createWriteStream(filePath, { flags: 'a' });
-        this.streams.set(filename, stream);
+      // Update access order for LRU (move to end if already exists)
+      if (this.streams.has(filename)) {
+        const index = this.accessOrder.indexOf(filename);
+        if (index !== -1) {
+          this.accessOrder.splice(index, 1);
+          this.accessOrder.push(filename);
+        }
+        return this.streams.get(filename);
       }
 
-      return this.streams.get(filename);
+      // Check if we need to evict a stream
+      if (this.streams.size >= this.maxStreams) {
+        this.evictLRU();
+      }
+
+      // Ensure log directory exists before creating stream
+      if (!fs.existsSync(this.logDir)) {
+        fs.mkdirSync(this.logDir, { recursive: true });
+      }
+
+      const stream = fs.createWriteStream(filePath, { flags: 'a' });
+      this.streams.set(filename, stream);
+      this.accessOrder.push(filename);
+
+      return stream;
     } catch (error) {
-      // If stream creation fails, log to stderr and return undefined
       console.error(`Failed to create log stream for ${filename}:`, error);
       return undefined;
     }
+  }
+
+  /**
+   * Evicts the least recently used stream from the pool
+   */
+  private evictLRU(): void {
+    if (this.accessOrder.length === 0) {
+      return;
+    }
+
+    const lruFilename = this.accessOrder[0];
+    const stream = this.streams.get(lruFilename);
+
+    if (stream) {
+      stream.end();
+      this.streams.delete(lruFilename);
+    }
+
+    this.accessOrder.shift();
   }
 
   /**
@@ -137,9 +169,61 @@ export class StructuredLogger {
       this.streams.delete(filename);
     }
 
+    // Remove from access order
+    const index = this.accessOrder.indexOf(filename);
+    if (index !== -1) {
+      this.accessOrder.splice(index, 1);
+    }
+
     // Rename file
     if (fs.existsSync(filePath)) {
       fs.renameSync(filePath, rotatedPath);
+    }
+  }
+
+  /**
+   * Cleanup: close all streams
+   */
+  cleanup(): void {
+    for (const stream of this.streams.values()) {
+      stream.end();
+    }
+    this.streams.clear();
+    this.accessOrder = [];
+  }
+}
+
+/**
+ * Structured Logger with file-based output
+ */
+export class StructuredLogger {
+  private logDir: string;
+  private minLevel: LogLevel;
+  private enableConsole: boolean;
+  private streamPool: StreamPool;
+  private maxFileSizeBytes: number;
+
+  constructor(config?: LoggerConfig) {
+    this.logDir = config?.logDir || path.join(process.cwd(), 'logs');
+    this.minLevel = config?.minLevel ?? LogLevel.INFO;
+    this.enableConsole = config?.enableConsole ?? false;
+    this.maxFileSizeBytes = (config?.maxFileSizeMB || 10) * 1024 * 1024;
+    this.streamPool = new StreamPool(this.logDir, MAX_STREAMS, this.maxFileSizeBytes);
+
+    // Create log directory if it doesn't exist
+    this.ensureLogDirectory();
+
+    // Setup graceful shutdown handlers
+    process.on('exit', () => this.streamPool.cleanup());
+    process.on('SIGINT', () => this.streamPool.cleanup());
+  }
+
+  /**
+   * Ensures log directory exists
+   */
+  private ensureLogDirectory(): void {
+    if (!fs.existsSync(this.logDir)) {
+      fs.mkdirSync(this.logDir, { recursive: true });
     }
   }
 
@@ -177,7 +261,7 @@ export class StructuredLogger {
 
     for (const file of files) {
       try {
-        const stream = this.getStream(file);
+        const stream = this.streamPool.getStream(file);
         if (stream) {
           stream.write(logLine);
         } else {
@@ -465,10 +549,7 @@ export class StructuredLogger {
    * Close all streams
    */
   close(): void {
-    for (const stream of this.streams.values()) {
-      stream.end();
-    }
-    this.streams.clear();
+    this.streamPool.cleanup();
   }
 }
 

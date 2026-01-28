@@ -4,7 +4,8 @@ import { formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/permissionManager.js";
 import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "./types.js";
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
+import { validatePath, validateFilePath } from "../utils/pathValidator.js";
 
 /**
  * Overthinker Workflow
@@ -48,13 +49,15 @@ export async function executeOverthinker(
   for (const file of contextFiles) {
     if (existsSync(file)) {
       try {
-        const content = readFileSync(file, 'utf-8');
+        // SECURITY: Validate file path to prevent path traversal attacks
+        const validatedFilePath = validateFilePath(file);
+        const content = readFileSync(validatedFilePath, 'utf-8');
         gatheredContext += `
 --- File: ${file} ---
 ${content}
 `;
       } catch (e) {
-        onProgress?.(`⚠️ Could not read context file ${file}`);
+        onProgress?.(`⚠️ Could not read context file ${file}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -64,7 +67,9 @@ ${content}
   for (const file of projectStandardsFiles) {
      if (existsSync(file) && !contextFiles.includes(file)) {
         try {
-            const content = readFileSync(file, 'utf-8');
+            // SECURITY: Validate file path to prevent path traversal attacks
+            const validatedFilePath = validateFilePath(file);
+            const content = readFileSync(validatedFilePath, 'utf-8');
             gatheredContext += `
 --- Project Standards (${file}) ---
 ${content}
@@ -125,7 +130,9 @@ ${content}
       mkdirSync(outputDir, { recursive: true });
     }
 
-    writeFileSync(masterPromptFile, masterPrompt);
+    // SECURITY: Validate output path to prevent path traversal attacks
+    const validatedMasterPromptPath = validatePath(masterPromptFile, process.cwd());
+    writeFileSync(validatedMasterPromptPath, masterPrompt);
     onProgress?.(`💾 Saved master prompt to: ${masterPromptFile}`);
   } catch (e: unknown) {
     onProgress?.(`⚠️ Could not save master prompt: ${e instanceof Error ? e.message : String(e)}`);
@@ -265,7 +272,9 @@ ${content}
         }
     }
 
-    writeFileSync(finalOutputPath, finalDocument);
+    // SECURITY: Validate output path to prevent path traversal attacks
+    const validatedOutputPath = validatePath(finalOutputPath, process.cwd());
+    writeFileSync(validatedOutputPath, finalDocument);
     onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
   } catch (e: unknown) {
     onProgress?.(`⚠️ Could not write file: ${e instanceof Error ? e.message : String(e)}`);

@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { ERROR_MESSAGES, BACKENDS } from "../constants.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
+import { logger } from "../utils/logger.js";
 /**
  * Ask Gemini tool - main interaction with Gemini CLI
+ *
+ * MIGRATED: Now uses ToolExecutionContext with requestId tracking
  */
 export const askGeminiTool = {
     name: "ask-gemini",
@@ -19,17 +22,22 @@ export const askGeminiTool = {
             .default(false)
             .describe("Sandbox mode for safe execution"),
     }),
-    execute: async (args, onProgress) => {
+    execute: async (args, context) => {
         const { prompt, sandbox } = args;
+        const { requestId, onProgress } = context;
+        logger.info(`Executing Gemini [requestId: ${requestId}]`);
         if (!prompt || !prompt.trim()) {
             throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
         }
+        // Progress callback with requestId context
+        onProgress?.(`Starting Gemini analysis [${requestId}]`);
         const result = await executeAIClient({
             backend: BACKENDS.GEMINI,
             prompt,
             // model,
             sandbox,
             onProgress
+            // TODO: Pass requestId to executeAIClient (will be added in QW4)
         });
         return result;
     },

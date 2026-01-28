@@ -133,7 +133,7 @@ Come Qwen, fornisci un'analisi logica:
   const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('review');
   task.requiresArchitecturalThinking = true; // Commit validation often needs architectural context
-  const backendsToUse = selectParallelBackends(task, circuitBreaker, 2);
+  const backendsToUse = await selectParallelBackends(task, circuitBreaker, 2);
 
   const analysisResult = await runParallelAnalysis(
     backendsToUse,

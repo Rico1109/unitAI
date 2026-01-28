@@ -3,9 +3,10 @@ title: Security Remediation Plan
 version: 1.0.0
 updated: 2026-01-24T18:13:00+01:00
 scope: unitai-security
-category: plan
+category: archive
 subcategory: security
-status: draft
+status: completed
+archived_date: 2026-01-26
 domain: [security, command-injection, input-validation, permissions]
 related_issues: [SEC-001, SEC-002, SEC-003, SEC-004, SEC-005, SEC-006]
 audit_source: Triangulated review (Qwen, Droid, Gemini) - 2026-01-24
