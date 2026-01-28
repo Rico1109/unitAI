@@ -273,7 +273,7 @@ ${content}
     }
 
     // SECURITY: Validate output path to prevent path traversal attacks
-    const validatedOutputPath = validatePath(finalOutputPath, process.cwd());
+    const validatedOutputPath = validatePath(finalOutputPath, resolve('.unitai'));
     writeFileSync(validatedOutputPath, finalDocument);
     onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
   } catch (e: unknown) {

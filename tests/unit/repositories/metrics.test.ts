@@ -115,6 +115,16 @@ describe('MetricsRepository', () => {
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe('3');
     });
+
+    it('should filter by multiple criteria (component AND success)', () => {
+      const results = repo.query({
+        component: 'comp-a',
+        success: false
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('2'); // Only comp-a with success=false
+    });
   });
 
   describe('getREDStats()', () => {

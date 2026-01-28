@@ -39,6 +39,7 @@ export class CircuitBreaker {
     private states: Map<string, BackendState> = new Map();
     private db: Database.Database | null = null;
     private stateMutex: Promise<void> = Promise.resolve();
+    private testingHalfOpen = false;
 
     private config: CircuitConfig = {
         failureThreshold: 3,
@@ -146,10 +147,20 @@ export class CircuitBreaker {
         return this.withStateLock(async () => {
             const state = this.getState(backend);
 
+            if (state.state === CircuitState.HALF_OPEN) {
+                // Only allow one test request
+                if (this.testingHalfOpen) {
+                    return false; // Other requests must wait
+                }
+                this.testingHalfOpen = true;
+                return true;
+            }
+
             if (state.state === CircuitState.OPEN) {
                 const now = Date.now();
                 if (now - state.lastFailureTime > this.config.resetTimeoutMs) {
                     await this.transitionTo(backend, CircuitState.HALF_OPEN);
+                    this.testingHalfOpen = true; // This is the first test request
                     return true; // Allow one trial request
                 }
                 return false;
@@ -166,6 +177,7 @@ export class CircuitBreaker {
         await this.withStateLock(async () => {
             const state = this.getState(backend);
             if (state.state === CircuitState.HALF_OPEN) {
+                this.testingHalfOpen = false; // Reset flag
                 await this.transitionTo(backend, CircuitState.CLOSED);
                 logger.info(`[CircuitBreaker] Backend ${backend} recovered. Circuit CLOSED.`);
             } else if (state.failures > 0) {
@@ -187,6 +199,7 @@ export class CircuitBreaker {
             state.lastFailureTime = Date.now();
 
             if (state.state === CircuitState.HALF_OPEN) {
+                this.testingHalfOpen = false; // Reset flag
                 await this.transitionTo(backend, CircuitState.OPEN);
                 logger.warn(`[CircuitBreaker] Backend ${backend} failed recovery check. Circuit OPEN.`);
             } else if (state.state === CircuitState.CLOSED && state.failures >= this.config.failureThreshold) {
