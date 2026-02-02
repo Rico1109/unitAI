@@ -129,10 +129,18 @@ export async function closeDependencies(): Promise<void> {
 
         // Close the synchronous DB connection
         if (dependencies.auditDbSync) {
-            dependencies.auditDbSync.close();
+            try {
+                dependencies.auditDbSync.close();
+            } catch (error) {
+                logger.error("Error closing audit database sync connection", error);
+            }
         }
         if (dependencies.tokenDbSync) {
-            dependencies.tokenDbSync.close();
+            try {
+                dependencies.tokenDbSync.close();
+            } catch (error) {
+                logger.error("Error closing token database sync connection", error);
+            }
         }
 
         // Close all async databases

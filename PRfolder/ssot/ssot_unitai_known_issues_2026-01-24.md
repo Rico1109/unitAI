@@ -1,12 +1,13 @@
 ---
 title: unitAI Known Issues Registry
-version: 3.3.0
-updated: 2026-02-02T11:55:00+01:00
+version: 3.4.0
+updated: 2026-02-02T15:30:00+01:00
 scope: unitai-issues
 category: ssot
 subcategory: issues
-domain: [di, testing, configuration, lifecycle, organization, security, observability, reliability]
+domain: [di, testing, configuration, lifecycle, organization, security, observability, reliability, backends]
 changelog:
+  - 3.4.0 (2026-02-02): Added CRITICAL ARCH-BACKEND-001 (Backend Parameter Semantic Mismatch in Fallback System). Fixed TEST-ASYNC-002 dependencies test (6 tests now passing). Fixed REL-LOOP-001 infinite fallback loop.
   - 3.3.0 (2026-02-02): Added TEST-ASYNC-001 (circuitBreaker.test.ts failures), TEST-ASYNC-002 (dependencies.test.ts failures), TEST-ENV-001 (gitHelper.test.ts environment-specific failures). Async migration complete for auditTrail and activityAnalytics tests.
   - 3.2.0 (2026-01-28): Added MISC-001 (Roadmap Deviation - Backend Plugins).
   - 3.1.0 (2026-01-26): Sprint 1+2 complete - 6 issues RESOLVED (OBS-PERF-001, TEST-FLAKY-001, OBS-LEAK-001, REL-RACE-001, REL-VULN-001, OBS-RACE-002).
@@ -26,6 +27,164 @@ changelog:
 This document catalogs observed facts about the unitAI codebase that may require attention. Each issue is documented objectively without prescribing solutions.
 
 **Format**: Each issue describes WHAT exists, WHERE it exists, and WHY it may be significant.
+
+---
+
+## 🔴 CRITICAL ISSUES
+
+### ARCH-BACKEND-001: Backend Parameter Semantic Mismatch in Fallback System
+
+**Severity**: 🔴 CRITICAL
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-02
+**Location**: `src/utils/aiExecutor.ts:75-88, 129-141` + All backend implementations
+
+#### Root Cause
+
+The fallback/retry system in `aiExecutor.ts` passes execution options from a failed backend to its fallback backend **without semantic translation**. Different backends interpret the same parameter names with fundamentally different semantics, causing failures.
+
+**Example - The `attachments` Parameter**:
+- **Cursor CLI**: `attachments` = "files to analyze" → `cursor-agent --file code.ts "check this"`
+- **Droid CLI**: `--file` = "file containing the PROMPT" → `droid exec --file prompt.txt`
+
+When Cursor fails and fallback retries with Droid using Cursor's options:
+```typescript
+// Cursor fails with: { attachments: ['code.ts'], prompt: "analyze..." }
+// Fallback passes same options to Droid
+// Droid builds: droid exec --file code.ts "analyze..."
+// ❌ ERROR: "Cannot specify both a file (-f/--file) and a prompt argument"
+```
+
+#### Execution Flow That Triggers Bug
+
+1. **Workflow calls backend** (e.g., triangulated-review with Cursor):
+   ```typescript
+   runParallelAnalysis([BACKENDS.CURSOR], ...,
+     (backend) => backend === BACKENDS.CURSOR
+       ? { attachments: files, prompt: "..." }  // Cursor-specific semantics
+       : {})
+   ```
+
+2. **Cursor fails** (not installed: `spawn cursor-agent ENOENT`)
+
+3. **Fallback system activates** (`aiExecutor.ts:75-88`):
+   ```typescript
+   const fallback = await selectFallbackBackend(backend, circuitBreaker, triedBackends);
+   return executeAIClient(
+     { ...options, backend: fallback },  // ❌ Passes Cursor's options to Droid!
+     { ...config, currentRetry: config.currentRetry + 1 }
+   );
+   ```
+
+4. **Droid receives Cursor-semantics options**: `{ attachments: ['file.ts'], prompt: "..." }`
+
+5. **DroidBackend misinterprets** (`src/backends/DroidBackend.ts:56-64`):
+   ```typescript
+   if (attachments.length > 0) {
+     args.push('--file', file);  // Droid thinks: "read prompt FROM this file"
+   }
+   args.push(prompt);  // Also adds prompt as positional arg
+   // Result: droid exec --file code.ts "analyze..." ❌ INVALID
+   ```
+
+#### Why This Wasn't Caught Before
+
+This bug emerged **due to recent refactoring**:
+- **Before**: Limited or no fallback between backends, OR backends weren't called with `attachments`
+- **After**: Robust fallback system (fixed infinite loop) now correctly retries with different backends
+- **Trigger**: New fallback logic exposes semantic incompatibility between backend interfaces
+
+#### The Universal Problem
+
+**Cannot hardcode backend-specific translations** because:
+1. ✅ **Setup wizard allows dynamic backend selection** - users enable/disable backends at runtime
+2. ✅ **Backends added via plugin system** - new backends can be registered dynamically
+3. ✅ **Fallback order is runtime-determined** - based on circuit breaker state and availability
+4. ❌ **Static mapping breaks**: `if (backend === 'droid') { transform(options) }` doesn't scale
+
+#### Impact
+
+**Production Severity**:
+- 🔴 **Workflow failures**: Any workflow using fallback with attachments fails
+- 🔴 **Silent failures**: Circuit breakers open, reducing backend availability
+- 🔴 **User confusion**: Error messages reference wrong backend (shows Droid error when Cursor failed)
+- 🟡 **Degraded reliability**: Fallback system exists but unusable for cross-backend scenarios
+
+**Affected Workflows**:
+- `triangulated-review` (uses Cursor → Droid fallback with files)
+- `parallel-review` (same issue)
+- `bug-hunt` (when using file attachments)
+- Any workflow passing backend-specific options
+
+#### Required Solution Properties
+
+**Must be**:
+1. ✅ **Universal**: Works for any backend, including future plugins
+2. ✅ **Runtime-adaptive**: No hardcoded backend mappings
+3. ✅ **Semantic-aware**: Understands parameter meaning, not just names
+4. ✅ **Backward-compatible**: Doesn't break existing backend implementations
+5. ✅ **Maintainable**: Adding new backends doesn't require modifying fallback logic
+
+#### Potential Solution Approaches
+
+**Option A: Backend Capability Declaration** (Recommended)
+```typescript
+interface BackendCapabilities {
+  supportsFiles: boolean;           // Can analyze files
+  fileMode: 'attachment' | 'prompt'; // How files are passed
+  requiresExplicitFiles: boolean;    // Needs --file flags vs mentions in prompt
+}
+```
+
+Each backend declares HOW it wants parameters:
+```typescript
+class DroidBackend {
+  getCapabilities() {
+    return {
+      supportsFiles: true,
+      fileMode: 'prompt',  // Files should be IN prompt text
+      requiresExplicitFiles: false
+    };
+  }
+}
+```
+
+Fallback system transforms options based on target backend's capabilities:
+```typescript
+function transformOptionsForBackend(options, targetBackend) {
+  const caps = targetBackend.getCapabilities();
+  if (options.attachments && caps.fileMode === 'prompt') {
+    return {
+      ...options,
+      attachments: [],  // Remove attachments
+      prompt: `Files: ${options.attachments.join(', ')}\n\n${options.prompt}`
+    };
+  }
+  return options;
+}
+```
+
+**Option B: Backend-Specific Adapters**
+Create adapter pattern for each backend that normalizes to/from common interface.
+
+**Option C: Remove Fallback Cross-Contamination**
+Fallback only retries with "safe" options (prompt only), discards backend-specific params.
+
+#### Next Steps
+
+1. **Design capability declaration system** for backends
+2. **Implement option transformation** in `aiExecutor.ts` fallback logic
+3. **Update all backends** to declare capabilities
+4. **Test with dynamic backend selection** (setup wizard scenarios)
+5. **Add integration tests** for cross-backend fallback scenarios
+
+#### Related Code Locations
+
+- `src/utils/aiExecutor.ts:75-88, 129-141` - Fallback execution (passes raw options)
+- `src/backends/DroidBackend.ts:56-64` - Droid file handling
+- `src/backends/CursorBackend.ts:44-52` - Cursor file handling
+- `src/workflows/triangulated-review.workflow.ts:46-53` - Uses backend-specific options
+- `src/workflows/modelSelector.ts:236-266` - Fallback selection logic
 
 ---
 

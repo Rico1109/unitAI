@@ -235,7 +235,8 @@ export function getBackendStats(): BackendMetrics[] {
  */
 export async function selectFallbackBackend(
   failedBackend: string,
-  circuitBreaker: CircuitBreaker
+  circuitBreaker: CircuitBreaker,
+  triedBackends: string[] = []
 ): Promise<string> {
   // Priority order for fallbacks (most reliable first)
   const fallbackOrder = [
@@ -245,10 +246,10 @@ export async function selectFallbackBackend(
     BACKENDS.ROVODEV
   ];
 
-  // Filter out the failed backend and unavailable ones
+  // Filter out the failed backend, already-tried backends, and unavailable ones
   const availabilityChecks = await Promise.all(
     fallbackOrder
-      .filter((b) => b !== failedBackend)
+      .filter((b) => b !== failedBackend && !triedBackends.includes(b))
       .map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
   );
   const available = availabilityChecks
@@ -259,10 +260,15 @@ export async function selectFallbackBackend(
     return available[0];
   }
 
-  // If all are unavailable, return first that's not the failed one
-  // (let circuit breaker handle the error)
-  const anyOther = fallbackOrder.find(b => b !== failedBackend);
-  return anyOther || BACKENDS.GEMINI;
+  // If all are unavailable, return first that's not the failed one AND not already tried
+  const anyOther = fallbackOrder.find(b => b !== failedBackend && !triedBackends.includes(b));
+
+  // If no untried backends remain, throw to stop the loop
+  if (!anyOther) {
+    throw new Error(`No fallback backends available. All backends tried: ${[...triedBackends, failedBackend].join(', ')}`);
+  }
+
+  return anyOther;
 }
 
 /**

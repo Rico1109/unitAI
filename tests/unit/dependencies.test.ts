@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type Database from 'better-sqlite3';
+import { AsyncDatabase } from '../../src/lib/async-db.js';
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({
@@ -25,12 +26,27 @@ vi.mock('../../src/utils/reliability/circuitBreaker.js', () => ({
   })),
 }));
 
+// Mock AsyncDatabase
+vi.mock('../../src/lib/async-db.js', () => ({
+  AsyncDatabase: vi.fn().mockImplementation(() => ({
+    init: vi.fn().mockResolvedValue(undefined),
+    execAsync: vi.fn().mockResolvedValue(undefined),
+    closeAsync: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 // Mock better-sqlite3
 const mockDatabase = vi.fn();
+const mockStatement = {
+  run: vi.fn(),
+  get: vi.fn(),
+  all: vi.fn().mockReturnValue([]),
+};
 const mockDbInstance = {
   pragma: vi.fn(),
   close: vi.fn(),
   exec: vi.fn(),
+  prepare: vi.fn().mockReturnValue(mockStatement),
 };
 
 vi.mock('better-sqlite3', () => ({
@@ -67,10 +83,10 @@ describe('dependencies', () => {
     dependencies = await import('../../src/dependencies');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Cleanup
     try {
-      dependencies.closeDependencies();
+      await dependencies.closeDependencies();
     } catch (e) {
       // Ignore cleanup errors
     }
@@ -87,24 +103,24 @@ describe('dependencies', () => {
       );
     });
 
-    it('should return same instance on multiple calls', () => {
+    it('should return same instance on multiple calls', async () => {
       // Act
-      const deps1 = dependencies.initializeDependencies();
+      const deps1 = await dependencies.initializeDependencies();
       const deps2 = dependencies.getDependencies();
-      const deps3 = dependencies.initializeDependencies(); // Should return cached
+      const deps3 = await dependencies.initializeDependencies(); // Should return cached
 
       // Assert
       expect(deps1).toBe(deps2);
       expect(deps2).toBe(deps3);
     });
 
-    it('should reset singleton after closeDependencies', () => {
+    it('should reset singleton after closeDependencies', async () => {
       // Arrange
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
       expect(() => dependencies.getDependencies()).not.toThrow();
 
       // Act
-      dependencies.closeDependencies();
+      await dependencies.closeDependencies();
 
       // Assert
       expect(() => dependencies.getDependencies()).toThrow(
@@ -117,12 +133,12 @@ describe('dependencies', () => {
   // Suite 2: Directory Setup
   // =================================================================
   describe('Directory Setup', () => {
-    it('should create data directory if it does not exist', () => {
+    it('should create data directory if it does not exist', async () => {
       // Arrange
       mockFs.existsSync.mockReturnValue(false);
 
       // Act
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
       // Assert
       expect(mockFs.mkdirSync).toHaveBeenCalledWith(
@@ -131,12 +147,12 @@ describe('dependencies', () => {
       );
     });
 
-    it('should not create directory if it already exists', () => {
+    it('should not create directory if it already exists', async () => {
       // Arrange
       mockFs.existsSync.mockReturnValue(true);
 
       // Act
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
       // Assert
       expect(mockFs.mkdirSync).not.toHaveBeenCalled();
@@ -147,35 +163,39 @@ describe('dependencies', () => {
   // Suite 3: Database Initialization
   // =================================================================
   describe('Database Initialization', () => {
-    it('should create four databases', () => {
+    it('should create databases (sync and async)', async () => {
       // Act
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
-      // Assert: 4 Database instances created
-      expect(mockDatabase).toHaveBeenCalledTimes(4);
-      expect(mockDatabase).toHaveBeenCalledWith(
-        expect.stringContaining('activity.sqlite')
-      );
+      // Assert: 2 Sync Database instances created (audit, token)
+      expect(mockDatabase).toHaveBeenCalledTimes(2);
       expect(mockDatabase).toHaveBeenCalledWith(
         expect.stringContaining('audit.sqlite')
       );
       expect(mockDatabase).toHaveBeenCalledWith(
         expect.stringContaining('token-metrics.sqlite')
       );
+
+      // Assert: 4 AsyncDatabase instances created
+      expect(AsyncDatabase).toHaveBeenCalledTimes(4);
+      expect(AsyncDatabase).toHaveBeenCalledWith(expect.stringContaining('activity.sqlite'));
+      expect(AsyncDatabase).toHaveBeenCalledWith(expect.stringContaining('audit.sqlite'));
+      expect(AsyncDatabase).toHaveBeenCalledWith(expect.stringContaining('token-metrics.sqlite'));
+      expect(AsyncDatabase).toHaveBeenCalledWith(expect.stringContaining('red-metrics.sqlite'));
     });
 
-    it('should enable WAL mode for all databases', () => {
+    it('should enable WAL mode for sync databases', async () => {
       // Act
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
-      // Assert: pragma called 4 times (once per DB)
-      expect(mockDbInstance.pragma).toHaveBeenCalledTimes(4);
+      // Assert: pragma called 2 times (once per Sync DB)
+      expect(mockDbInstance.pragma).toHaveBeenCalledTimes(2);
       expect(mockDbInstance.pragma).toHaveBeenCalledWith('journal_mode = WAL');
     });
 
-    it('should return AppDependencies with all required properties', () => {
+    it('should return AppDependencies with all required properties', async () => {
       // Act
-      const deps = dependencies.initializeDependencies();
+      const deps = await dependencies.initializeDependencies();
 
       // Assert
       expect(deps).toHaveProperty('activityDb');
@@ -192,16 +212,16 @@ describe('dependencies', () => {
   describe('Circuit Breaker Initialization', () => {
     it('should initialize circuit breaker with audit database', async () => {
       // Arrange
-      const { CircuitBreaker } = await import('../../src/utils/circuitBreaker.js');
+      const { CircuitBreaker } = await import('../../src/utils/reliability/circuitBreaker.js');
 
       // Act
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
       // Assert
       expect(CircuitBreaker).toHaveBeenCalledWith(
         3,                // failure threshold
         5 * 60 * 1000,    // 5 minutes timeout
-        expect.anything() // auditDb
+        expect.anything() // auditDb (sync)
       );
     });
   });
@@ -210,68 +230,73 @@ describe('dependencies', () => {
   // Suite 5: Cleanup
   // =================================================================
   describe('Cleanup', () => {
-    it('should call shutdown on circuit breaker', () => {
+    it('should call shutdown on circuit breaker', async () => {
       // Arrange
-      const deps = dependencies.initializeDependencies();
+      const deps = await dependencies.initializeDependencies();
 
       // Act
-      dependencies.closeDependencies();
+      await dependencies.closeDependencies();
 
       // Assert
       expect(deps.circuitBreaker.shutdown).toHaveBeenCalled();
     });
 
-    it('should close all four databases', () => {
+    it('should close databases', async () => {
       // Arrange
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
+      const asyncDbInstances = vi.mocked(AsyncDatabase).mock.results.map(r => r.value);
 
       // Act
-      dependencies.closeDependencies();
+      await dependencies.closeDependencies();
 
-      // Assert: close called 4 times (one per DB)
-      expect(mockDbInstance.close).toHaveBeenCalledTimes(4);
+      // Assert: close called 2 times (one per Sync DB)
+      expect(mockDbInstance.close).toHaveBeenCalledTimes(2);
+
+      // Assert: closeAsync called on all async DBs
+      asyncDbInstances.forEach(db => {
+          expect(db.closeAsync).toHaveBeenCalled();
+      });
     });
 
-    it('should handle circuit breaker shutdown errors gracefully', () => {
+    it('should handle circuit breaker shutdown errors gracefully', async () => {
       // Arrange
-      const deps = dependencies.initializeDependencies();
+      const deps = await dependencies.initializeDependencies();
       deps.circuitBreaker.shutdown = vi.fn(() => {
         throw new Error('Shutdown error');
       });
 
       // Act & Assert: Should not throw
-      expect(() => dependencies.closeDependencies()).not.toThrow();
+      await expect(dependencies.closeDependencies()).resolves.not.toThrow();
     });
 
-    it('should handle database close errors gracefully', () => {
+    it('should handle database close errors gracefully', async () => {
       // Arrange
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
       mockDbInstance.close.mockImplementation(() => {
         throw new Error('Close error');
       });
 
       // Act & Assert: Should not throw
-      expect(() => dependencies.closeDependencies()).not.toThrow();
+      await expect(dependencies.closeDependencies()).resolves.not.toThrow();
     });
 
-    it('should handle multiple closeDependencies calls safely', () => {
+    it('should handle multiple closeDependencies calls safely', async () => {
       // Arrange
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
-      // Act & Assert
-      expect(() => {
-        dependencies.closeDependencies();
-        dependencies.closeDependencies(); // Second call should be safe
-        dependencies.closeDependencies(); // Third call should be safe
-      }).not.toThrow();
+      // Act & Assert - multiple calls should complete without throwing
+      await dependencies.closeDependencies();
+      await dependencies.closeDependencies(); // Second call should be safe
+      await dependencies.closeDependencies(); // Third call should be safe
+      // Test passes if no error thrown
     });
 
-    it('should reset singleton to null after close', () => {
+    it('should reset singleton to null after close', async () => {
       // Arrange
-      dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
       // Act
-      dependencies.closeDependencies();
+      await dependencies.closeDependencies();
 
       // Assert: getDependencies should now throw
       expect(() => dependencies.getDependencies()).toThrow(
@@ -284,32 +309,32 @@ describe('dependencies', () => {
   // Suite 6: Integration
   // =================================================================
   describe('Integration', () => {
-    it('should allow re-initialization after close', () => {
+    it('should allow re-initialization after close', async () => {
       // Arrange
-      dependencies.initializeDependencies();
-      dependencies.closeDependencies();
+      await dependencies.initializeDependencies();
+      await dependencies.closeDependencies();
 
       // Act & Assert: Should be able to init again
-      expect(() => dependencies.initializeDependencies()).not.toThrow();
+      await expect(dependencies.initializeDependencies()).resolves.not.toThrow();
       expect(() => dependencies.getDependencies()).not.toThrow();
     });
 
-    it('should create fresh instances after re-initialization', () => {
+    it('should create fresh instances after re-initialization', async () => {
       // Arrange
-      const deps1 = dependencies.initializeDependencies();
-      dependencies.closeDependencies();
+      await dependencies.initializeDependencies();
+      await dependencies.closeDependencies();
 
       // Reset mock call counts
       vi.clearAllMocks();
       mockDatabase.mockReturnValue(mockDbInstance);
+      vi.mocked(AsyncDatabase).mockClear();
 
       // Act
-      const deps2 = dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
       // Assert: New Database instances created
-      expect(mockDatabase).toHaveBeenCalledTimes(4);
-      // Note: In actual code these would be different instances,
-      // but in our mock they point to the same mockDbInstance
+      expect(mockDatabase).toHaveBeenCalledTimes(2);
+      expect(AsyncDatabase).toHaveBeenCalledTimes(4);
     });
   });
 });
