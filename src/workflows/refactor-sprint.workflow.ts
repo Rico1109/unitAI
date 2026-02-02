@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
 import { BACKENDS } from "../constants.js";

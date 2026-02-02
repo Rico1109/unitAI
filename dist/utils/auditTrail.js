@@ -11,13 +11,12 @@ export class AuditTrail {
     db;
     constructor(db) {
         this.db = db;
-        this.initializeSchema();
     }
     /**
      * Initialize database schema
      */
-    initializeSchema() {
-        this.db.exec(`
+    async initializeSchema() {
+        await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS audit_entries (
         id TEXT PRIMARY KEY,
         timestamp INTEGER NOT NULL,
@@ -44,22 +43,34 @@ export class AuditTrail {
     /**
      * Record an audit entry
      */
-    record(entry) {
+    async record(entry) {
         const id = this.generateId();
         const timestamp = Date.now();
-        const stmt = this.db.prepare(`
+        const sql = `
       INSERT INTO audit_entries (
         id, timestamp, workflow_name, workflow_id, autonomy_level, operation,
         target, approved, executed_by, outcome, error_message, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-        stmt.run(id, timestamp, entry.workflowName, entry.workflowId || null, entry.autonomyLevel, entry.operation, entry.target, entry.approved ? 1 : 0, entry.executedBy, entry.outcome, entry.errorMessage || null, JSON.stringify(entry.metadata || {}));
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        await this.db.runAsync(sql, [
+            id,
+            timestamp,
+            entry.workflowName,
+            entry.workflowId || null,
+            entry.autonomyLevel,
+            entry.operation,
+            entry.target,
+            entry.approved ? 1 : 0,
+            entry.executedBy,
+            entry.outcome,
+            entry.errorMessage || null,
+            JSON.stringify(entry.metadata || {})
+        ]);
     }
     /**
      * Query audit entries
      */
-    query(filters = {}) {
-        let sql = 'SELECT * FROM audit_entries WHERE 1=1';
+    async query(filters = {}) {
+        let sql = 'SELECT * FROM audit_entries WHERE 1=1;';
         const params = [];
         if (filters.workflowName) {
             sql += ' AND workflow_name = ?';
@@ -98,14 +109,14 @@ export class AuditTrail {
             sql += ' LIMIT ?';
             params.push(filters.limit);
         }
-        const rows = this.db.prepare(sql).all(...params);
+        const rows = await this.db.allAsync(sql, params);
         return rows.map((row) => this.rowToEntry(row));
     }
     /**
      * Get audit statistics
      */
-    getStats(filters) {
-        let whereClause = 'WHERE 1=1';
+    async getStats(filters) {
+        let whereClause = ' WHERE 1=1';
         const params = [];
         if (filters?.workflowName) {
             whereClause += ' AND workflow_name = ?';
@@ -120,29 +131,30 @@ export class AuditTrail {
             params.push(filters.endTime.getTime());
         }
         // Get counts
-        const totalEntries = this.db.prepare(`SELECT COUNT(*) as count FROM audit_entries ${whereClause}`).get(...params);
-        const approvedOperations = this.db.prepare(`SELECT COUNT(*) as count FROM audit_entries ${whereClause} AND approved = 1`).get(...params);
-        const deniedOperations = this.db.prepare(`SELECT COUNT(*) as count FROM audit_entries ${whereClause} AND approved = 0`).get(...params);
-        const successfulOperations = this.db.prepare(`SELECT COUNT(*) as count FROM audit_entries ${whereClause} AND outcome = 'success'`).get(...params);
-        const failedOperations = this.db.prepare(`SELECT COUNT(*) as count FROM audit_entries ${whereClause} AND outcome = 'failure'`).get(...params);
+        const totalEntriesPromise = this.db.getAsync(`SELECT COUNT(*) as count FROM audit_entries${whereClause}`, params);
+        const approvedOperationsPromise = this.db.getAsync(`SELECT COUNT(*) as count FROM audit_entries${whereClause} AND approved = 1`, params);
+        const deniedOperationsPromise = this.db.getAsync(`SELECT COUNT(*) as count FROM audit_entries${whereClause} AND approved = 0`, params);
+        const successfulOperationsPromise = this.db.getAsync(`SELECT COUNT(*) as count FROM audit_entries${whereClause} AND outcome = 'success'`, params);
+        const failedOperationsPromise = this.db.getAsync(`SELECT COUNT(*) as count FROM audit_entries${whereClause} AND outcome = 'failure'`, params);
         // Get distribution by autonomy level
         const byAutonomyLevel = {};
-        const autonomyLevelRows = this.db.prepare(`SELECT autonomy_level, COUNT(*) as count FROM audit_entries ${whereClause} GROUP BY autonomy_level`).all(...params);
+        const autonomyLevelRowsPromise = this.db.allAsync(`SELECT autonomy_level, COUNT(*) as count FROM audit_entries${whereClause} GROUP BY autonomy_level`, params);
+        // Get distribution by operation
+        const byOperation = {};
+        const operationRowsPromise = this.db.allAsync(`SELECT operation, COUNT(*) as count FROM audit_entries${whereClause} GROUP BY operation`, params);
+        const [totalEntries, approvedOperations, deniedOperations, successfulOperations, failedOperations, autonomyLevelRows, operationRows] = await Promise.all([totalEntriesPromise, approvedOperationsPromise, deniedOperationsPromise, successfulOperationsPromise, failedOperationsPromise, autonomyLevelRowsPromise, operationRowsPromise]);
         for (const row of autonomyLevelRows) {
             byAutonomyLevel[row.autonomy_level] = row.count;
         }
-        // Get distribution by operation
-        const byOperation = {};
-        const operationRows = this.db.prepare(`SELECT operation, COUNT(*) as count FROM audit_entries ${whereClause} GROUP BY operation`).all(...params);
         for (const row of operationRows) {
             byOperation[row.operation] = row.count;
         }
         return {
-            totalEntries: totalEntries.count,
-            approvedOperations: approvedOperations.count,
-            deniedOperations: deniedOperations.count,
-            successfulOperations: successfulOperations.count,
-            failedOperations: failedOperations.count,
+            totalEntries: totalEntries?.count ?? 0,
+            approvedOperations: approvedOperations?.count ?? 0,
+            deniedOperations: deniedOperations?.count ?? 0,
+            successfulOperations: successfulOperations?.count ?? 0,
+            failedOperations: failedOperations?.count ?? 0,
             byAutonomyLevel,
             byOperation
         };
@@ -150,8 +162,8 @@ export class AuditTrail {
     /**
      * Export report in various formats
      */
-    exportReport(format, filters) {
-        const entries = this.query(filters);
+    async exportReport(format, filters) {
+        const entries = await this.query(filters);
         if (format === 'json') {
             return JSON.stringify(entries, null, 2);
         }
@@ -186,7 +198,7 @@ export class AuditTrail {
             ].join('\n');
         }
         // HTML format
-        const stats = this.getStats(filters);
+        const stats = await this.getStats(filters);
         const html = `
 <!DOCTYPE html>
 <html>
@@ -275,17 +287,16 @@ export class AuditTrail {
     /**
      * Delete old entries
      */
-    cleanup(daysToKeep) {
+    async cleanup(daysToKeep) {
         const cutoffTimestamp = Date.now() - (daysToKeep * 24 * 60 * 60 * 1000);
-        const stmt = this.db.prepare('DELETE FROM audit_entries WHERE timestamp < ?');
-        const result = stmt.run(cutoffTimestamp);
+        const result = await this.db.runAsync('DELETE FROM audit_entries WHERE timestamp < ?', [cutoffTimestamp]);
         return result.changes;
     }
     /**
      * Close database connection
      */
-    close() {
-        this.db.close();
+    async close() {
+        await this.db.closeAsync();
     }
     /**
      * Generate unique ID
@@ -317,24 +328,35 @@ export class AuditTrail {
  * Lazy singleton using DI container
  */
 let auditTrailInstance = null;
+let auditTrailPromise = null;
 export function getAuditTrail() {
-    if (!auditTrailInstance) {
-        const deps = getDependencies();
-        auditTrailInstance = new AuditTrail(deps.auditDb);
+    if (auditTrailInstance) {
+        return Promise.resolve(auditTrailInstance);
     }
-    return auditTrailInstance;
+    if (!auditTrailPromise) {
+        auditTrailPromise = (async () => {
+            const deps = getDependencies();
+            const auditDb = deps.auditDb;
+            auditTrailInstance = new AuditTrail(auditDb);
+            await auditTrailInstance.initializeSchema();
+            return auditTrailInstance;
+        })();
+    }
+    return auditTrailPromise;
 }
 /**
  * Reset singleton for testing
  */
 export function resetAuditTrail() {
     auditTrailInstance = null;
+    auditTrailPromise = null;
 }
 /**
  * Helper function to log audit entries
  */
 export async function logAudit(params) {
-    getAuditTrail().record({
+    const auditTrail = await getAuditTrail();
+    await auditTrail.record({
         workflowName: params.workflowName || 'workflow',
         workflowId: params.workflowId,
         autonomyLevel: params.autonomyLevel,

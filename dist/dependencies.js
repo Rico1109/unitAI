@@ -3,17 +3,18 @@
  *
  * Manages the lifecycle and injection of services, repositories, and databases.
  */
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3'; // Keep for sync needs (CircuitBreaker)
 import path from 'path';
 import fs from 'fs';
+import { AsyncDatabase } from './lib/async-db.js';
 import { logger } from './utils/logger.js';
-import { CircuitBreaker } from './utils/circuitBreaker.js';
+import { CircuitBreaker } from './utils/reliability/circuitBreaker.js';
 import { MetricsRepository } from './repositories/metrics.js';
 let dependencies = null;
 /**
  * Initialize all system dependencies
  */
-export function initializeDependencies() {
+export async function initializeDependencies() {
     if (dependencies) {
         return dependencies;
     }
@@ -23,38 +24,45 @@ export function initializeDependencies() {
     if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
     }
+    // --- Initialize Databases ---
+    // We create both sync and async versions where needed for gradual migration.
     // Initialize Activity Database
     const activityDbPath = path.join(dataDir, 'activity.sqlite');
     logger.debug(`Opening Activity DB at ${activityDbPath}`);
-    const activityDb = new Database(activityDbPath);
-    activityDb.pragma('journal_mode = WAL');
+    const activityDb = new AsyncDatabase(activityDbPath);
+    await activityDb.execAsync('PRAGMA journal_mode = WAL;');
     // Initialize Audit Database
     const auditDbPath = path.join(dataDir, 'audit.sqlite');
     logger.debug(`Opening Audit DB at ${auditDbPath}`);
-    const auditDb = new Database(auditDbPath);
-    auditDb.pragma('journal_mode = WAL');
+    const auditDb = new AsyncDatabase(auditDbPath);
+    await auditDb.execAsync('PRAGMA journal_mode = WAL;');
+    // Sync version for CircuitBreaker
+    const auditDbSync = new Database(auditDbPath);
+    auditDbSync.pragma('journal_mode = WAL');
     // Initialize Token Metrics Database
     const tokenDbPath = path.join(dataDir, 'token-metrics.sqlite');
     logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
-    const tokenDb = new Database(tokenDbPath);
-    tokenDb.pragma('journal_mode = WAL');
+    const tokenDb = new AsyncDatabase(tokenDbPath);
+    await tokenDb.execAsync('PRAGMA journal_mode = WAL;');
     // Initialize RED Metrics Database
     const metricsDbPath = path.join(dataDir, 'red-metrics.sqlite');
     logger.debug(`Opening RED Metrics DB at ${metricsDbPath}`);
-    const metricsDb = new Database(metricsDbPath);
-    metricsDb.pragma('journal_mode = WAL');
+    const metricsDb = new AsyncDatabase(metricsDbPath);
+    await metricsDb.execAsync('PRAGMA journal_mode = WAL;');
+    // --- Initialize Repositories and Services ---
     // Initialize metrics repository and schema
     const metricsRepo = new MetricsRepository(metricsDb);
-    metricsRepo.initializeSchema();
+    await metricsRepo.initializeSchema();
     // Initialize Circuit Breaker with audit database for state persistence
     logger.debug("Initializing Circuit Breaker");
-    const circuitBreaker = new CircuitBreaker(3, 5 * 60 * 1000, auditDb);
+    const circuitBreaker = new CircuitBreaker(3, 5 * 60 * 1000, auditDbSync);
     dependencies = {
         activityDb,
         auditDb,
         tokenDb,
         metricsDb,
-        circuitBreaker
+        circuitBreaker,
+        auditDbSync
     };
     return dependencies;
 }
@@ -70,7 +78,7 @@ export function getDependencies() {
 /**
  * Cleanup dependencies (close DBs, etc)
  */
-export function closeDependencies() {
+export async function closeDependencies() {
     if (dependencies) {
         logger.info("Closing dependencies...");
         // Persist circuit breaker state before closing
@@ -80,31 +88,19 @@ export function closeDependencies() {
         catch (error) {
             logger.error("Error persisting circuit breaker state during shutdown", error);
         }
-        // Close databases with individual error handling
-        try {
-            dependencies.activityDb.close();
+        // Close the synchronous DB connection
+        if (dependencies.auditDbSync) {
+            dependencies.auditDbSync.close();
         }
-        catch (error) {
-            logger.error("Error closing activity database", error);
-        }
-        try {
-            dependencies.auditDb.close();
-        }
-        catch (error) {
-            logger.error("Error closing audit database", error);
-        }
-        try {
-            dependencies.tokenDb.close();
-        }
-        catch (error) {
-            logger.error("Error closing token database", error);
-        }
-        try {
-            dependencies.metricsDb.close();
-        }
-        catch (error) {
-            logger.error("Error closing metrics database", error);
-        }
+        // Close all async databases
+        await Promise.all([
+            dependencies.activityDb.closeAsync(),
+            dependencies.auditDb.closeAsync(),
+            dependencies.tokenDb.closeAsync(),
+            dependencies.metricsDb.closeAsync()
+        ]).catch(error => {
+            logger.error("Error closing one or more async databases", error);
+        });
         dependencies = null;
     }
 }

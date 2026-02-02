@@ -2,10 +2,10 @@ import { CLI, AI_MODELS, ERROR_MESSAGES, STATUS_MESSAGES, BACKENDS } from "../co
 
 // Re-export BACKENDS for convenience
 export { BACKENDS };
-import { executeCommand } from "./commandExecutor.js";
+import { executeCommand } from "./cli/commandExecutor.js";
 import { logger } from "./logger.js";
-import { validateFilePaths } from "./pathValidator.js";
-import { sanitizePrompt, validatePromptNotEmpty } from "./promptSanitizer.js";
+import { validateFilePaths } from "./security/pathValidator.js";
+import { sanitizePrompt, validatePromptNotEmpty } from "./security/promptSanitizer.js";
 import type { GeminiModel } from "../constants.js";
 
 /**
@@ -252,7 +252,7 @@ export async function executeDroidCLI(
   }
 }
 
-import type { CircuitBreaker } from "./circuitBreaker.js";
+import type { CircuitBreaker } from "./reliability/circuitBreaker.js";
 import { getDependencies } from "../dependencies.js";
 import { selectFallbackBackend } from "../workflows/modelSelector.js";
 

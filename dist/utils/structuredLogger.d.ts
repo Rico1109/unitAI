@@ -54,21 +54,13 @@ export declare class StructuredLogger {
     private logDir;
     private minLevel;
     private enableConsole;
-    private streams;
+    private streamPool;
     private maxFileSizeBytes;
     constructor(config?: LoggerConfig);
     /**
      * Ensures log directory exists
      */
     private ensureLogDirectory;
-    /**
-     * Gets or creates a write stream for a log file
-     */
-    private getStream;
-    /**
-     * Rotates a log file when it reaches max size
-     */
-    private rotateFile;
     /**
      * Log generico - scrive su file appropriati
      */

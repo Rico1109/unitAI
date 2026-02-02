@@ -12,7 +12,7 @@
 import { ArchitectAgent } from "./ArchitectAgent.js";
 import { ImplementerAgent } from "./ImplementerAgent.js";
 import { TesterAgent } from "./TesterAgent.js";
-import type { IAgent } from "./types.js";
+import type { IAgent } from "../domain/agents/types.js";
 /**
  * Agent types supported by the factory
  */
@@ -122,5 +122,5 @@ export { ArchitectAgent } from "./ArchitectAgent.js";
 export { ImplementerAgent } from "./ImplementerAgent.js";
 export { TesterAgent } from "./TesterAgent.js";
 export { BaseAgent } from "./base/BaseAgent.js";
-export * from "./types.js";
+export * from "../domain/agents/types.js";
 //# sourceMappingURL=index.d.ts.map

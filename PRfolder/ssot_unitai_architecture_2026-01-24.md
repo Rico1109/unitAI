@@ -66,10 +66,19 @@ unitAI/
 │   │   └── *.workflow.ts     # 10 workflow implementations
 │   │
 │   ├── utils/
+│   │   ├── security/         # Security-critical utilities
+│   │   │   ├── permissionManager.ts
+│   │   │   ├── promptSanitizer.ts
+│   │   │   └── pathValidator.ts
+│   │   ├── reliability/      # Stability patterns
+│   │   │   ├── circuitBreaker.ts
+│   │   │   └── errorRecovery.ts
+│   │   ├── cli/              # CLI wrappers
+│   │   │   ├── commandExecutor.ts
+│   │   │   └── gitHelper.ts
+│   │   ├── data/             # Data visualization
+│   │   │   └── dashboardRenderer.ts
 │   │   ├── aiExecutor.ts     # CLI execution hub
-│   │   ├── commandExecutor.ts # spawn wrapper
-│   │   ├── circuitBreaker.ts # Failure handling
-│   │   ├── permissionManager.ts # 4-tier autonomy
 │   │   ├── auditTrail.ts     # SQLite audit log
 │   │   └── logger.ts         # Logging
 │   │
@@ -358,7 +367,7 @@ Not persisted - lost when workflow ends.
 
 ---
 
-### utils/permissionManager.ts (Autonomy Levels)
+### utils/security/permissionManager.ts (Autonomy Levels)
 
 4-tier permission system:
 | Level | Allowed Operations |
@@ -437,5 +446,5 @@ npm run setup     # Interactive configuration
 | Modify DI | `dependencies.ts` |
 | Add workflow | `workflows/*.workflow.ts`, register in `workflows/index.ts` |
 | Change config | `config/config.ts` |
-| Modify permissions | `utils/permissionManager.ts` |
+| Modify permissions | `utils/security/permissionManager.ts` |
 | Backend selection | `workflows/modelSelector.ts` |

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
-import { getGitCommitInfo, isGitRepository } from "../utils/gitHelper.js";
+import { getGitCommitInfo, isGitRepository } from "../utils/cli/gitHelper.js";
 import { runParallelAnalysis, formatWorkflowOutput } from "./utils.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
 import { getDependencies } from '../dependencies.js';
@@ -112,7 +112,7 @@ Come Qwen, fornisci un'analisi logica:
     const { circuitBreaker } = getDependencies();
     const task = createTaskCharacteristics('review');
     task.requiresArchitecturalThinking = true; // Commit validation often needs architectural context
-    const backendsToUse = selectParallelBackends(task, circuitBreaker, 2);
+    const backendsToUse = await selectParallelBackends(task, circuitBreaker, 2);
     const analysisResult = await runParallelAnalysis(backendsToUse, promptBuilder, onProgress);
     // Analisi dei risultati
     const successful = analysisResult.results.filter(r => r.success);

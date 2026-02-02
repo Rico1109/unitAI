@@ -4,14 +4,14 @@ import {
   createPermissionManager,
   getDefaultAutonomyLevel,
   type PermissionManager
-} from "../utils/permissionManager.js";
+} from "../utils/security/permissionManager.js";
 import type {
   ProgressCallback,
   AIAnalysisResult,
   ParallelAnalysisResult,
   ReviewFocus,
   BaseWorkflowParams
-} from "./types.js";
+} from "../domain/workflows/types.js";
 import type { AIExecutionOptions } from "../utils/aiExecutor.js";
 
 /**
@@ -334,7 +334,7 @@ export function createWorkflowPermissionManager(
 export function createAgentConfig(
   params: BaseWorkflowParams,
   onProgress?: ProgressCallback
-): import("../agents/types.js").AgentConfig {
+): import("../domain/agents/types.js").AgentConfig {
   const level = params.autonomyLevel || getDefaultAutonomyLevel();
 
   return {
@@ -362,7 +362,7 @@ export function createAgentConfig(
  * ```
  */
 export function formatAgentResults<T>(
-  result: import("../agents/types.js").AgentResult<T>,
+  result: import("../domain/agents/types.js").AgentResult<T>,
   agentName: string
 ): string {
   let output = `# ${agentName} Results\n\n`;

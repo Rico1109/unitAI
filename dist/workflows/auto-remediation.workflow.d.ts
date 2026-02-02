@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 declare const autoRemediationSchema: z.ZodObject<{
     symptoms: z.ZodString;
     maxActions: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;

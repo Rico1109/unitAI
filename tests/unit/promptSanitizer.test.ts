@@ -10,7 +10,7 @@ import {
   sanitizePrompt,
   validatePromptNotEmpty,
   SanitizationResult,
-} from '../../src/utils/promptSanitizer';
+} from '../../src/utils/security/promptSanitizer';
 
 // Mock logger to avoid console noise in tests
 vi.mock('../../src/utils/logger.js', () => ({

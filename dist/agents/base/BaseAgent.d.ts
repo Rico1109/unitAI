@@ -6,7 +6,7 @@
  *
  * @module agents/base/BaseAgent
  */
-import type { IAgent, AgentConfig, AgentResult } from "../types.js";
+import type { IAgent, AgentConfig, AgentResult } from "../../domain/agents/types.js";
 /**
  * Abstract base class for all agents
  *

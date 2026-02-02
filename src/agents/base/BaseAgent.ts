@@ -15,7 +15,7 @@ import type {
   AgentResult,
   AgentMetadata,
   AgentError
-} from "../types.js";
+} from "../../domain/agents/types.js";
 
 /**
  * Abstract base class for all agents

@@ -19,7 +19,7 @@ import type {
   ImplementerOutput,
   CodeSnippet,
   ImplementationApproach
-} from "./types.js";
+} from "../domain/agents/types.js";
 
 /**
  * ImplementerAgent specializes in code implementation and modification

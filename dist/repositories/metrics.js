@@ -3,8 +3,8 @@ export class MetricsRepository extends BaseRepository {
     /**
      * Initialize RED metrics database schema
      */
-    initializeSchema() {
-        this.db.exec(`
+    async initializeSchema() {
+        await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS red_metrics (
         id TEXT PRIMARY KEY,
         timestamp INTEGER NOT NULL,
@@ -28,22 +28,32 @@ export class MetricsRepository extends BaseRepository {
     /**
      * Record a RED metric
      */
-    record(metric) {
+    async record(metric) {
         const id = `red-${Date.now()}-${Math.random().toString(36).substring(7)}`;
         const timestamp = Date.now();
-        const stmt = this.db.prepare(`
+        const sql = `
       INSERT INTO red_metrics (
         id, timestamp, metric_type, component, backend,
         duration, success, error_type, request_id, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-        stmt.run(id, timestamp, metric.metricType, metric.component, metric.backend || null, metric.duration, metric.success ? 1 : 0, metric.errorType || null, metric.requestId || null, JSON.stringify(metric.metadata || {}));
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        await this.db.runAsync(sql, [
+            id,
+            timestamp,
+            metric.metricType,
+            metric.component,
+            metric.backend || null,
+            metric.duration,
+            metric.success ? 1 : 0,
+            metric.errorType || null,
+            metric.requestId || null,
+            JSON.stringify(metric.metadata || {})
+        ]);
         return id;
     }
     /**
      * Query metrics with filters
      */
-    query(filters) {
+    async query(filters) {
         let sql = 'SELECT * FROM red_metrics WHERE 1=1';
         const params = [];
         if (filters.component) {
@@ -75,8 +85,7 @@ export class MetricsRepository extends BaseRepository {
             sql += ' LIMIT ?';
             params.push(filters.limit);
         }
-        const stmt = this.db.prepare(sql);
-        const rows = stmt.all(...params);
+        const rows = await this.db.allAsync(sql, params);
         return rows.map(row => ({
             id: row.id,
             timestamp: new Date(row.timestamp),
@@ -93,8 +102,8 @@ export class MetricsRepository extends BaseRepository {
     /**
      * Calculate RED statistics
      */
-    getREDStats(filters) {
-        const metrics = this.query(filters);
+    async getREDStats(filters) {
+        const metrics = await this.query(filters);
         if (metrics.length === 0) {
             return {
                 rate: 0,
@@ -130,7 +139,7 @@ export class MetricsRepository extends BaseRepository {
     /**
      * Get error breakdown
      */
-    getErrorBreakdown(filters) {
+    async getErrorBreakdown(filters) {
         let sql = `
       SELECT error_type, COUNT(*) as count
       FROM red_metrics
@@ -154,8 +163,7 @@ export class MetricsRepository extends BaseRepository {
             params.push(filters.endTime.getTime());
         }
         sql += ' GROUP BY error_type ORDER BY count DESC';
-        const stmt = this.db.prepare(sql);
-        const rows = stmt.all(...params);
+        const rows = await this.db.allAsync(sql, params);
         return rows.map(row => ({
             errorType: row.error_type,
             count: row.count

@@ -15,11 +15,11 @@ export declare class MetricsRepository extends BaseRepository {
     /**
      * Initialize RED metrics database schema
      */
-    initializeSchema(): void;
+    initializeSchema(): Promise<void>;
     /**
      * Record a RED metric
      */
-    record(metric: Omit<REDMetric, 'id' | 'timestamp'>): string;
+    record(metric: Omit<REDMetric, 'id' | 'timestamp'>): Promise<string>;
     /**
      * Query metrics with filters
      */
@@ -31,7 +31,7 @@ export declare class MetricsRepository extends BaseRepository {
         success?: boolean;
         requestId?: string;
         limit?: number;
-    }): REDMetric[];
+    }): Promise<REDMetric[]>;
     /**
      * Calculate RED statistics
      */
@@ -40,14 +40,14 @@ export declare class MetricsRepository extends BaseRepository {
         backend?: string;
         startTime?: Date;
         endTime?: Date;
-    }): {
+    }): Promise<{
         rate: number;
         errorRate: number;
         p50: number;
         p95: number;
         p99: number;
         totalRequests: number;
-    };
+    }>;
     /**
      * Get error breakdown
      */
@@ -56,9 +56,9 @@ export declare class MetricsRepository extends BaseRepository {
         backend?: string;
         startTime?: Date;
         endTime?: Date;
-    }): Array<{
+    }): Promise<Array<{
         errorType: string;
         count: number;
-    }>;
+    }>>;
 }
 //# sourceMappingURL=metrics.d.ts.map

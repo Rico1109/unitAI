@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { validateFilePath, validateFilePaths } from '../../src/utils/pathValidator';
+import { validateFilePath, validateFilePaths } from '../../src/utils/security/pathValidator';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmdirSync } from 'fs';
 import path from 'path';
 

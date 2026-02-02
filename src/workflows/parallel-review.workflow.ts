@@ -7,7 +7,7 @@ import type {
   ProgressCallback,
   ParallelReviewParams,
   ReviewFocus
-} from "./types.js";
+} from "../domain/workflows/types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
 import { getDependencies } from '../dependencies.js';
 

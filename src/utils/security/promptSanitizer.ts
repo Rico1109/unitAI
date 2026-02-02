@@ -4,7 +4,7 @@
  * SECURITY: Detect and mitigate prompt injection attacks
  */
 
-import { logger } from "./logger.js";
+import { logger } from "../logger.js";
 
 // Maximum prompt length (50k characters)
 const MAX_PROMPT_LENGTH = 50000;

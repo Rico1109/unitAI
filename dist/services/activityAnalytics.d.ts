@@ -10,6 +10,7 @@
 import { AuditTrail, AuditStats } from '../utils/auditTrail.js';
 import { TokenSavingsMetrics, TokenSavingsStats } from '../utils/tokenEstimator.js';
 import { ActivityRepository } from '../repositories/activity.js';
+import { MCPActivity } from '../domain/common/activity.js';
 /**
  * Time range for activity queries
  */
@@ -60,21 +61,6 @@ export interface UserActivitySummary {
         date: string;
         count: number;
     }[];
-}
-/**
- * MCP Server activity record
- */
-export interface MCPActivity {
-    id: string;
-    timestamp: Date;
-    activityType: 'tool_invocation' | 'workflow_execution' | 'agent_action';
-    toolName?: string;
-    workflowName?: string;
-    agentName?: string;
-    duration?: number;
-    success: boolean;
-    errorMessage?: string;
-    metadata: Record<string, any>;
 }
 /**
  * Activity Analytics Service

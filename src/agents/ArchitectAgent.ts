@@ -17,7 +17,7 @@ import type {
   ArchitectOutput,
   ArchitectFocus,
   ComplexityLevel
-} from "./types.js";
+} from "../domain/agents/types.js";
 
 /**
  * ArchitectAgent specializes in architectural design and analysis

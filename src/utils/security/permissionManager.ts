@@ -7,7 +7,7 @@
  * @module permissionManager
  */
 
-import { getAuditTrail } from './auditTrail.js';
+import { getAuditTrail } from '../auditTrail.js';
 
 /**
  * Permission levels for autonomous operations
@@ -133,18 +133,19 @@ export function checkPermission(
  * }
  * ```
  */
-export function assertPermission(
+export async function assertPermission(
   currentLevel: AutonomyLevel,
   operation: OperationType,
   context?: string,
   workflowName?: string,
   workflowId?: string
-): void {
+): Promise<void> {
   const result = checkPermission(currentLevel, operation);
   
   // Record audit entry (FAIL-CLOSED: audit failure = operation failure)
   try {
-    getAuditTrail().record({
+    const auditTrail = await getAuditTrail();
+    auditTrail.record({
       workflowName: workflowName || 'unknown',
       workflowId,
       autonomyLevel: currentLevel,

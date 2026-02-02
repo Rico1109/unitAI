@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Activity Dashboard CLI
- * 
+ *
  * Terminal-based dashboard for monitoring MCP server user activity,
  * tool usage, workflow execution, and agent performance metrics.
- * 
+ *
  * Usage:
  *   npm run activity-dashboard              # Show current dashboard
  *   npm run activity-dashboard --days 30    # Last 30 days
@@ -14,7 +14,7 @@
  */
 
 import { getActivityAnalytics } from '../services/activityAnalytics.js';
-import { DashboardRenderer } from '../utils/dashboardRenderer.js';
+import { DashboardRenderer } from '../utils/data/dashboardRenderer.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -230,10 +230,10 @@ function convertToCSV(summary: any): string {
 /**
  * Render and display dashboard
  */
-function displayDashboard(options: CLIOptions): void {
+async function displayDashboard(options: CLIOptions): Promise<void> {
   try {
-    const analytics = getActivityAnalytics();
-    const summary = analytics.getActivitySummary(options.days);
+    const analytics = await getActivityAnalytics();
+    const summary = await analytics.getActivitySummary(options.days);
 
     const renderer = new DashboardRenderer({
       useColors: !options.noColor,

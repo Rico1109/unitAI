@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import type { WorkflowDefinition, ProgressCallback } from './types.js';
+import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
 import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
 import { formatWorkflowOutput } from './utils.js';
 import { selectParallelBackends, createTaskCharacteristics } from './modelSelector.js';

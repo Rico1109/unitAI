@@ -111,7 +111,7 @@ Come Qwen, fornisci un'analisi logica e strutturata:
         if (focus === 'security')
             task.domain = 'security';
         const count = strategy === "double-check" ? 3 : 2;
-        backendsToUse = selectParallelBackends(task, circuitBreaker, count);
+        backendsToUse = await selectParallelBackends(task, circuitBreaker, count);
     }
     logger.step('parallel-analysis-start', 'Starting parallel analysis', {
         backends: backendsToUse

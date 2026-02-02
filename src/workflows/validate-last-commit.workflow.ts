@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
-import { getGitCommitInfo, isGitRepository } from "../utils/gitHelper.js";
+import { getGitCommitInfo, isGitRepository } from "../utils/cli/gitHelper.js";
 import { runParallelAnalysis, formatWorkflowOutput } from "./utils.js";
 import type {
   WorkflowDefinition,
   ProgressCallback,
   ValidateLastCommitParams
-} from "./types.js";
+} from "../domain/workflows/types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
 import { getDependencies } from '../dependencies.js';
 

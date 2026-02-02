@@ -8,7 +8,8 @@ import path from 'path';
 import fs from 'fs';
 import { AsyncDatabase } from './lib/async-db.js';
 import { logger } from './utils/logger.js';
-import { CircuitBreaker } from './utils/circuitBreaker.js';
+import { CircuitBreaker } from './utils/reliability/circuitBreaker.js';
+import { ActivityRepository } from './repositories/activity.js';
 import { MetricsRepository } from './repositories/metrics.js';
 
 // Define the shape of our dependencies
@@ -20,6 +21,7 @@ export interface AppDependencies {
     circuitBreaker: CircuitBreaker;
     // Keep a sync instance for legacy/difficult-to-refactor components
     auditDbSync: Database.Database;
+    tokenDbSync: Database.Database;
     // Add other shared DBs or services here as we migrate them
 }
 
@@ -64,6 +66,9 @@ export async function initializeDependencies(): Promise<AppDependencies> {
     logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
     const tokenDb = new AsyncDatabase(tokenDbPath);
     await tokenDb.execAsync('PRAGMA journal_mode = WAL;');
+    // Sync version for TokenSavingsMetrics
+    const tokenDbSync = new Database(tokenDbPath);
+    tokenDbSync.pragma('journal_mode = WAL');
 
     // Initialize RED Metrics Database
     const metricsDbPath = path.join(dataDir, 'red-metrics.sqlite');
@@ -72,6 +77,10 @@ export async function initializeDependencies(): Promise<AppDependencies> {
     await metricsDb.execAsync('PRAGMA journal_mode = WAL;');
 
     // --- Initialize Repositories and Services ---
+
+    // Initialize activity repository and schema
+    const activityRepo = new ActivityRepository(activityDb);
+    await activityRepo.initializeSchema();
 
     // Initialize metrics repository and schema
     const metricsRepo = new MetricsRepository(metricsDb);
@@ -87,7 +96,8 @@ export async function initializeDependencies(): Promise<AppDependencies> {
         tokenDb,
         metricsDb,
         circuitBreaker,
-        auditDbSync
+        auditDbSync,
+        tokenDbSync
     };
 
     return dependencies;
@@ -120,6 +130,9 @@ export async function closeDependencies(): Promise<void> {
         // Close the synchronous DB connection
         if (dependencies.auditDbSync) {
             dependencies.auditDbSync.close();
+        }
+        if (dependencies.tokenDbSync) {
+            dependencies.tokenDbSync.close();
         }
 
         // Close all async databases

@@ -20,11 +20,9 @@ import { getToolDefinitions, executeTool, toolExists } from "./tools/index.js";
 
 export class UnitAIServer {
     private server: Server;
-    private dependencies: AppDependencies;
+    private dependencies!: AppDependencies;
 
     constructor() {
-        this.dependencies = initializeDependencies();
-
         this.server = new Server(
             {
                 name: MCP_CONFIG.SERVER_NAME,
@@ -91,10 +89,13 @@ export class UnitAIServer {
      */
     async start(): Promise<void> {
         try {
+            // Initialize dependencies first
+            this.dependencies = await initializeDependencies();
+
             const transport = new StdioServerTransport();
             await this.server.connect(transport);
             logger.info("UnitAI MCP Server started (Stdio)");
-            
+
             this.setupShutdownHandlers();
         } catch (error) {
             logger.error("Failed to start server", error);

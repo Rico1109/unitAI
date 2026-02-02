@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BACKENDS, ERROR_MESSAGES } from "../constants.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 // const droidModels = [AI_MODELS.DROID.PRIMARY] as const;
 const droidSchema = z.object({
     prompt: z

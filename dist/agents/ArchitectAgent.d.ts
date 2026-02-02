@@ -10,7 +10,7 @@
  * @module agents/ArchitectAgent
  */
 import { BaseAgent } from "./base/BaseAgent.js";
-import type { ArchitectInput, ArchitectOutput } from "./types.js";
+import type { ArchitectInput, ArchitectOutput } from "../domain/agents/types.js";
 /**
  * ArchitectAgent specializes in architectural design and analysis
  *

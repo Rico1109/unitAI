@@ -3,6 +3,7 @@
  *
  * Provides caching for workflow results to avoid redundant AI calls.
  * Uses content-based hashing for cache keys and TTL-based expiration.
+ * Implements Reader-Writer Lock pattern to prevent race conditions.
  */
 export interface CacheEntry {
     key: string;
@@ -25,7 +26,7 @@ export declare class WorkflowCache {
     private cache;
     private stats;
     private cacheDir;
-    private isWriting;
+    private rwLock;
     constructor(cacheDir?: string);
     /**
      * Compute cache key from workflow name, params, and file contents
@@ -60,7 +61,7 @@ export declare class WorkflowCache {
      */
     private loadFromDisk;
     /**
-     * Save cache to disk (async with locking to prevent race conditions)
+     * Save cache to disk (protected by RWLock, caller must hold write lock)
      */
     private saveToDisk;
 }

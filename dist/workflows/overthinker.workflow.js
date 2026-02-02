@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
 import { formatWorkflowOutput } from "./utils.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
+import { validatePath, validateFilePath } from "../utils/security/pathValidator.js";
 /**
  * Overthinker Workflow
  *
@@ -31,14 +32,16 @@ export async function executeOverthinker(params, onProgress) {
     for (const file of contextFiles) {
         if (existsSync(file)) {
             try {
-                const content = readFileSync(file, 'utf-8');
+                // SECURITY: Validate file path to prevent path traversal attacks
+                const validatedFilePath = validateFilePath(file);
+                const content = readFileSync(validatedFilePath, 'utf-8');
                 gatheredContext += `
 --- File: ${file} ---
 ${content}
 `;
             }
             catch (e) {
-                onProgress?.(`⚠️ Could not read context file ${file}`);
+                onProgress?.(`⚠️ Could not read context file ${file}: ${e instanceof Error ? e.message : String(e)}`);
             }
         }
     }
@@ -47,7 +50,9 @@ ${content}
     for (const file of projectStandardsFiles) {
         if (existsSync(file) && !contextFiles.includes(file)) {
             try {
-                const content = readFileSync(file, 'utf-8');
+                // SECURITY: Validate file path to prevent path traversal attacks
+                const validatedFilePath = validateFilePath(file);
+                const content = readFileSync(validatedFilePath, 'utf-8');
                 gatheredContext += `
 --- Project Standards (${file}) ---
 ${content}
@@ -103,7 +108,9 @@ ${content}
         if (!existsSync(outputDir)) {
             mkdirSync(outputDir, { recursive: true });
         }
-        writeFileSync(masterPromptFile, masterPrompt);
+        // SECURITY: Validate output path to prevent path traversal attacks
+        const validatedMasterPromptPath = validatePath(masterPromptFile, process.cwd());
+        writeFileSync(validatedMasterPromptPath, masterPrompt);
         onProgress?.(`💾 Saved master prompt to: ${masterPromptFile}`);
     }
     catch (e) {
@@ -234,7 +241,9 @@ ${content}
                 onProgress?.(`⚠️ Could not create directory for ${finalOutputPath}`);
             }
         }
-        writeFileSync(finalOutputPath, finalDocument);
+        // SECURITY: Validate output path to prevent path traversal attacks
+        const validatedOutputPath = validatePath(finalOutputPath, resolve('.unitai'));
+        writeFileSync(validatedOutputPath, finalDocument);
         onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
     }
     catch (e) {

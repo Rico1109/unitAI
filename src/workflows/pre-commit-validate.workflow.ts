@@ -1,20 +1,20 @@
 /**
  * Pre-Commit Validation Workflow
- * 
+ *
  * Validates staged changes before committing, checking for:
  * - Security issues (secrets, vulnerabilities)
  * - Code quality issues
  * - Breaking changes
- * 
+ *
  * Uses parallel AI analysis with multiple backends for comprehensive validation.
  */
 
 import { z } from 'zod';
-import type { WorkflowDefinition, ProgressCallback } from './types.js';
+import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
 import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
 import { selectOptimalBackend, createTaskCharacteristics } from './modelSelector.js';
 import { getDependencies } from '../dependencies.js';
-import { getStagedDiff } from '../utils/gitHelper.js';
+import { getStagedDiff } from '../utils/cli/gitHelper.js';
 import { formatWorkflowOutput } from './utils.js';
 import { logAudit } from '../utils/auditTrail.js';
 import { estimateFileTokens } from '../utils/tokenEstimator.js';

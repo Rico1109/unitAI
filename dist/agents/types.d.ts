@@ -6,7 +6,7 @@
  *
  * @module agents/types
  */
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 /**
  * Configuration for agent execution
  */

@@ -7,7 +7,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { AsyncDatabase } from '../lib/async-db.js';
-import type { AutonomyLevel, OperationType } from './permissionManager.js';
+import type { AutonomyLevel, OperationType } from './security/permissionManager.js';
 import { getDependencies } from '../dependencies.js';
 
 /**

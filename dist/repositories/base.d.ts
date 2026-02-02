@@ -1,19 +1,15 @@
 /**
  * Base Repository Pattern
  *
- * Abstract class for data access layers using better-sqlite3.
+ * Abstract class for data access layers using AsyncDatabase.
  */
-import Database from 'better-sqlite3';
+import { AsyncDatabase } from '../lib/async-db.js';
 export declare abstract class BaseRepository {
-    protected db: Database.Database;
-    constructor(db: Database.Database);
+    protected db: AsyncDatabase;
+    constructor(db: AsyncDatabase);
     /**
      * Initialize tables - to be overridden by subclasses
      */
-    abstract initializeSchema(): void;
-    /**
-     * Helper to run a transaction
-     */
-    protected transaction<T>(fn: () => T): T;
+    abstract initializeSchema(): Promise<void>;
 }
 //# sourceMappingURL=base.d.ts.map

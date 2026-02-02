@@ -19,7 +19,7 @@ vi.mock('../../src/utils/logger.js', () => ({
 }));
 
 // Mock CircuitBreaker
-vi.mock('../../src/utils/circuitBreaker.js', () => ({
+vi.mock('../../src/utils/reliability/circuitBreaker.js', () => ({
   CircuitBreaker: vi.fn().mockImplementation(() => ({
     shutdown: vi.fn(),
   })),

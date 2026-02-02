@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
 import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
 
 const triangulatedReviewSchema = z.object({

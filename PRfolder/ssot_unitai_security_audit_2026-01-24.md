@@ -118,7 +118,7 @@ function isCommandAvailable(command: string): boolean {
 ### SEC-002: Unrestricted Command Execution in commandExecutor.ts
 
 **Severity:** 🔴 CRITICAL
-**Location:** `src/utils/commandExecutor.ts:45-60`
+**Location:** `src/utils/cli/commandExecutor.ts:45-60`
 **CWE:** CWE-78 (OS Command Injection)
 
 **Vulnerability:**
@@ -233,7 +233,7 @@ await executeCommand({
 // 1. Remove --skip-permissions-unsafe flag usage entirely
 // 2. Enforce permission checks at framework level
 
-// In permissionManager.ts
+// In utils/security/permissionManager.ts
 export function checkOperation(
   operation: OperationType,
   level: AutonomyLevel,
@@ -515,7 +515,7 @@ function validateFileSize(filePath: string): void {
 ### SEC-012: Hardcoded Timeouts
 
 **Severity:** 🟢 LOW
-**Location:** `src/utils/commandExecutor.ts:45`
+**Location:** `src/utils/cli/commandExecutor.ts:45`
 
 **Issue:** Default 120s timeout may be too permissive
 
@@ -538,12 +538,12 @@ function validateFileSize(filePath: string): void {
 
 Despite the vulnerabilities, the codebase shows good security awareness:
 
-1. ✅ **Well-Designed Permission System** (`permissionManager.ts`)
+1. ✅ **Well-Designed Permission System** (`utils/security/permissionManager.ts`)
    - 4-tier autonomy levels (READ_ONLY → LOW → MEDIUM → HIGH)
    - Granular operation types
    - Audit trail integration
 
-2. ✅ **Secure Spawn Usage** (`commandExecutor.ts`)
+2. ✅ **Secure Spawn Usage** (`utils/cli/commandExecutor.ts`)
    - Uses `spawn()` with `shell: false` (prevents shell injection)
    - Proper process lifecycle management
    - Timeout mechanisms

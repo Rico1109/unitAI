@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 /**
  * Registra un workflow nel registro
  */

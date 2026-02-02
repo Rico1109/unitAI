@@ -33,8 +33,8 @@ export const redMetricsDashboardTool: UnifiedTool = {
     const endTime = new Date();
     const startTime = new Date(endTime.getTime() - timeRangeMinutes * 60 * 1000);
 
-    const stats = metricsRepo.getREDStats({ component, backend, startTime, endTime });
-    const errorBreakdown = metricsRepo.getErrorBreakdown({ component, backend, startTime, endTime });
+    const stats = await metricsRepo.getREDStats({ component, backend, startTime, endTime });
+    const errorBreakdown = await metricsRepo.getErrorBreakdown({ component, backend, startTime, endTime });
 
     // Build dashboard output
     const filterInfo = [];

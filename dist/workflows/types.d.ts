@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 /**
  * Tipo di callback per progresso dell'esecuzione
  */

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { CircuitBreaker, CircuitState } from '../../src/utils/circuitBreaker';
+import { CircuitBreaker, CircuitState } from '../../src/utils/reliability/circuitBreaker';
 import Database from 'better-sqlite3';
 
 // Mock logger to avoid console noise

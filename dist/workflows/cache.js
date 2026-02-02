@@ -3,11 +3,93 @@
  *
  * Provides caching for workflow results to avoid redundant AI calls.
  * Uses content-based hashing for cache keys and TTL-based expiration.
+ * Implements Reader-Writer Lock pattern to prevent race conditions.
  */
 import { createHash } from 'crypto';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
+/**
+ * Reader-Writer Lock Implementation
+ *
+ * Allows multiple concurrent readers but exclusive access for writers.
+ * Prevents read-during-write race conditions that could cause stale/partial data.
+ */
+class RWLock {
+    readLocks = 0;
+    writeLock = false;
+    waitingReaders = [];
+    waitingWriters = [];
+    /**
+     * Acquire a read lock
+     * Multiple readers can hold read locks simultaneously
+     * Waits if a writer is active
+     */
+    async acquireRead() {
+        if (!this.writeLock) {
+            // No writer active, acquire immediately
+            this.readLocks++;
+            return;
+        }
+        // Writer is active, wait for it to finish
+        return new Promise((resolve) => {
+            this.waitingReaders.push(resolve);
+        });
+    }
+    /**
+     * Release a read lock
+     * If this was the last reader, wake up the next waiting writer
+     */
+    releaseRead() {
+        this.readLocks--;
+        if (this.readLocks === 0 && this.waitingWriters.length > 0) {
+            // No more readers, wake up the next writer
+            const nextWriter = this.waitingWriters.shift();
+            if (nextWriter) {
+                this.writeLock = true;
+                nextWriter();
+            }
+        }
+    }
+    /**
+     * Acquire a write lock
+     * Exclusive access - waits for all readers and other writers
+     */
+    async acquireWrite() {
+        if (!this.writeLock && this.readLocks === 0) {
+            // No locks active, acquire immediately
+            this.writeLock = true;
+            return;
+        }
+        // Some locks are active, wait for them to finish
+        return new Promise((resolve) => {
+            this.waitingWriters.push(resolve);
+        });
+    }
+    /**
+     * Release a write lock
+     * Wakes up all waiting readers (multiple readers can proceed)
+     * or the next writer if no readers are waiting
+     */
+    releaseWrite() {
+        this.writeLock = false;
+        if (this.waitingReaders.length > 0) {
+            // Wake up all waiting readers
+            this.readLocks = this.waitingReaders.length;
+            const waitingReadersCopy = [...this.waitingReaders];
+            this.waitingReaders = [];
+            waitingReadersCopy.forEach((resolve) => resolve());
+        }
+        else if (this.waitingWriters.length > 0) {
+            // Wake up the next writer
+            const nextWriter = this.waitingWriters.shift();
+            if (nextWriter) {
+                this.writeLock = true;
+                nextWriter();
+            }
+        }
+    }
+}
 /**
  * Workflow cache implementation
  */
@@ -15,7 +97,7 @@ export class WorkflowCache {
     cache = new Map();
     stats = { hits: 0, misses: 0 };
     cacheDir;
-    isWriting = false;
+    rwLock = new RWLock();
     constructor(cacheDir = join(process.cwd(), '.cache', 'workflows')) {
         this.cacheDir = cacheDir;
         if (!existsSync(this.cacheDir)) {
@@ -56,60 +138,84 @@ export class WorkflowCache {
      * Get cached result if valid
      */
     async get(key) {
-        const entry = this.cache.get(key);
-        if (!entry) {
-            this.stats.misses++;
-            return null;
+        await this.rwLock.acquireRead();
+        try {
+            const entry = this.cache.get(key);
+            if (!entry) {
+                this.stats.misses++;
+                return null;
+            }
+            const age = Date.now() - entry.timestamp;
+            if (age > entry.ttlSeconds * 1000) {
+                this.cache.delete(key);
+                this.stats.misses++;
+                return null;
+            }
+            this.stats.hits++;
+            return entry.result;
         }
-        const age = Date.now() - entry.timestamp;
-        if (age > entry.ttlSeconds * 1000) {
-            this.cache.delete(key);
-            this.stats.misses++;
-            return null;
+        finally {
+            this.rwLock.releaseRead();
         }
-        this.stats.hits++;
-        return entry.result;
     }
     /**
      * Set cache entry
      */
     async set(key, result, workflowName, ttlSeconds, metadata) {
-        const entry = {
-            key,
-            result,
-            timestamp: Date.now(),
-            ttlSeconds,
-            workflowName,
-            metadata
-        };
-        this.cache.set(key, entry);
-        await this.saveToDisk();
+        await this.rwLock.acquireWrite();
+        try {
+            const entry = {
+                key,
+                result,
+                timestamp: Date.now(),
+                ttlSeconds,
+                workflowName,
+                metadata
+            };
+            this.cache.set(key, entry);
+            await this.saveToDisk();
+        }
+        finally {
+            this.rwLock.releaseWrite();
+        }
     }
     /**
      * Clear expired entries
      */
     async cleanup() {
-        const now = Date.now();
-        let removed = 0;
-        for (const [key, entry] of this.cache.entries()) {
-            const age = now - entry.timestamp;
-            if (age > entry.ttlSeconds * 1000) {
-                this.cache.delete(key);
-                removed++;
+        await this.rwLock.acquireWrite();
+        try {
+            const now = Date.now();
+            let removed = 0;
+            for (const [key, entry] of this.cache.entries()) {
+                const age = now - entry.timestamp;
+                if (age > entry.ttlSeconds * 1000) {
+                    this.cache.delete(key);
+                    removed++;
+                }
             }
+            if (removed > 0) {
+                await this.saveToDisk();
+            }
+            return removed;
         }
-        if (removed > 0) {
-            await this.saveToDisk();
+        finally {
+            this.rwLock.releaseWrite();
         }
-        return removed;
     }
     /**
      * Clear all cache entries
      */
     async clear() {
-        this.cache.clear();
-        this.stats = { hits: 0, misses: 0 };
-        await this.saveToDisk();
+        await this.rwLock.acquireWrite();
+        try {
+            this.cache.clear();
+            this.stats = { hits: 0, misses: 0 };
+            await this.saveToDisk();
+        }
+        finally {
+            this.rwLock.releaseWrite();
+        }
     }
     /**
      * Get cache statistics
@@ -146,15 +252,9 @@ export class WorkflowCache {
         }
     }
     /**
-     * Save cache to disk (async with locking to prevent race conditions)
+     * Save cache to disk (protected by RWLock, caller must hold write lock)
      */
     async saveToDisk() {
-        // Prevent concurrent writes
-        if (this.isWriting) {
-            console.warn('Cache write already in progress, skipping.');
-            return;
-        }
-        this.isWriting = true;
         const cacheFile = join(this.cacheDir, 'cache.json');
         try {
             const data = {
@@ -167,9 +267,6 @@ export class WorkflowCache {
         catch (error) {
             console.error('Failed to save cache to disk:', error);
             throw error; // Re-throw to make failures visible
-        }
-        finally {
-            this.isWriting = false;
         }
     }
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 declare const triangulatedReviewSchema: z.ZodObject<{
     files: z.ZodArray<z.ZodString, "many">;
     goal: z.ZodDefault<z.ZodOptional<z.ZodEnum<["bugfix", "refactor"]>>>;

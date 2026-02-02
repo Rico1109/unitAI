@@ -12,7 +12,7 @@
  * @module agents/ImplementerAgent
  */
 import { BaseAgent } from "./base/BaseAgent.js";
-import type { ImplementerInput, ImplementerOutput } from "./types.js";
+import type { ImplementerInput, ImplementerOutput } from "../domain/agents/types.js";
 /**
  * ImplementerAgent specializes in code implementation and modification
  *

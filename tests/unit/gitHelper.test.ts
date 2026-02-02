@@ -14,20 +14,20 @@ describe('GitHelper', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unmock('../../src/utils/commandExecutor.js');
+    vi.unmock('../../src/utils/cli/commandExecutor.js');
   });
 
   describe('isGitRepository', () => {
     it('should return true when in git repository', async () => {
       mockGitCommand('rev-parse --git-dir', '.git');
-      const { isGitRepository } = await import('../../src/utils/gitHelper.js');
+      const { isGitRepository } = await import('../../src/utils/cli/gitHelper.js');
       const result = await isGitRepository();
       expect(result).toBe(true);
     });
 
     it('should return false when not in git repository', async () => {
       mockGitCommand('rev-parse --git-dir', '', 128);
-      const { isGitRepository } = await import('../../src/utils/gitHelper.js');
+      const { isGitRepository } = await import('../../src/utils/cli/gitHelper.js');
       const result = await isGitRepository();
       expect(result).toBe(false);
     });
@@ -44,7 +44,7 @@ describe('GitHelper', () => {
         { command: 'diff --name-only', output: 'README.md' }
       ]);
 
-      const { getGitRepoInfo } = await import('../../src/utils/gitHelper.js');
+      const { getGitRepoInfo } = await import('../../src/utils/cli/gitHelper.js');
       const info = await getGitRepoInfo();
 
       expect(info.currentBranch).toBe('main');
@@ -56,7 +56,7 @@ describe('GitHelper', () => {
     it('should throw error when not in git repository', async () => {
       mockGitCommand('rev-parse --git-dir', '', 128);
 
-      const { getGitRepoInfo } = await import('../../src/utils/gitHelper.js');
+      const { getGitRepoInfo } = await import('../../src/utils/cli/gitHelper.js');
       await expect(getGitRepoInfo()).rejects.toThrow('non è un repository Git');
     });
 
@@ -70,7 +70,7 @@ describe('GitHelper', () => {
         { command: 'diff --name-only', output: '' }
       ]);
 
-      const { getGitRepoInfo } = await import('../../src/utils/gitHelper.js');
+      const { getGitRepoInfo } = await import('../../src/utils/cli/gitHelper.js');
       const info = await getGitRepoInfo();
 
       expect(info.stagedFiles).toEqual([]);
@@ -96,7 +96,7 @@ describe('GitHelper', () => {
         { command: 'show --format= --name-only HEAD', output: 'src/index.ts' }
       ]);
 
-      const { getGitCommitInfo } = await import('../../src/utils/gitHelper.js');
+      const { getGitCommitInfo } = await import('../../src/utils/cli/gitHelper.js');
       const info = await getGitCommitInfo('HEAD');
 
       expect(info.hash).toBe('abc123');
@@ -109,7 +109,7 @@ describe('GitHelper', () => {
     it('should throw error when not in git repository', async () => {
       mockGitCommand('rev-parse --git-dir', '', 128);
 
-      const { getGitCommitInfo } = await import('../../src/utils/gitHelper.js');
+      const { getGitCommitInfo } = await import('../../src/utils/cli/gitHelper.js');
       await expect(getGitCommitInfo()).rejects.toThrow('non è un repository Git');
     });
   });
@@ -136,7 +136,7 @@ describe('GitHelper', () => {
         { command: 'show --format= --name-only def456', output: 'file2.ts' }
       ]);
 
-      const { getRecentCommitsWithDiffs } = await import('../../src/utils/gitHelper.js');
+      const { getRecentCommitsWithDiffs } = await import('../../src/utils/cli/gitHelper.js');
       const commits = await getRecentCommitsWithDiffs(2);
 
       expect(commits).toHaveLength(2);
@@ -154,7 +154,7 @@ describe('GitHelper', () => {
         { command: 'diff --cached', output: mockDiff }
       ]);
 
-      const { getStagedDiff } = await import('../../src/utils/gitHelper.js');
+      const { getStagedDiff } = await import('../../src/utils/cli/gitHelper.js');
       const diff = await getStagedDiff();
 
       expect(diff).toContain('+new code');
@@ -167,7 +167,7 @@ describe('GitHelper', () => {
         { command: 'diff --cached', output: '' }
       ]);
 
-      const { getStagedDiff } = await import('../../src/utils/gitHelper.js');
+      const { getStagedDiff } = await import('../../src/utils/cli/gitHelper.js');
       const diff = await getStagedDiff();
 
       expect(diff).toBe('');
@@ -181,7 +181,7 @@ describe('GitHelper', () => {
         { command: 'branch --show-current', output: 'feature/new-feature' }
       ]);
 
-      const { getCurrentBranch } = await import('../../src/utils/gitHelper.js');
+      const { getCurrentBranch } = await import('../../src/utils/cli/gitHelper.js');
       const branch = await getCurrentBranch();
 
       expect(branch).toBe('feature/new-feature');
@@ -192,7 +192,7 @@ describe('GitHelper', () => {
     it('should detect available CLI commands', async () => {
       mockGitCommand('--version', 'version 2.40.0');
 
-      const { checkCLIAvailability } = await import('../../src/utils/gitHelper.js');
+      const { checkCLIAvailability } = await import('../../src/utils/cli/gitHelper.js');
       const available = await checkCLIAvailability();
 
       // Function returns display-friendly keys (used for init-session display)
@@ -204,7 +204,7 @@ describe('GitHelper', () => {
     it('should detect unavailable CLI commands', async () => {
       mockGitCommand('--version', '', 127);
 
-      const { checkCLIAvailability } = await import('../../src/utils/gitHelper.js');
+      const { checkCLIAvailability } = await import('../../src/utils/cli/gitHelper.js');
       const available = await checkCLIAvailability();
 
       // Function returns display-friendly keys (used for init-session display)

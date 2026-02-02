@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { AgentFactory } from "../agents/index.js";
 import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./utils.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./modelSelector.js";
 import { getDependencies } from '../dependencies.js';
 import type {
   WorkflowDefinition,
   ProgressCallback
-} from "./types.js";
+} from "../domain/workflows/types.js";
 
 /**
  * Feature Design Workflow - Orchestration Example

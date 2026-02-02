@@ -1,11 +1,11 @@
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
-import { getGitRepoInfo, getGitDiff, getDetailedGitStatus, getGitBranches, checkCLIAvailability, isGitRepository, getRecentCommitsWithDiffs, getDateRangeFromCommits } from "../utils/gitHelper.js";
+import { getGitRepoInfo, getGitDiff, getDetailedGitStatus, getGitBranches, checkCLIAvailability, isGitRepository, getRecentCommitsWithDiffs, getDateRangeFromCommits } from "../utils/cli/gitHelper.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { executeAIClient } from "../utils/aiExecutor.js";
 import { BACKENDS, AI_MODELS } from "../constants.js";
-import type { WorkflowDefinition, ProgressCallback, GitCommitInfo } from "./types.js";
+import type { WorkflowDefinition, ProgressCallback, GitCommitInfo } from "../domain/workflows/types.js";
 
 /**
  * Schema Zod per il workflow init-session

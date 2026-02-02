@@ -9,7 +9,7 @@
  * Uses parallel AI analysis with multiple backends for comprehensive validation.
  */
 import { z } from 'zod';
-import type { WorkflowDefinition, ProgressCallback } from './types.js';
+import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
 /**
  * Schema dei parametri per pre-commit-validate
  */

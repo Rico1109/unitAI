@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { executeCommand, ExecutionResult } from '../../src/utils/commandExecutor';
+import { executeCommand, ExecutionResult } from '../../src/utils/cli/commandExecutor';
 import { EventEmitter } from 'events';
 
 // Mock logger to avoid console noise

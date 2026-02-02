@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
 import { formatWorkflowOutput } from "./utils.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
-import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "./types.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "../domain/workflows/types.js";
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
 import { join, dirname, resolve } from "path";
-import { validatePath, validateFilePath } from "../utils/pathValidator.js";
+import { validatePath, validateFilePath } from "../utils/security/pathValidator.js";
 
 /**
  * Overthinker Workflow

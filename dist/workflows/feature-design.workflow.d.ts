@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { AutonomyLevel } from "../utils/permissionManager.js";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 /**
  * Feature Design Workflow - Orchestration Example
  *

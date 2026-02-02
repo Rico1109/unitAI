@@ -10,7 +10,7 @@
  * @module agents/TesterAgent
  */
 import { BaseAgent } from "./base/BaseAgent.js";
-import type { TesterInput, TesterOutput } from "./types.js";
+import type { TesterInput, TesterOutput } from "../domain/agents/types.js";
 /**
  * TesterAgent specializes in fast test generation
  *

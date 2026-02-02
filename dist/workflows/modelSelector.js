@@ -65,10 +65,13 @@ const backendStats = new BackendStats();
 /**
  * Select optimal backend based on task characteristics
  */
-export function selectOptimalBackend(task, circuitBreaker, allowedBackends) {
+export async function selectOptimalBackend(task, circuitBreaker, allowedBackends) {
     const candidates = allowedBackends || Object.values(BACKENDS);
     // Filter out unavailable backends
-    const availableCandidates = candidates.filter(b => circuitBreaker.isAvailable(b));
+    const availabilityChecks = await Promise.all(candidates.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) })));
+    const availableCandidates = availabilityChecks
+        .filter((check) => check.available)
+        .map((check) => check.backend);
     if (availableCandidates.length === 0) {
         // If all are down, return a default (likely Gemini or Qwen) and let the circuit breaker throw the error
         // or return the "least failed" one. For now, return primary fallback.
@@ -108,17 +111,20 @@ export function selectOptimalBackend(task, circuitBreaker, allowedBackends) {
 /**
  * Select multiple backends for parallel analysis
  */
-export function selectParallelBackends(task, circuitBreaker, count = 2) {
+export async function selectParallelBackends(task, circuitBreaker, count = 2) {
     const selections = [];
     // Updated Priority: Gemini -> Qwen -> Droid -> Rovodev
     const allBackends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID, BACKENDS.ROVODEV];
-    const available = allBackends.filter(b => circuitBreaker.isAvailable(b));
+    const availabilityChecks = await Promise.all(allBackends.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) })));
+    const available = availabilityChecks
+        .filter((check) => check.available)
+        .map((check) => check.backend);
     if (available.length === 0)
         return [BACKENDS.QWEN]; // Fallback to Qwen
     // Strategy: diversify for different strengths
     if (count >= 1) {
         // First choice: optimal backend
-        const primary = selectOptimalBackend(task, circuitBreaker, available);
+        const primary = await selectOptimalBackend(task, circuitBreaker, available);
         selections.push(primary);
     }
     if (count >= 2 && selections.length < count) {
@@ -167,7 +173,7 @@ export function getBackendStats() {
  * Select a fallback backend when the primary fails
  * Returns a different backend from the failed one, prioritizing by reliability
  */
-export function selectFallbackBackend(failedBackend, circuitBreaker) {
+export async function selectFallbackBackend(failedBackend, circuitBreaker) {
     // Priority order for fallbacks (most reliable first)
     const fallbackOrder = [
         BACKENDS.GEMINI,
@@ -176,7 +182,12 @@ export function selectFallbackBackend(failedBackend, circuitBreaker) {
         BACKENDS.ROVODEV
     ];
     // Filter out the failed backend and unavailable ones
-    const available = fallbackOrder.filter(b => b !== failedBackend && circuitBreaker.isAvailable(b));
+    const availabilityChecks = await Promise.all(fallbackOrder
+        .filter((b) => b !== failedBackend)
+        .map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) })));
+    const available = availabilityChecks
+        .filter((check) => check.available)
+        .map((check) => check.backend);
     if (available.length > 0) {
         return available[0];
     }

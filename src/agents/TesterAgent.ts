@@ -16,7 +16,7 @@ import type {
   TesterInput,
   TesterOutput,
   TestType
-} from "./types.js";
+} from "../domain/agents/types.js";
 
 /**
  * TesterAgent specializes in fast test generation

@@ -648,7 +648,7 @@ let metricsInstance: TokenSavingsMetrics | null = null;
 export function getMetricsCollector(): TokenSavingsMetrics {
   if (!metricsInstance) {
     const deps = getDependencies();
-    metricsInstance = new TokenSavingsMetrics(deps.tokenDb);
+    metricsInstance = new TokenSavingsMetrics(deps.tokenDbSync);
   }
   return metricsInstance;
 }

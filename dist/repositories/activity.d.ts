@@ -4,7 +4,7 @@
  * Data access layer for MCP Activities.
  */
 import { BaseRepository } from "./base.js";
-import { MCPActivity } from "../services/activityAnalytics.js";
+import { MCPActivity } from "../domain/common/activity.js";
 export declare class ActivityRepository extends BaseRepository {
     initializeSchema(): void;
     create(activity: Omit<MCPActivity, 'id' | 'timestamp'> & {

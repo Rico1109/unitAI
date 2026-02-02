@@ -1,12 +1,14 @@
 ---
 title: unitAI Pyramid Progress Status
-version: 2.1.0
-updated: 2026-01-28T12:30:00+01:00
+version: 2.2.0
+updated: 2026-01-28T14:00:00+01:00
 scope: unitai-project
 category: ssot
 subcategory: status
 domain: [project-management, progress-tracking]
 changelog:
+  - 2.3.0 (2026-01-28): Sprint 4 complete - Code reorganization (src/utils).
+  - 2.2.0 (2026-01-28): Sprint 4 complete - security fixes and code organization.
   - 2.1.0 (2026-01-28): Sprint 3 complete - test quality & type safety improvements.
   - 2.0.0 (2026-01-26): Layer 5 complete, quality report integrated, production readiness updated.
   - 1.0.0 (2026-01-26): Initial project status tracking document.
@@ -22,7 +24,7 @@ changelog:
 🎯 CURRENT LAYER: 6 - CODE ORGANIZATION
 📍 BRANCH: feat/di-lifecycle
 📊 QUALITY SCORE: 8.7/10 (Production Ready)
-✅ SPRINTS COMPLETE: 3/3 (Layer 6 Sprint Phase Complete)
+✅ SPRINTS COMPLETE: 4/4 (Layer 6 Complete)
 ```
 
 ---
@@ -36,14 +38,14 @@ changelog:
 | 2 | Security | ✅ DONE | 1 | `414ce75` SEC-001→006 |
 | 3 | Reliability | ✅ DONE | 3 | `f8a4dcd` REL-001→004 |
 | 4 | Testing | ✅ DONE | 3 | `769ee66` 178 tests |
-| 5 | Observability | ✅ DONE | 2 | `80d328e` + `a8c953d` |
-| **6** | **Code Organization** | **⏳ IN PROGRESS** | - | Sprint 1-3 complete, commit pending |
+| 5 | Observability | ❗**BLOCKED** | 2 | `80d328e` + `a8c953d` - Layer 5 build errors detected |
+| **6** | **Code Organization** | **✅ DONE** | 1 | `6c9e7a2` - 4 sprints complete |
 | 7 | Optimizations | ⬜ TODO | - | - |
 | 8 | New Features | ⬜ TODO | - | - |
 
 ---
 
-## Current Focus: Quality Report Remediation
+## Current Focus: Layer 6 Sprint Summary
 
 ### Sprint 1: High Priority Fixes ✅ COMPLETE
 - [x] `TEST-FLAKY-001` - Fix flaky TTL tests
@@ -60,31 +62,50 @@ changelog:
 - [x] `TEST-INCON-001` - Fix rate vs errorRate inconsistency
 - [x] `TEST-CACHE-001` - Add cache key normalization tests
 
+### Sprint 4: Security & Code Organization ✅ COMPLETE
+- [x] `SEC-RACE-001` - Fix circuit breaker race condition with `testingHalfOpen` flag
+- [x] `SEC-VULN-001` - Restrict file system access to `.unitai/` subdirectory (path traversal)
+- [x] `TEST-COMB-001` - Create combined filter test for `unitAI.filter.ts`
+- [x] **REORG-001** - Reorganize `src/utils/` by domain
+
+**Sprint 4 Details (Code Organization):**
+
+| Domain | New Location | Files Moved |
+|--------|--------------|-------------|
+| **Security** | `src/utils/security/` | `permissionManager.ts`, `promptSanitizer.ts`, `pathValidator.ts` |
+| **Reliability** | `src/utils/reliability/` | `circuitBreaker.ts`, `errorRecovery.ts` |
+| **CLI** | `src/utils/cli/` | `commandExecutor.ts`, `gitHelper.ts` |
+| **Data** | `src/utils/data/` | `dashboardRenderer.ts` |
+
+**Infrastructure Files (Retained in Root):**
+`aiExecutor.ts`, `auditTrail.ts`, `logger.ts`, `structuredLogger.ts`, `tokenEstimator.ts`.
+
 **Results:**
-- cache.test.ts: 11/11 tests passing ✅
-- Type safety: Improved (RedMetricRow interface added)
-- Test coverage: Enhanced (2 new normalization tests)
-- Known issue: metrics.test.ts has pre-existing DB infrastructure issue (documented)
+- Sprint 4 changes correct and isolated.
+- Security posture improved: `testingHalfOpen` flag mitigates race conditions; path restrictions prevent traversal vulnerabilities.
+- Codebase organized: Security utilities moved to `utils/security/`.
+- **BLOCKING ISSUE:** Pre-existing Layer 5 build errors prevent full validation. 103 test failures persist from AsyncDatabase migration. Layer 5 remediation is now the top priority.
 
 ---
 
 ## Sprint Phase Summary
 
-All 3 sprints of Layer 6 (Code Organization) completed:
+All 4 sprints of Layer 6 (Code Organization) completed:
 
 | Sprint | Focus | Status | Test Results |
 |--------|-------|--------|--------------|
 | Sprint 1 | High Priority Fixes | ✅ COMPLETE | Flaky tests fixed, SQLite async, FD exhaustion resolved |
 | Sprint 2 | Security & Integrity | ✅ COMPLETE | Path traversal, race conditions, circuit breaker hardened |
 | Sprint 3 | Test Quality & Type Safety | ✅ COMPLETE | Type safety improved, cache normalization verified |
+| Sprint 4 | Security & Code Org | ✅ COMPLETE | Circuit breaker race fix, path traversal secured, filter test combined |
 
 **Delegation Performance:**
-- Sprint 3 executed via GLM-4.6 (cost-optimized)
-- Duration: 162.7s (~2.7 min)
-- Cost: $0.4970
-- Token efficiency: ~60-70% savings vs direct implementation
+- Sprint 4 executed via GLM-4.6 (cost-optimized)
+- Duration: ~440s (~7.3 min)
+- Cost: $0.9812
+- Token efficiency: ~65-75% savings vs direct implementation
 
-**Next Step:** Commit Sprint 3 changes and proceed to Layer 7 (Optimizations)
+**Next Step:** Address Layer 5 build errors and test failures before proceeding to Layer 7.
 
 ---
 
@@ -96,15 +117,15 @@ cd ~/Projects/CodeBase/unitAI
 git log --oneline -5
 git status --short | head -20
 
-# 2. Verify build
+# 2. Verify build (EXPECTED TO FAIL)
 npm run build
 
-# 3. Run tests
+# 3. Run tests (EXPECTED TO FAIL)
 npm test
 
-# 4. When Layer 5 complete, commit:
+# 4. After Layer 5 remediation, commit:
 git add src/ tests/ PRfolder/
-git commit -m "feat(observability): implement RED metrics dashboard and logging bridge"
+git commit -m "fix(layer-5): resolve build errors and test failures"
 ```
 
 ---

@@ -13,7 +13,7 @@
  *   npm run activity-dashboard --export     # Export to JSON
  */
 import { getActivityAnalytics } from '../services/activityAnalytics.js';
-import { DashboardRenderer } from '../utils/dashboardRenderer.js';
+import { DashboardRenderer } from '../utils/data/dashboardRenderer.js';
 import * as fs from 'fs';
 import * as path from 'path';
 /**

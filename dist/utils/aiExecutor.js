@@ -1,10 +1,10 @@
 import { CLI, AI_MODELS, STATUS_MESSAGES, BACKENDS } from "../constants.js";
 // Re-export BACKENDS for convenience
 export { BACKENDS };
-import { executeCommand } from "./commandExecutor.js";
+import { executeCommand } from "./cli/commandExecutor.js";
 import { logger } from "./logger.js";
-import { validateFilePaths } from "./pathValidator.js";
-import { sanitizePrompt, validatePromptNotEmpty } from "./promptSanitizer.js";
+import { validateFilePaths } from "./security/pathValidator.js";
+import { sanitizePrompt, validatePromptNotEmpty } from "./security/promptSanitizer.js";
 /**
  * Execute Gemini CLI with the given options
  */
@@ -285,10 +285,10 @@ export async function executeAIClient(options, retryConfig) {
     // Track this backend as tried
     config.triedBackends.push(backend);
     // Circuit Breaker Check - try fallback if blocked
-    if (!circuitBreaker.isAvailable(backend)) {
+    if (!(await circuitBreaker.isAvailable(backend))) {
         logger.warn(`Backend ${backend} is currently unavailable (Circuit Open).`);
         if (config.currentRetry < config.maxRetries) {
-            const fallback = selectFallbackBackend(backend, circuitBreaker);
+            const fallback = await selectFallbackBackend(backend, circuitBreaker);
             // Avoid retrying already-tried backends
             if (config.triedBackends.includes(fallback)) {
                 const msg = `All available backends have been tried: ${config.triedBackends.join(', ')}`;
@@ -343,7 +343,7 @@ export async function executeAIClient(options, retryConfig) {
         }
         // Retry with fallback if we haven't exhausted retries
         if (config.currentRetry < config.maxRetries) {
-            const fallback = selectFallbackBackend(backend, circuitBreaker);
+            const fallback = await selectFallbackBackend(backend, circuitBreaker);
             // Avoid retrying already-tried backends
             if (config.triedBackends.includes(fallback)) {
                 logger.error(`Fallback ${fallback} was already tried. Exhausted options.`);

@@ -1,5 +1,5 @@
-import { type PermissionManager } from "../utils/permissionManager.js";
-import type { ProgressCallback, AIAnalysisResult, ParallelAnalysisResult, ReviewFocus, BaseWorkflowParams } from "./types.js";
+import { type PermissionManager } from "../utils/security/permissionManager.js";
+import type { ProgressCallback, AIAnalysisResult, ParallelAnalysisResult, ReviewFocus, BaseWorkflowParams } from "../domain/workflows/types.js";
 import type { AIExecutionOptions } from "../utils/aiExecutor.js";
 /**
  * Esegue un'analisi AI con un backend specifico
@@ -83,7 +83,7 @@ export declare function createWorkflowPermissionManager(params: BaseWorkflowPara
  * }
  * ```
  */
-export declare function createAgentConfig(params: BaseWorkflowParams, onProgress?: ProgressCallback): import("../agents/types.js").AgentConfig;
+export declare function createAgentConfig(params: BaseWorkflowParams, onProgress?: ProgressCallback): import("../domain/agents/types.js").AgentConfig;
 /**
  * Formatta i risultati di un agent per la visualizzazione
  *
@@ -101,5 +101,5 @@ export declare function createAgentConfig(params: BaseWorkflowParams, onProgress
  * console.log(formatted);
  * ```
  */
-export declare function formatAgentResults<T>(result: import("../agents/types.js").AgentResult<T>, agentName: string): string;
+export declare function formatAgentResults<T>(result: import("../domain/agents/types.js").AgentResult<T>, agentName: string): string;
 //# sourceMappingURL=utils.d.ts.map

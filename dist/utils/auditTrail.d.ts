@@ -3,8 +3,8 @@
  *
  * Tracks all autonomous decisions and operations for accountability and debugging.
  */
-import Database from 'better-sqlite3';
-import type { AutonomyLevel, OperationType } from './permissionManager.js';
+import { AsyncDatabase } from '../lib/async-db.js';
+import type { AutonomyLevel, OperationType } from './security/permissionManager.js';
 /**
  * Audit entry for tracking autonomous operations
  */
@@ -53,35 +53,35 @@ export interface AuditStats {
  */
 export declare class AuditTrail {
     private db;
-    constructor(db: Database.Database);
+    constructor(db: AsyncDatabase);
     /**
      * Initialize database schema
      */
-    private initializeSchema;
+    initializeSchema(): Promise<void>;
     /**
      * Record an audit entry
      */
-    record(entry: Omit<AuditEntry, 'id' | 'timestamp'>): void;
+    record(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Promise<void>;
     /**
      * Query audit entries
      */
-    query(filters?: AuditQueryFilters): AuditEntry[];
+    query(filters?: AuditQueryFilters): Promise<AuditEntry[]>;
     /**
      * Get audit statistics
      */
-    getStats(filters?: Pick<AuditQueryFilters, 'workflowName' | 'startTime' | 'endTime'>): AuditStats;
+    getStats(filters?: Pick<AuditQueryFilters, 'workflowName' | 'startTime' | 'endTime'>): Promise<AuditStats>;
     /**
      * Export report in various formats
      */
-    exportReport(format: 'json' | 'csv' | 'html', filters?: AuditQueryFilters): string;
+    exportReport(format: 'json' | 'csv' | 'html', filters?: AuditQueryFilters): Promise<string>;
     /**
      * Delete old entries
      */
-    cleanup(daysToKeep: number): number;
+    cleanup(daysToKeep: number): Promise<number>;
     /**
      * Close database connection
      */
-    close(): void;
+    close(): Promise<void>;
     /**
      * Generate unique ID
      */
@@ -91,7 +91,7 @@ export declare class AuditTrail {
      */
     private rowToEntry;
 }
-export declare function getAuditTrail(): AuditTrail;
+export declare function getAuditTrail(): Promise<AuditTrail>;
 /**
  * Reset singleton for testing
  */

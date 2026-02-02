@@ -142,7 +142,7 @@ private async persistState(): Promise<void> {
 ### REL-002: Circuit Breaker State Not Persisted
 
 **Severity:** 🔴 CRITICAL
-**Location:** `src/utils/circuitBreaker.ts:30-134`
+**Location:** `src/utils/reliability/circuitBreaker.ts:30-134`
 **Impact:** Circuit breaker state lost on restart, repeated failures
 
 **Vulnerability:**
@@ -623,7 +623,7 @@ const activityPool = createPool({
 ### REL-008: No Memory Leak Prevention
 
 **Severity:** 🟠 HIGH
-**Location:** `src/utils/circuitBreaker.ts:32, src/workflows/modelSelector.ts:34`
+**Location:** `src/utils/reliability/circuitBreaker.ts:32, src/workflows/modelSelector.ts:34`
 **Impact:** Unbounded Map growth, OOM crashes
 
 **Vulnerability:**

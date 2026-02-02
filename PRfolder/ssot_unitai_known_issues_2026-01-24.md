@@ -262,7 +262,7 @@ execSync(`which ${command}`, { stdio: 'ignore' });  // ⚠️ INJECTION RISK
 **Status**: Fixed in commit 414ce75 - added ALLOWED_COMMANDS whitelist + argument validation
 
 **Severity:** 🔴 CRITICAL
-**Location:** `src/utils/commandExecutor.ts:45-60`
+**Location:** `src/utils/cli/commandExecutor.ts:45-60`
 
 **Observation**: `executeCommand()` accepts arbitrary commands and arguments without whitelist validation.
 
@@ -413,7 +413,7 @@ export const AGENT_ROLES = {
 **Status**: Fixed in commit 80d328e (feat/di-lifecycle branch)
 
 **Severity**: 🔴 CRITICAL
-**Location**: `src/utils/permissionManager.ts:146-164`
+**Location**: `src/utils/security/permissionManager.ts:146-164`
 **Observation**: Tests pass but silently fail to record audit entries with "Error: Dependencies not initialized".
 **Context**: Critical for security compliance. Means actions are happening without immutable record.
 **Impact**: Security blindness, compliance failure.
@@ -714,13 +714,13 @@ export const AGENT_ROLES = {
 |----|----------|----------|----------|--------|
 | **SECURITY ISSUES (Audit: 2026-01-24)** |
 | ~~SEC-001~~ | Security | 🔴 CRITICAL | `detectBackends.ts:56-62` | ✅ RESOLVED |
-| ~~SEC-002~~ | Security | 🔴 CRITICAL | `commandExecutor.ts:45-60` | ✅ RESOLVED |
+| ~~SEC-002~~ | Security | 🔴 CRITICAL | `cli/commandExecutor.ts:45-60` | ✅ RESOLVED |
 | ~~SEC-003~~ | Security | 🔴 CRITICAL | Multiple workflows | ✅ RESOLVED |
 | ~~SEC-004~~ | Security | 🟠 HIGH | `aiExecutor.ts:120-135` | ✅ RESOLVED |
 | ~~SEC-005~~ | Security | 🟠 HIGH | `aiExecutor.ts` (all) | ✅ RESOLVED |
 | ~~SEC-006~~ | Security | 🟡 MEDIUM | `aiExecutor.ts`, `server.ts` | ✅ RESOLVED |
 | **OBSERVABILITY (Layer 5 Audit)** |
-| ~~OBS-001~~ | Audit | 🔴 CRITICAL | `permissionManager.ts` | ✅ RESOLVED |
+| ~~OBS-001~~ | Audit | 🔴 CRITICAL | `security/permissionManager.ts` | ✅ RESOLVED |
 | ~~OBS-002~~ | Cache | 🟠 HIGH | `cache.ts` | ✅ RESOLVED |
 | ~~OBS-003~~ | Error | 🟡 MEDIUM | `overthinker.workflow.ts` | ✅ RESOLVED |
 | ~~OBS-004~~ | File I/O | 🟡 MEDIUM | `overthinker.workflow.ts` | ✅ RESOLVED |
@@ -730,9 +730,9 @@ export const AGENT_ROLES = {
 | ~~TEST-FLAKY-001~~ | Testing | 🟠 HIGH | `cache.test.ts` | ✅ RESOLVED (Sprint 1) |
 | ~~OBS-LEAK-001~~ | Resources | 🟠 HIGH | `structuredLogger.ts` | ✅ RESOLVED (Sprint 1) |
 | ARCH-DI-001 | Architecture | 🟡 MEDIUM | `dependencies.ts` | 🔶 OPEN |
-| ~~REL-RACE-001~~ | Reliability | 🟡 MEDIUM | `circuitBreaker.ts` | ✅ RESOLVED (Sprint 2) |
+| ~~REL-RACE-001~~ | Reliability | 🟡 MEDIUM | `reliability/circuitBreaker.ts` | ✅ RESOLVED (Sprint 2) |
 | ~~REL-VULN-001~~ | Security | 🟡 MEDIUM | `overthinker.workflow.ts` | ✅ RESOLVED (Sprint 2) |
-| REL-PARSE-001 | Reliability | 🟡 MEDIUM | `gitHelper.ts` | 🔶 OPEN |
+| REL-PARSE-001 | Reliability | 🟡 MEDIUM | `cli/gitHelper.ts` | 🔶 OPEN |
 | ~~OBS-RACE-002~~ | Concurrency | 🟡 MEDIUM | `cache.ts` | ✅ RESOLVED (Sprint 2) |
 | TEST-TYPE-001 | Testing | 🟡 MEDIUM | `metrics.test.ts` | 🔶 OPEN |
 | TEST-INCON-001 | Testing | 🟡 MEDIUM | `metrics.test.ts` | 🔶 OPEN |
@@ -755,7 +755,7 @@ export const AGENT_ROLES = {
 | **LIFECYCLE** |
 | ~~LCY-001~~ | Lifecycle | Medium | `server.ts` | ✅ RESOLVED |
 | LCY-002 | Lifecycle | Low | `modelSelector.ts:91` | 🔶 OPEN |
-| ~~LCY-003~~ | Lifecycle | Low | `circuitBreaker.ts` | ✅ RESOLVED |
+| ~~LCY-003~~ | Lifecycle | Low | `reliability/circuitBreaker.ts` | ✅ RESOLVED |
 | **CODE ORGANIZATION** |
 | ORG-001 | Organization | Low | `constants.ts`, `aiExecutor.ts` | 🔶 OPEN |
 | ORG-002 | Organization | Low | `constants.ts:127-148` | 🔶 OPEN |

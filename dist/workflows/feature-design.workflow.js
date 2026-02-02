@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AgentFactory } from "../agents/index.js";
 import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./utils.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./modelSelector.js";
 import { getDependencies } from '../dependencies.js';
@@ -74,7 +74,7 @@ export async function executeFeatureDesign(params, onProgress) {
         const archTask = createTaskCharacteristics('architecture');
         archTask.requiresArchitecturalThinking = true;
         const { circuitBreaker } = getDependencies();
-        const archBackend = selectOptimalBackend(archTask, circuitBreaker);
+        const archBackend = await selectOptimalBackend(archTask, circuitBreaker);
         const architect = AgentFactory.createArchitect();
         const architectResult = await architect.execute({
             task: `Design the architecture for the following feature:\n\n${featureDescription}`,
@@ -113,7 +113,7 @@ export async function executeFeatureDesign(params, onProgress) {
         const { circuitBreaker } = getDependencies();
         const implTask = createTaskCharacteristics('implementation');
         implTask.requiresCodeGeneration = true;
-        const implBackend = selectOptimalBackend(implTask, circuitBreaker);
+        const implBackend = await selectOptimalBackend(implTask, circuitBreaker);
         const implementer = AgentFactory.createImplementer();
         let implementerResult = await implementer.execute({
             task: featureDescription,
@@ -176,7 +176,7 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
         const { circuitBreaker } = getDependencies();
         const testTask = createTaskCharacteristics('testing');
         testTask.requiresSpeed = true; // Testing usually benefits from speed
-        const testBackend = selectOptimalBackend(testTask, circuitBreaker);
+        const testBackend = await selectOptimalBackend(testTask, circuitBreaker);
         const tester = AgentFactory.createTester();
         const testerResult = await tester.execute({
             targetCode: `// Feature: ${featureDescription}\n// Files: ${targetFiles.join(", ")}`,

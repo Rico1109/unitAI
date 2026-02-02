@@ -15,7 +15,7 @@ import {
   FileOperations,
   PermissionManager,
   createPermissionManager
-} from '../../src/utils/permissionManager.js';
+} from '../../src/utils/security/permissionManager.js';
 import { initializeDependencies, closeDependencies } from '../../src/dependencies.js';
 
 describe('PermissionManager', () => {

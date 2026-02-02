@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { UnifiedTool } from "./registry.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 declare const droidSchema: z.ZodObject<{
     prompt: z.ZodString;
     auto: z.ZodDefault<z.ZodEnum<["low", "medium", "high"]>>;

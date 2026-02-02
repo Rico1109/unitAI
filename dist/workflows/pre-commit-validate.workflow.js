@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
 import { selectOptimalBackend, createTaskCharacteristics } from './modelSelector.js';
 import { getDependencies } from '../dependencies.js';
-import { getStagedDiff } from '../utils/gitHelper.js';
+import { getStagedDiff } from '../utils/cli/gitHelper.js';
 import { formatWorkflowOutput } from './utils.js';
 import { logAudit } from '../utils/auditTrail.js';
 import { estimateFileTokens } from '../utils/tokenEstimator.js';
@@ -65,7 +65,7 @@ Produci un piano strutturato con:
     const { circuitBreaker } = getDependencies();
     const task = createTaskCharacteristics('implementation');
     task.requiresCodeGeneration = true;
-    const backend = selectOptimalBackend(task, circuitBreaker);
+    const backend = await selectOptimalBackend(task, circuitBreaker);
     return executeAIClient({
         backend,
         prompt,
@@ -109,7 +109,7 @@ Format as JSON:
     const task = createTaskCharacteristics('security');
     task.domain = 'security';
     const { circuitBreaker } = getDependencies();
-    const backend = selectOptimalBackend(task, circuitBreaker);
+    const backend = await selectOptimalBackend(task, circuitBreaker);
     return await executeAIClient({
         backend,
         prompt
@@ -147,7 +147,7 @@ Respond with JSON:
 }`;
     const task = createTaskCharacteristics('review');
     const { circuitBreaker } = getDependencies();
-    const backend = selectOptimalBackend(task, circuitBreaker);
+    const backend = await selectOptimalBackend(task, circuitBreaker);
     return await executeAIClient({
         backend,
         prompt
@@ -182,7 +182,7 @@ Respond with JSON:
     const task = createTaskCharacteristics('architecture');
     task.requiresArchitecturalThinking = true;
     const { circuitBreaker } = getDependencies();
-    const backend = selectOptimalBackend(task, circuitBreaker);
+    const backend = await selectOptimalBackend(task, circuitBreaker);
     return await executeAIClient({
         backend,
         prompt

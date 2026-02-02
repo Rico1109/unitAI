@@ -1,5 +1,5 @@
 import { executeAIClient } from "../utils/aiExecutor.js";
-import { createPermissionManager, getDefaultAutonomyLevel } from "../utils/permissionManager.js";
+import { createPermissionManager, getDefaultAutonomyLevel } from "../utils/security/permissionManager.js";
 /**
  * Esegue un'analisi AI con un backend specifico
  */
