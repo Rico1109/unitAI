@@ -9,39 +9,42 @@ import { AuditTrail } from '../../../src/utils/auditTrail.js';
 import { TokenSavingsMetrics } from '../../../src/utils/tokenEstimator.js';
 import { createTestDependencies } from '../../utils/testDependencies.js';
 import type Database from 'better-sqlite3';
+import type { AsyncDatabase } from '../../../src/lib/async-db.js';
 
 describe('ActivityAnalytics', () => {
   let analytics: ActivityAnalytics;
   let testDeps: {
-    activityDb: Database.Database;
-    auditDb: Database.Database;
+    activityDb: AsyncDatabase;
+    auditDb: AsyncDatabase;
     tokenDb: Database.Database;
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create in-memory test databases
     testDeps = createTestDependencies();
 
     // Create dependencies
     const repo = new ActivityRepository(testDeps.activityDb);
+    await repo.initializeSchema();
     const audit = new AuditTrail(testDeps.auditDb);
+    await audit.initializeSchema();
     const tokens = new TokenSavingsMetrics(testDeps.tokenDb);
 
     // Create analytics instance with injected dependencies
     analytics = new ActivityAnalytics(repo, audit, tokens);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Cleanup in-memory databases
     analytics.close();
-    testDeps.activityDb.close();
-    testDeps.auditDb.close();
+    await testDeps.activityDb.closeAsync();
+    await testDeps.auditDb.closeAsync();
     testDeps.tokenDb.close();
   });
 
   describe('recordActivity', () => {
-    it('should record a tool invocation activity', () => {
-      const activityId = analytics.recordActivity({
+    it('should record a tool invocation activity', async () => {
+      const activityId = await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'ask-gemini',
         success: true,
@@ -52,8 +55,8 @@ describe('ActivityAnalytics', () => {
       expect(activityId).toMatch(/^activity_/);
     });
 
-    it('should record a workflow execution activity', () => {
-      const activityId = analytics.recordActivity({
+    it('should record a workflow execution activity', async () => {
+      const activityId = await analytics.recordActivity({
         activityType: 'workflow_execution',
         workflowName: 'bug-hunt',
         success: true,
@@ -64,8 +67,8 @@ describe('ActivityAnalytics', () => {
       expect(activityId).toMatch(/^activity_/);
     });
 
-    it('should record a failed activity with error message', () => {
-      const activityId = analytics.recordActivity({
+    it('should record a failed activity with error message', async () => {
+      const activityId = await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'ask-qwen',
         success: false,
@@ -78,9 +81,9 @@ describe('ActivityAnalytics', () => {
   });
 
   describe('queryActivities', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Add test data
-      analytics.recordActivity({
+      await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'ask-gemini',
         success: true,
@@ -88,7 +91,7 @@ describe('ActivityAnalytics', () => {
         metadata: {}
       });
 
-      analytics.recordActivity({
+      await analytics.recordActivity({
         activityType: 'workflow_execution',
         workflowName: 'bug-hunt',
         success: true,
@@ -97,13 +100,13 @@ describe('ActivityAnalytics', () => {
       });
     });
 
-    it('should query all activities', () => {
-      const activities = analytics.queryActivities();
+    it('should query all activities', async () => {
+      const activities = await analytics.queryActivities();
       expect(activities.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('should filter by activity type', () => {
-      const activities = analytics.queryActivities({
+    it('should filter by activity type', async () => {
+      const activities = await analytics.queryActivities({
         activityType: 'tool_invocation'
       });
 
@@ -111,8 +114,8 @@ describe('ActivityAnalytics', () => {
       expect(activities.every(a => a.activityType === 'tool_invocation')).toBe(true);
     });
 
-    it('should filter by tool name', () => {
-      const activities = analytics.queryActivities({
+    it('should filter by tool name', async () => {
+      const activities = await analytics.queryActivities({
         toolName: 'ask-gemini'
       });
 
@@ -120,15 +123,15 @@ describe('ActivityAnalytics', () => {
       expect(activities.every(a => a.toolName === 'ask-gemini')).toBe(true);
     });
 
-    it('should filter by success status', () => {
-      analytics.recordActivity({
+    it('should filter by success status', async () => {
+      await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'test-tool',
         success: false,
         metadata: {}
       });
 
-      const failedActivities = analytics.queryActivities({
+      const failedActivities = await analytics.queryActivities({
         success: false
       });
 
@@ -136,17 +139,17 @@ describe('ActivityAnalytics', () => {
       expect(failedActivities.every(a => !a.success)).toBe(true);
     });
 
-    it('should limit results', () => {
-      const activities = analytics.queryActivities({ limit: 1 });
+    it('should limit results', async () => {
+      const activities = await analytics.queryActivities({ limit: 1 });
       expect(activities.length).toBe(1);
     });
   });
 
   describe('getActivitySummary', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Add varied test data
       for (let i = 0; i < 5; i++) {
-        analytics.recordActivity({
+        await analytics.recordActivity({
           activityType: 'tool_invocation',
           toolName: 'ask-gemini',
           success: true,
@@ -156,7 +159,7 @@ describe('ActivityAnalytics', () => {
       }
 
       for (let i = 0; i < 3; i++) {
-        analytics.recordActivity({
+        await analytics.recordActivity({
           activityType: 'workflow_execution',
           workflowName: 'bug-hunt',
           success: i < 2, // 2 successful, 1 failed
@@ -166,8 +169,8 @@ describe('ActivityAnalytics', () => {
       }
     });
 
-    it('should generate activity summary', () => {
-      const summary = analytics.getActivitySummary(7);
+    it('should generate activity summary', async () => {
+      const summary = await analytics.getActivitySummary(7);
 
       expect(summary).toBeDefined();
       expect(summary.period).toBe('Last 7 days');
@@ -175,44 +178,44 @@ describe('ActivityAnalytics', () => {
       expect(summary.workflowExecutions).toBeGreaterThanOrEqual(3);
     });
 
-    it('should calculate success rate', () => {
-      const summary = analytics.getActivitySummary(7);
+    it('should calculate success rate', async () => {
+      const summary = await analytics.getActivitySummary(7);
       expect(summary.successRate).toBeGreaterThan(0);
       expect(summary.successRate).toBeLessThanOrEqual(1);
     });
 
-    it('should include top tools', () => {
-      const summary = analytics.getActivitySummary(7);
+    it('should include top tools', async () => {
+      const summary = await analytics.getActivitySummary(7);
       expect(summary.topTools.length).toBeGreaterThan(0);
-      
+
       const geminiTool = summary.topTools.find(t => t.toolName === 'ask-gemini');
       expect(geminiTool).toBeDefined();
       expect(geminiTool?.invocations).toBeGreaterThanOrEqual(5);
     });
 
-    it('should include top workflows', () => {
-      const summary = analytics.getActivitySummary(7);
+    it('should include top workflows', async () => {
+      const summary = await analytics.getActivitySummary(7);
       expect(summary.topWorkflows.length).toBeGreaterThan(0);
-      
+
       const bugHuntWorkflow = summary.topWorkflows.find(w => w.workflowName === 'bug-hunt');
       expect(bugHuntWorkflow).toBeDefined();
       expect(bugHuntWorkflow?.executions).toBeGreaterThanOrEqual(3);
     });
 
-    it('should include activity patterns', () => {
-      const summary = analytics.getActivitySummary(7);
-      
+    it('should include activity patterns', async () => {
+      const summary = await analytics.getActivitySummary(7);
+
       expect(summary.activityByHour).toBeDefined();
       expect(summary.activityByHour.length).toBe(24); // All hours
-      
+
       expect(summary.activityByDay).toBeDefined();
       expect(summary.activityByDay.length).toBeGreaterThan(0);
     });
   });
 
   describe('getToolStats', () => {
-    beforeEach(() => {
-      analytics.recordActivity({
+    beforeEach(async () => {
+      await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'test-tool',
         success: true,
@@ -220,7 +223,7 @@ describe('ActivityAnalytics', () => {
         metadata: {}
       });
 
-      analytics.recordActivity({
+      await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'test-tool',
         success: false,
@@ -229,8 +232,8 @@ describe('ActivityAnalytics', () => {
       });
     });
 
-    it('should return tool statistics', () => {
-      const stats = analytics.getToolStats('test-tool', 7);
+    it('should return tool statistics', async () => {
+      const stats = await analytics.getToolStats('test-tool', 7);
 
       expect(stats).toBeDefined();
       expect(stats?.toolName).toBe('test-tool');
@@ -239,15 +242,15 @@ describe('ActivityAnalytics', () => {
       expect(stats?.avgResponseTime).toBeDefined();
     });
 
-    it('should return null for non-existent tool', () => {
-      const stats = analytics.getToolStats('non-existent-tool', 7);
+    it('should return null for non-existent tool', async () => {
+      const stats = await analytics.getToolStats('non-existent-tool', 7);
       expect(stats).toBeNull();
     });
   });
 
   describe('getWorkflowStats', () => {
-    beforeEach(() => {
-      analytics.recordActivity({
+    beforeEach(async () => {
+      await analytics.recordActivity({
         activityType: 'workflow_execution',
         workflowName: 'test-workflow',
         success: true,
@@ -255,7 +258,7 @@ describe('ActivityAnalytics', () => {
         metadata: {}
       });
 
-      analytics.recordActivity({
+      await analytics.recordActivity({
         activityType: 'workflow_execution',
         workflowName: 'test-workflow',
         success: true,
@@ -264,8 +267,8 @@ describe('ActivityAnalytics', () => {
       });
     });
 
-    it('should return workflow statistics', () => {
-      const stats = analytics.getWorkflowStats('test-workflow', 7);
+    it('should return workflow statistics', async () => {
+      const stats = await analytics.getWorkflowStats('test-workflow', 7);
 
       expect(stats).toBeDefined();
       expect(stats?.workflowName).toBe('test-workflow');
@@ -275,16 +278,16 @@ describe('ActivityAnalytics', () => {
       expect(stats?.avgDuration).toBeDefined();
     });
 
-    it('should return null for non-existent workflow', () => {
-      const stats = analytics.getWorkflowStats('non-existent-workflow', 7);
+    it('should return null for non-existent workflow', async () => {
+      const stats = await analytics.getWorkflowStats('non-existent-workflow', 7);
       expect(stats).toBeNull();
     });
   });
 
   describe('getRecentActivities', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       for (let i = 0; i < 10; i++) {
-        analytics.recordActivity({
+        await analytics.recordActivity({
           activityType: 'tool_invocation',
           toolName: `tool-${i}`,
           success: true,
@@ -293,14 +296,14 @@ describe('ActivityAnalytics', () => {
       }
     });
 
-    it('should return recent activities', () => {
-      const activities = analytics.getRecentActivities(5);
+    it('should return recent activities', async () => {
+      const activities = await analytics.getRecentActivities(5);
       expect(activities.length).toBe(5);
     });
 
-    it('should return activities in descending order', () => {
-      const activities = analytics.getRecentActivities(10);
-      
+    it('should return activities in descending order', async () => {
+      const activities = await analytics.getRecentActivities(10);
+
       for (let i = 0; i < activities.length - 1; i++) {
         expect(activities[i].timestamp.getTime()).toBeGreaterThanOrEqual(
           activities[i + 1].timestamp.getTime()
@@ -310,13 +313,13 @@ describe('ActivityAnalytics', () => {
   });
 
   describe('cleanup', () => {
-    it('should remove old activities', () => {
+    it('should remove old activities', async () => {
       vi.useFakeTimers();
       const now = new Date('2026-01-25T10:00:00Z');
       vi.setSystemTime(now);
 
       // Record an activity at current time
-      analytics.recordActivity({
+      await analytics.recordActivity({
         activityType: 'tool_invocation',
         toolName: 'test-tool',
         success: true,
@@ -327,11 +330,11 @@ describe('ActivityAnalytics', () => {
       vi.setSystemTime(new Date('2026-02-04T10:00:00Z'));
 
       // Cleanup activities older than 7 days (should remove our activity)
-      const removed = analytics.cleanup(7);
+      const removed = await analytics.cleanup(7);
       expect(removed).toBeGreaterThanOrEqual(1);
-      
+
       // Check that activities were removed
-      const activities = analytics.queryActivities();
+      const activities = await analytics.queryActivities();
       expect(activities.length).toBe(0);
 
       vi.useRealTimers();

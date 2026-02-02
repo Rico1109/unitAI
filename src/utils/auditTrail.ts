@@ -128,7 +128,7 @@ export class AuditTrail {
    * Query audit entries
    */
   async query(filters: AuditQueryFilters = {}): Promise<AuditEntry[]> {
-    let sql = 'SELECT * FROM audit_entries WHERE 1=1;';
+    let sql = 'SELECT * FROM audit_entries WHERE 1=1';
     const params: any[] = [];
 
     if (filters.workflowName) {
