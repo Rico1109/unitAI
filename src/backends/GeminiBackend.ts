@@ -57,7 +57,8 @@ export class GeminiBackend implements IBackendExecutor {
       supportsFiles: false, // Gemini CLI currently takes prompt as arg, doesn't seem to have direct file attachment flag in this wrapper version
       supportsStreaming: true, // onProgress is supported
       supportsSandbox: true,
-      supportsJSON: false
+      supportsJSON: false,
+      fileMode: 'none' as const
     };
   }
 }

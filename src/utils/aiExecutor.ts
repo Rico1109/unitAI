@@ -8,6 +8,7 @@ import { BackendRegistry } from "../backends/BackendRegistry.js";
 import { BackendExecutionOptions } from "../backends/types.js";
 import { getDependencies } from "../dependencies.js";
 import { selectFallbackBackend } from "../workflows/modelSelector.js";
+import { validateFilePaths } from "./security/pathValidator.js";
 
 /**
  * Options for executing AI CLI commands
@@ -34,6 +35,62 @@ export interface RetryConfig {
   maxRetries: number;
   currentRetry: number;
   triedBackends: string[];
+}
+
+/**
+ * Transform options for a target backend based on its capabilities.
+ * Handles semantic differences between backends (e.g., how files are passed).
+ * @internal Exported for testing
+ */
+export function transformOptionsForBackend(
+  options: AIExecutionOptions,
+  targetBackend: string
+): AIExecutionOptions {
+  const registry = BackendRegistry.getInstance();
+  const executor = registry.getBackend(targetBackend);
+
+  if (!executor) {
+    // Can't transform without executor info, return as-is
+    return { ...options, backend: targetBackend };
+  }
+
+  const capabilities = executor.getCapabilities();
+  const { attachments = [], prompt, ...rest } = options;
+
+  // If target backend doesn't support files via CLI flag but has attachments,
+  // we need to handle them based on fileMode
+  if (attachments.length > 0) {
+    if (capabilities.fileMode === 'embed-in-prompt') {
+      // SECURITY: Validate paths before embedding in prompt
+      const validatedPaths = validateFilePaths(attachments);
+      // Embed file references in prompt, clear attachments
+      const fileList = validatedPaths.join(', ');
+      const transformedPrompt = `[Files to analyze: ${fileList}]\n\n${prompt}`;
+      logger.debug(`Transformed attachments to embedded prompt for backend ${targetBackend}`);
+      return {
+        ...rest,
+        prompt: transformedPrompt,
+        attachments: [], // Clear attachments since they're now in prompt
+        backend: targetBackend
+      };
+    } else if (capabilities.fileMode === 'none') {
+      // SECURITY: Validate paths before embedding in prompt
+      const validatedPaths = validateFilePaths(attachments);
+      // Backend doesn't support files at all, embed in prompt as best effort
+      const fileList = validatedPaths.join(', ');
+      const transformedPrompt = `[Files to analyze: ${fileList}]\n\n${prompt}`;
+      logger.warn(`Backend ${targetBackend} doesn't support files, embedding in prompt as fallback`);
+      return {
+        ...rest,
+        prompt: transformedPrompt,
+        attachments: [], // Clear attachments
+        backend: targetBackend
+      };
+    }
+    // fileMode === 'cli-flag': pass attachments as-is (backend handles via --file)
+  }
+
+  return { ...options, backend: targetBackend };
 }
 
 /**
@@ -74,10 +131,12 @@ export async function executeAIClient(
 
     if (config.currentRetry < config.maxRetries) {
       const fallback = await selectFallbackBackend(backend, circuitBreaker, config.triedBackends);
+      const transformedOptions = transformOptionsForBackend(options, fallback);
 
       logger.info(`Trying fallback backend: ${fallback}`);
+      // Pass transformed options to avoid re-transformation on subsequent fallbacks
       return executeAIClient(
-        { ...options, backend: fallback },
+        transformedOptions,
         { ...config, currentRetry: config.currentRetry + 1 }
       );
     }
@@ -121,10 +180,12 @@ export async function executeAIClient(
     // Retry with fallback if we haven't exhausted retries
     if (config.currentRetry < config.maxRetries) {
       const fallback = await selectFallbackBackend(backend, circuitBreaker, config.triedBackends);
+      const transformedOptions = transformOptionsForBackend(options, fallback);
 
       logger.info(`Retrying with fallback backend: ${fallback} (attempt ${config.currentRetry + 1}/${config.maxRetries})`);
+      // Pass transformed options to avoid re-transformation on subsequent fallbacks
       return executeAIClient(
-        { ...options, backend: fallback },
+        transformedOptions,
         { ...config, currentRetry: config.currentRetry + 1 }
       );
     }

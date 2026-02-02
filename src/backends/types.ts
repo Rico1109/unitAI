@@ -43,5 +43,12 @@ export interface IBackendExecutor {
     supportsStreaming: boolean;
     supportsSandbox: boolean;
     supportsJSON: boolean;
+    /**
+     * How attachments/files should be passed to this backend:
+     * - 'cli-flag': Files passed via --file CLI flag (e.g., Cursor, Gemini)
+     * - 'embed-in-prompt': Files should be embedded as references in prompt text (e.g., Droid)
+     * - 'none': Backend doesn't support file attachments
+     */
+    fileMode: 'cli-flag' | 'embed-in-prompt' | 'none';
   };
 }

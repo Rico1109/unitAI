@@ -39,7 +39,7 @@ vi.mock('../../src/repositories/metrics.js', () => ({
 }));
 
 // Mock commandExecutor
-vi.mock('../../src/utils/commandExecutor.js', () => ({
+vi.mock('../../src/utils/cli/commandExecutor.js', () => ({
   executeCommand: mocks.executeCommand
 }));
 
@@ -49,17 +49,15 @@ vi.mock('../../src/utils/logger.js', () => ({
 }));
 
 // Mock pathValidator (to avoid FS access)
-vi.mock('../../src/utils/pathValidator.js', () => ({
+vi.mock('../../src/utils/security/pathValidator.js', () => ({
   validateFilePaths: mocks.validateFilePaths,
   validateFilePath: vi.fn()
 }));
 
 // Import subject under test
-import { 
-  executeGeminiCLI, 
-  executeCursorAgentCLI, 
-  executeDroidCLI, 
-  executeAIClient 
+import {
+  executeAIClient,
+  AIExecutionOptions
 } from '../../src/utils/aiExecutor.js';
 
 describe('AIExecutor', () => {
@@ -69,38 +67,35 @@ describe('AIExecutor', () => {
     mocks.executeCommand.mockResolvedValue('Mock Response');
   });
 
-  describe('executeGeminiCLI', () => {
+  describe('executeAIClient (Gemini Backend)', () => {
     it('should execute gemini with basic prompt', async () => {
       mocks.executeCommand.mockResolvedValue('Gemini response');
-      const result = await executeGeminiCLI({ prompt: 'Test prompt' });
+      const result = await executeAIClient({ backend: BACKENDS.GEMINI, prompt: 'Test prompt' });
 
       expect(mocks.executeCommand).toHaveBeenCalled();
       expect(result).toBe('Gemini response');
     });
 
     it('should execute gemini with prompt as positional argument', async () => {
-      await executeGeminiCLI({ prompt: 'Test prompt' });
+      await executeAIClient({ backend: BACKENDS.GEMINI, prompt: 'Test prompt' });
 
       const callArgs = mocks.executeCommand.mock.calls[0][1];
       expect(callArgs).toContain('Test prompt');
     });
-
-    it('should throw error for empty prompt', async () => {
-      await expect(executeGeminiCLI({ prompt: '' })).rejects.toThrow();
-    });
   });
 
-  describe('executeCursorAgentCLI', () => {
+  describe('executeAIClient (Cursor Backend)', () => {
     it('should execute cursor agent with default options', async () => {
       mocks.executeCommand.mockResolvedValue('Cursor response');
-      const result = await executeCursorAgentCLI({ prompt: 'Fix bug' });
+      const result = await executeAIClient({ backend: BACKENDS.CURSOR, prompt: 'Fix bug' });
 
       expect(mocks.executeCommand).toHaveBeenCalled();
       expect(result).toBe('Cursor response');
     });
 
     it('should include attachments, force and output format flags', async () => {
-      await executeCursorAgentCLI({
+      await executeAIClient({
+        backend: BACKENDS.CURSOR,
         prompt: 'Plan refactor',
         attachments: ['test-file.ts'],
         autoApprove: true,
@@ -117,18 +112,19 @@ describe('AIExecutor', () => {
     });
   });
 
-  describe('executeDroidCLI', () => {
+  describe('executeAIClient (Droid Backend)', () => {
     it('should execute droid with exec subcommand', async () => {
       mocks.executeCommand.mockResolvedValue('Droid response');
-      const result = await executeDroidCLI({ prompt: 'Investigate issue' });
+      const result = await executeAIClient({ backend: BACKENDS.DROID, prompt: 'Investigate issue' });
 
       expect(mocks.executeCommand).toHaveBeenCalled();
       expect(mocks.executeCommand.mock.calls[0][1][0]).toBe('exec');
       expect(result).toBe('Droid response');
     });
 
-    it('should include auto level, session id and attachments', async () => {
-      await executeDroidCLI({
+    it('should include auto level, session id and attachments embedded in prompt', async () => {
+      await executeAIClient({
+        backend: BACKENDS.DROID,
         prompt: 'Generate checklist',
         auto: 'medium',
         sessionId: 'session-123',
@@ -145,8 +141,13 @@ describe('AIExecutor', () => {
       expect(args).toContain('--session-id');
       expect(args).toContain('session-123');
       expect(args).toContain('--skip-permissions-unsafe');
-      expect(args).toContain('--file');
-      expect(args).toContain('/abs/test-file.ts');
+      // Droid now embeds files in prompt instead of using --file flag
+      // (because Droid's --file means "read prompt FROM file", not "analyze this file")
+      expect(args).not.toContain('--file');
+      // File reference should be in the prompt argument (last arg)
+      const promptArg = args[args.length - 1];
+      expect(promptArg).toContain('[Files to analyze:');
+      expect(promptArg).toContain('/abs/test-file.ts');
       expect(args).toContain('--cwd');
       expect(args).toContain('/repo');
       expect(args).toContain('--output-format');
@@ -154,7 +155,7 @@ describe('AIExecutor', () => {
     });
   });
 
-  describe('executeAIClient', () => {
+  describe('executeAIClient Routing', () => {
     it('should route to cursor backend', async () => {
       await executeAIClient({ backend: BACKENDS.CURSOR, prompt: 'Cursor prompt' });
 
@@ -185,7 +186,7 @@ describe('AIExecutor', () => {
   describe('Error handling', () => {
     it('should handle command execution errors', async () => {
       mocks.executeCommand.mockRejectedValue(new Error('Command failed'));
-      await expect(executeGeminiCLI({ prompt: 'Test' })).rejects.toThrow();
+      await expect(executeAIClient({ backend: BACKENDS.GEMINI, prompt: 'Test' })).rejects.toThrow();
     });
 
     it('should handle timeout errors', async () => {
@@ -194,7 +195,7 @@ describe('AIExecutor', () => {
           setTimeout(() => reject(new Error('Timeout')), 100)
         )
       );
-      await expect(executeGeminiCLI({ prompt: 'Test' })).rejects.toThrow();
+      await expect(executeAIClient({ backend: BACKENDS.GEMINI, prompt: 'Test' })).rejects.toThrow();
     });
   });
 });

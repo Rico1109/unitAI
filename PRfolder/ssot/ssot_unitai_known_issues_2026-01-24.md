@@ -1,23 +1,17 @@
 ---
 title: unitAI Known Issues Registry
-version: 3.4.0
-updated: 2026-02-02T15:30:00+01:00
+version: 3.7.0
+updated: 2026-02-02T21:00:00+01:00
 scope: unitai-issues
 category: ssot
 subcategory: issues
 domain: [di, testing, configuration, lifecycle, organization, security, observability, reliability, backends]
 changelog:
+  - 3.7.0 (2026-02-02): ARCH-BACKEND-001 core bug FULLY RESOLVED - Options tracking fix + 22 new tests (13 unit + 9 integration). Status upgraded to MOSTLY RESOLVED (security gaps tracked separately).
+  - 3.6.0 (2026-02-02): ARCH-BACKEND-001 marked PARTIALLY RESOLVED with critical testing gaps + new security issues discovered via triangulated review (SEC-007, SEC-008, SEC-009, SEC-010, SEC-011).
+  - 3.5.0 (2026-02-02): RESOLVED ARCH-BACKEND-001 (Backend Parameter Semantic Mismatch) via capability declaration system and option transformation.
   - 3.4.0 (2026-02-02): Added CRITICAL ARCH-BACKEND-001 (Backend Parameter Semantic Mismatch in Fallback System). Fixed TEST-ASYNC-002 dependencies test (6 tests now passing). Fixed REL-LOOP-001 infinite fallback loop.
   - 3.3.0 (2026-02-02): Added TEST-ASYNC-001 (circuitBreaker.test.ts failures), TEST-ASYNC-002 (dependencies.test.ts failures), TEST-ENV-001 (gitHelper.test.ts environment-specific failures). Async migration complete for auditTrail and activityAnalytics tests.
-  - 3.2.0 (2026-01-28): Added MISC-001 (Roadmap Deviation - Backend Plugins).
-  - 3.1.0 (2026-01-26): Sprint 1+2 complete - 6 issues RESOLVED (OBS-PERF-001, TEST-FLAKY-001, OBS-LEAK-001, REL-RACE-001, REL-VULN-001, OBS-RACE-002).
-  - 3.0.0 (2026-01-26): Add 14 new findings from quality report (3 HIGH, 8 MEDIUM, 3 LOW).
-  - 2.5.0 (2026-01-26): Mark OBS-004, OBS-005, Logger Init, Type Safety as RESOLVED.
-  - 2.4.0 (2026-01-26): Mark OBS-001, OBS-002, OBS-003 as RESOLVED.
-  - 2.3.0 (2026-01-24): Mark SEC-001 to SEC-006 as RESOLVED.
-  - 2.2.0 (2026-01-24): Mark LCY-001, LCY-003 as RESOLVED.
-  - 2.0.0 (2026-01-24): Add security audit findings (13 new issues).
-  - 1.0.0 (2026-01-24): Initial registry from architecture analysis.
 ---
 
 # unitAI Known Issues Registry
@@ -32,14 +26,88 @@ This document catalogs observed facts about the unitAI codebase that may require
 
 ## 🔴 CRITICAL ISSUES
 
-### ARCH-BACKEND-001: Backend Parameter Semantic Mismatch in Fallback System
+### ARCH-BACKEND-001: Backend Parameter Semantic Mismatch in Fallback System ⚠️ MOSTLY RESOLVED
 
 **Severity**: 🔴 CRITICAL
-**Status**: 🔶 OPEN
+**Status**: ⚠️ MOSTLY RESOLVED (Security gaps remain)
 **Discovered**: 2026-02-02
-**Location**: `src/utils/aiExecutor.ts:75-88, 129-141` + All backend implementations
+**Partially Resolved**: 2026-02-02
+**Fully Resolved (Core Bug)**: 2026-02-02 (Options tracking fix + tests)
+**Location**: `src/utils/aiExecutor.ts` + All backend implementations
 
-#### Root Cause
+---
+
+#### What Was Fixed (Complete Implementation)
+
+**Phase 1: Options Tracking Bug Fix** ✅
+- **File**: `src/utils/aiExecutor.ts`
+- **Change**: Both fallback paths (lines 134 and 183) now pass transformed options to recursive calls
+- **Impact**: Eliminates double-transformation and incorrect option propagation
+
+```typescript
+// Fixed: Uses TRANSFORMED options
+const transformedOptions = transformOptionsForBackend(options, fallback);
+return executeAIClient(transformedOptions, { ...config, currentRetry: config.currentRetry + 1 });
+```
+
+**Phase 2: Path Validation for Security** ✅
+- **File**: `src/utils/aiExecutor.ts`
+- **Change**: Added `validateFilePaths()` calls before embedding paths in prompts (lines 65 and 78)
+- **Impact**: Ensures security validation during fallback transformation
+
+**Phase 3: Comprehensive Unit Tests** ✅
+- **New File**: `tests/unit/transformOptionsForBackend.test.ts` (13 tests)
+- **Coverage**:
+  - cli-flag → embed-in-prompt transformation
+  - cli-flag → none transformation
+  - cli-flag → cli-flag (no transformation)
+  - Empty/undefined attachments handling
+  - Unknown backend handling
+  - Path validation security
+  - Idempotency (already transformed options)
+  - Option preservation during transformation
+
+**Phase 4: Integration Tests** ✅
+- **New File**: `tests/integration/fallback-with-attachments.test.ts` (9 tests)
+- **Coverage**:
+  - Single fallback with attachments
+  - Double fallback - verifying no duplicate `[Files to analyze:]` prefix
+  - Circuit breaker triggered fallback with attachments
+  - Edge cases (empty attachments, undefined attachments, option preservation)
+
+**Test Results**: All 34 tests pass ✅
+- `tests/unit/aiExecutor.test.ts`: 12 passed
+- `tests/unit/transformOptionsForBackend.test.ts`: 13 passed
+- `tests/integration/fallback-with-attachments.test.ts`: 9 passed
+
+---
+
+#### Remaining Issues (Non-Core)
+
+**🟠 MEDIUM: Duplicate Logic**
+- Duplicate file handling between `transformOptionsForBackend()` and `DroidBackend.execute()`
+- **Status**: Defensive programming - not a bug, but creates maintenance burden
+- **Recommendation**: Remove from DroidBackend after validation period
+
+**🟠 HIGH: Hardcoded Backend Selection (CFG-003)**
+- Workflows hardcode `[GEMINI, CURSOR]` instead of using wizard-configured backends
+- **Status**: Separate issue, tracked as CFG-003
+- **Impact**: Qwen and other backends never executed in workflows
+- **Solution**: See `PRfolder/plans/prompt_dynamic_backend_selection_2026-02-02.md`
+
+**🔴 CRITICAL: Security Issues (Separate Tracking)**
+- SEC-007 through SEC-011 tracked separately below
+- Not part of ARCH-BACKEND-001 core bug
+- Require RBAC implementation
+
+**Security (Priority: 🔥 CRITICAL):**
+1. Implement RBAC (Role-Based Access Control) system
+2. Replace `trustedSource` boolean with granular permission checks
+3. Add authorization checks for `skipPermissionsUnsafe` and `autoApprove` flags
+4. Implement runtime input validation for all BackendExecutionOptions
+5. Add security context with userId, roles, sessionToken
+
+#### Original Root Cause
 
 The fallback/retry system in `aiExecutor.ts` passes execution options from a failed backend to its fallback backend **without semantic translation**. Different backends interpret the same parameter names with fundamentally different semantics, causing failures.
 
@@ -55,129 +123,6 @@ When Cursor fails and fallback retries with Droid using Cursor's options:
 // ❌ ERROR: "Cannot specify both a file (-f/--file) and a prompt argument"
 ```
 
-#### Execution Flow That Triggers Bug
-
-1. **Workflow calls backend** (e.g., triangulated-review with Cursor):
-   ```typescript
-   runParallelAnalysis([BACKENDS.CURSOR], ...,
-     (backend) => backend === BACKENDS.CURSOR
-       ? { attachments: files, prompt: "..." }  // Cursor-specific semantics
-       : {})
-   ```
-
-2. **Cursor fails** (not installed: `spawn cursor-agent ENOENT`)
-
-3. **Fallback system activates** (`aiExecutor.ts:75-88`):
-   ```typescript
-   const fallback = await selectFallbackBackend(backend, circuitBreaker, triedBackends);
-   return executeAIClient(
-     { ...options, backend: fallback },  // ❌ Passes Cursor's options to Droid!
-     { ...config, currentRetry: config.currentRetry + 1 }
-   );
-   ```
-
-4. **Droid receives Cursor-semantics options**: `{ attachments: ['file.ts'], prompt: "..." }`
-
-5. **DroidBackend misinterprets** (`src/backends/DroidBackend.ts:56-64`):
-   ```typescript
-   if (attachments.length > 0) {
-     args.push('--file', file);  // Droid thinks: "read prompt FROM this file"
-   }
-   args.push(prompt);  // Also adds prompt as positional arg
-   // Result: droid exec --file code.ts "analyze..." ❌ INVALID
-   ```
-
-#### Why This Wasn't Caught Before
-
-This bug emerged **due to recent refactoring**:
-- **Before**: Limited or no fallback between backends, OR backends weren't called with `attachments`
-- **After**: Robust fallback system (fixed infinite loop) now correctly retries with different backends
-- **Trigger**: New fallback logic exposes semantic incompatibility between backend interfaces
-
-#### The Universal Problem
-
-**Cannot hardcode backend-specific translations** because:
-1. ✅ **Setup wizard allows dynamic backend selection** - users enable/disable backends at runtime
-2. ✅ **Backends added via plugin system** - new backends can be registered dynamically
-3. ✅ **Fallback order is runtime-determined** - based on circuit breaker state and availability
-4. ❌ **Static mapping breaks**: `if (backend === 'droid') { transform(options) }` doesn't scale
-
-#### Impact
-
-**Production Severity**:
-- 🔴 **Workflow failures**: Any workflow using fallback with attachments fails
-- 🔴 **Silent failures**: Circuit breakers open, reducing backend availability
-- 🔴 **User confusion**: Error messages reference wrong backend (shows Droid error when Cursor failed)
-- 🟡 **Degraded reliability**: Fallback system exists but unusable for cross-backend scenarios
-
-**Affected Workflows**:
-- `triangulated-review` (uses Cursor → Droid fallback with files)
-- `parallel-review` (same issue)
-- `bug-hunt` (when using file attachments)
-- Any workflow passing backend-specific options
-
-#### Required Solution Properties
-
-**Must be**:
-1. ✅ **Universal**: Works for any backend, including future plugins
-2. ✅ **Runtime-adaptive**: No hardcoded backend mappings
-3. ✅ **Semantic-aware**: Understands parameter meaning, not just names
-4. ✅ **Backward-compatible**: Doesn't break existing backend implementations
-5. ✅ **Maintainable**: Adding new backends doesn't require modifying fallback logic
-
-#### Potential Solution Approaches
-
-**Option A: Backend Capability Declaration** (Recommended)
-```typescript
-interface BackendCapabilities {
-  supportsFiles: boolean;           // Can analyze files
-  fileMode: 'attachment' | 'prompt'; // How files are passed
-  requiresExplicitFiles: boolean;    // Needs --file flags vs mentions in prompt
-}
-```
-
-Each backend declares HOW it wants parameters:
-```typescript
-class DroidBackend {
-  getCapabilities() {
-    return {
-      supportsFiles: true,
-      fileMode: 'prompt',  // Files should be IN prompt text
-      requiresExplicitFiles: false
-    };
-  }
-}
-```
-
-Fallback system transforms options based on target backend's capabilities:
-```typescript
-function transformOptionsForBackend(options, targetBackend) {
-  const caps = targetBackend.getCapabilities();
-  if (options.attachments && caps.fileMode === 'prompt') {
-    return {
-      ...options,
-      attachments: [],  // Remove attachments
-      prompt: `Files: ${options.attachments.join(', ')}\n\n${options.prompt}`
-    };
-  }
-  return options;
-}
-```
-
-**Option B: Backend-Specific Adapters**
-Create adapter pattern for each backend that normalizes to/from common interface.
-
-**Option C: Remove Fallback Cross-Contamination**
-Fallback only retries with "safe" options (prompt only), discards backend-specific params.
-
-#### Next Steps
-
-1. **Design capability declaration system** for backends
-2. **Implement option transformation** in `aiExecutor.ts` fallback logic
-3. **Update all backends** to declare capabilities
-4. **Test with dynamic backend selection** (setup wizard scenarios)
-5. **Add integration tests** for cross-backend fallback scenarios
-
 #### Related Code Locations
 
 - `src/utils/aiExecutor.ts:75-88, 129-141` - Fallback execution (passes raw options)
@@ -185,6 +130,132 @@ Fallback only retries with "safe" options (prompt only), discards backend-specif
 - `src/backends/CursorBackend.ts:44-52` - Cursor file handling
 - `src/workflows/triangulated-review.workflow.ts:46-53` - Uses backend-specific options
 - `src/workflows/modelSelector.ts:236-266` - Fallback selection logic
+
+---
+
+## 🔴 CRITICAL SECURITY ISSUES (Discovered 2026-02-02)
+
+### SEC-007: `trustedSource` Flag Bypasses All Security Controls
+
+**Severity**: 🔴 CRITICAL
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-02 (Triangulated Review)
+**Location**: `src/backends/DroidBackend.ts`, `src/backends/CursorBackend.ts`
+
+**Observation**: The `trustedSource` flag allows disabling ALL prompt sanitization (blocking, redaction) without any verification.
+
+```typescript
+const { sanitized: sanitizedDroid } = sanitizePrompt(effectivePrompt, {
+  skipBlocking: trustedSource,    // ⚠️ Anyone can set=true
+  skipRedaction: trustedSource    // ⚠️ Disables redaction!
+});
+```
+
+**Impact**:
+- Prompt injection attacks possible
+- Dangerous commands can be injected
+- Complete bypass of security controls
+
+**Remediation**: Replace with RBAC-based permission checks
+
+---
+
+### SEC-008: `skipPermissionsUnsafe` Without Authorization
+
+**Severity**: 🔴 CRITICAL
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-02 (Triangulated Review)
+**Location**: `src/backends/DroidBackend.ts`
+
+**Observation**: The `skipPermissionsUnsafe` flag can be set by anyone without permission checks.
+
+```typescript
+if (skipPermissionsUnsafe) {  // ⚠️ Anyone can pass=true
+  args.push(CLI.FLAGS.DROID.SKIP_PERMISSIONS);
+}
+```
+
+**Impact**:
+- Execute destructive commands without confirmation
+- Bypass permission system entirely
+- Audit trail not recorded
+
+**Remediation**: Add role-based permission checks before using this flag
+
+---
+
+### SEC-009: `autoApprove` Flag Without Authorization
+
+**Severity**: 🔴 CRITICAL
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-02 (Triangulated Review)
+**Location**: `src/backends/CursorBackend.ts`
+
+**Observation**: The `autoApprove` flag allows modifications without confirmation, without permission checks.
+
+```typescript
+if (autoApprove) {  // ⚠️ Allows modifications without review
+  args.push(CLI.FLAGS.CURSOR.FORCE);
+}
+```
+
+**Impact**:
+- Destructive operations without review
+- Unauthorized git operations
+- Risk of data loss
+
+**Remediation**: Add authorization checks before using this flag
+
+---
+
+### SEC-010: No Authentication/Authorization
+
+**Severity**: 🟠 HIGH
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-02 (Triangulated Review)
+**Location**: All backend executors
+
+**Observation**: No verification of caller identity or permissions when executing commands.
+
+```typescript
+async execute(options: BackendExecutionOptions): Promise<string> {
+  // No verification of who is calling or their permissions
+}
+```
+
+**Impact**:
+- Anyone can execute any command
+- No audit trail of who did what
+- Unable to enforce role-based access
+
+**Remediation**: Implement SecurityContext with userId, roles, sessionToken
+
+---
+
+### SEC-011: No Runtime Input Validation
+
+**Severity**: 🟠 HIGH
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-02 (Triangulated Review)
+**Location**: `src/backends/types.ts` - BackendExecutionOptions interface
+
+**Observation**: Options are only type-checked at compile time, not validated at runtime.
+
+```typescript
+export interface BackendExecutionOptions {
+  model?: string;           // ⚠️ Any string accepted
+  outputFormat?: "text" | "json"; // ⚠️ Type-only, no runtime check
+  autonomyLevel?: string;   // ⚠️ Any value accepted
+  auto?: "low" | "medium" | "high"; // ⚠️ Type-only check
+}
+```
+
+**Impact**:
+- Invalid values can pass through
+- Potential security vulnerabilities
+- Unpredictable behavior
+
+**Remediation**: Add runtime validators for all option values
 
 ---
 
@@ -1019,6 +1090,14 @@ expected true to be false // isGitRepository check
 | ~~SEC-004~~ | Security | 🟠 HIGH | `aiExecutor.ts:120-135` | ✅ RESOLVED |
 | ~~SEC-005~~ | Security | 🟠 HIGH | `aiExecutor.ts` (all) | ✅ RESOLVED |
 | ~~SEC-006~~ | Security | 🟡 MEDIUM | `aiExecutor.ts`, `server.ts` | ✅ RESOLVED |
+| **SECURITY ISSUES (Audit: 2026-02-02)** |
+| SEC-007 | Security | 🔴 CRITICAL | `DroidBackend.ts`, `CursorBackend.ts` | 🔶 OPEN |
+| SEC-008 | Security | 🔴 CRITICAL | `DroidBackend.ts` | 🔶 OPEN |
+| SEC-009 | Security | 🔴 CRITICAL | `CursorBackend.ts` | 🔶 OPEN |
+| SEC-010 | Security | 🟠 HIGH | All backend executors | 🔶 OPEN |
+| SEC-011 | Security | 🟠 HIGH | `backends/types.ts` | 🔶 OPEN |
+| **BACKEND & RELIABILITY** |
+| ARCH-BACKEND-001 | Backend | 🔴 CRITICAL | `aiExecutor.ts` + all backends | ⚠️ MOSTLY RESOLVED |
 | **OBSERVABILITY (Layer 5 Audit)** |
 | ~~OBS-001~~ | Audit | 🔴 CRITICAL | `security/permissionManager.ts` | ✅ RESOLVED |
 | ~~OBS-002~~ | Cache | 🟠 HIGH | `cache.ts` | ✅ RESOLVED |
@@ -1065,9 +1144,9 @@ expected true to be false // isGitRepository check
 | TEST-ASYNC-002 | Testing | 🟡 MEDIUM | `dependencies.test.ts` | 🔶 OPEN |
 | TEST-ENV-001 | Testing | 🟢 LOW | `gitHelper.test.ts` | 🔶 OPEN |
 
-**Progress**: 25/42 issues resolved (60%)
-**Security Status**: ✅ **ALL CRITICAL ISSUES RESOLVED**
-**Production Ready**: ✅ **YES** - All HIGH priority issues resolved. Ready for HIGH load deployment.
+**Progress**: 27/48 issues resolved (56%)
+**Security Status**: 🔴 **NEW CRITICAL SECURITY ISSUES DISCOVERED** (5 new issues, 3 CRITICAL)
+**Production Ready**: ⚠️ **CONDITIONAL** - ARCH-BACKEND-001 core bug fully resolved (22 new tests passing). Security vulnerabilities (SEC-007-011) remain.
 **Async Migration Status**: ✅ **Core tests passing** (auditTrail: 32/32, activityAnalytics: 20/20, aiExecutor: 12/12) - Secondary test failures documented above.
 
 ---
