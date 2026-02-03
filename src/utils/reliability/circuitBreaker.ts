@@ -228,17 +228,17 @@ export class CircuitBreaker {
 
     /**
      * Transition backend to a new state
+     * Note: Must be called within a withStateLock context
      */
     private async transitionTo(backend: string, newState: CircuitState): Promise<void> {
-        await this.withStateLock(() => {
-            const state = this.getState(backend);
-            state.state = newState;
-            if (newState === CircuitState.CLOSED) {
-                state.failures = 0;
-            }
-            this.states.set(backend, state);
-            this.saveState(backend); // Persist state transition
-        });
+        // No lock here - caller must hold lock
+        const state = this.getState(backend);
+        state.state = newState;
+        if (newState === CircuitState.CLOSED) {
+            state.failures = 0;
+        }
+        this.states.set(backend, state);
+        this.saveState(backend); // Persist state transition
     }
 
     /**

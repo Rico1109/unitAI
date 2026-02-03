@@ -7,6 +7,7 @@
 
 import { BACKENDS } from '../utils/aiExecutor.js';
 import { logAudit } from '../utils/auditTrail.js';
+import { getFallbackPriority } from '../config/config.js';
 
 export interface TaskCharacteristics {
   complexity: 'low' | 'medium' | 'high';
@@ -238,13 +239,8 @@ export async function selectFallbackBackend(
   circuitBreaker: CircuitBreaker,
   triedBackends: string[] = []
 ): Promise<string> {
-  // Priority order for fallbacks (most reliable first)
-  const fallbackOrder = [
-    BACKENDS.GEMINI,
-    BACKENDS.QWEN,
-    BACKENDS.DROID,
-    BACKENDS.ROVODEV
-  ];
+  // Priority order for fallbacks (wizard-configured or defaults)
+  const fallbackOrder = getFallbackPriority();
 
   // Filter out the failed backend, already-tried backends, and unavailable ones
   const availabilityChecks = await Promise.all(

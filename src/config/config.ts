@@ -8,6 +8,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { BACKENDS } from '../constants.js';
+import type { CircuitBreaker } from '../utils/reliability/circuitBreaker.js';
 
 export interface UnitAIConfig {
     version: string;
@@ -22,6 +24,21 @@ export interface UnitAIConfig {
     };
     createdAt: string;
     lastModified: string;
+
+    // Dynamic backend selection fields (CFG-003)
+    fallbackPriority?: string[];           // Override default fallback order
+
+    workflowDefaults?: {
+        [workflowName: string]: {
+            backends?: string[];           // Backends for this workflow
+            maxParallel?: number;          // Max parallel execution
+        };
+    };
+
+    preferences?: {
+        preferAvailable: boolean;          // Skip unavailable in fallback
+        retryWithFallback: boolean;        // Enable automatic fallback
+    };
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.unitai');
@@ -117,6 +134,9 @@ export function createConfig(options: {
         implementer: string;
         tester: string;
     };
+    fallbackPriority?: string[];
+    workflowDefaults?: UnitAIConfig['workflowDefaults'];
+    preferences?: UnitAIConfig['preferences'];
 }): UnitAIConfig {
     return {
         version: CONFIG_VERSION,
@@ -125,6 +145,9 @@ export function createConfig(options: {
             detected: options.detectedBackends
         },
         roles: options.roles,
+        fallbackPriority: options.fallbackPriority,
+        workflowDefaults: options.workflowDefaults,
+        preferences: options.preferences,
         createdAt: new Date().toISOString(),
         lastModified: new Date().toISOString()
     };
@@ -168,4 +191,76 @@ export function getConfigAge(): string | null {
     if (diffDays === 0) return 'today';
     if (diffDays === 1) return '1 day old';
     return `${diffDays} days old`;
+}
+
+// ============================================================================
+// Dynamic Backend Selection Helpers (CFG-003)
+// ============================================================================
+
+/**
+ * Get the default fallback order for backends
+ * This is the hardcoded default when no config is set
+ */
+export function getDefaultFallbackOrder(): string[] {
+    return [
+        BACKENDS.GEMINI,
+        BACKENDS.QWEN,
+        BACKENDS.DROID,
+        BACKENDS.ROVODEV
+    ];
+}
+
+/**
+ * Get the configured fallback priority, or default if not configured
+ * Used by modelSelector.selectFallbackBackend()
+ */
+export function getFallbackPriority(): string[] {
+    const config = loadConfig();
+    if (config?.fallbackPriority && config.fallbackPriority.length > 0) {
+        return config.fallbackPriority;
+    }
+    return getDefaultFallbackOrder();
+}
+
+/**
+ * Get backends configured for a specific workflow
+ * Falls back to provided defaults if not configured
+ */
+export function getWorkflowBackends(workflowName: string, defaults: string[]): string[] {
+    const config = loadConfig();
+    const workflowConfig = config?.workflowDefaults?.[workflowName];
+    if (workflowConfig?.backends && workflowConfig.backends.length > 0) {
+        return workflowConfig.backends;
+    }
+    return defaults;
+}
+
+/**
+ * Filter backends to only those available (circuit breaker not open)
+ * Respects preferences.preferAvailable setting
+ */
+export async function filterAvailableBackends(
+    backends: string[],
+    cb: CircuitBreaker
+): Promise<string[]> {
+    const config = loadConfig();
+    const preferAvailable = config?.preferences?.preferAvailable ?? true;
+
+    if (!preferAvailable) {
+        return backends;
+    }
+
+    const availabilityChecks = await Promise.all(
+        backends.map(async (b) => ({
+            backend: b,
+            available: await cb.isAvailable(b)
+        }))
+    );
+
+    const available = availabilityChecks
+        .filter((check) => check.available)
+        .map((check) => check.backend);
+
+    // Return available backends, or all backends if none available
+    return available.length > 0 ? available : backends;
 }

@@ -13,7 +13,7 @@ import Spinner from 'ink-spinner';
 import { detectBackends, BackendInfo, BACKEND_METADATA } from '../config/detectBackends.js';
 import { loadConfig, saveConfig, createConfig, getConfigPath, UnitAIConfig } from '../config/config.js';
 
-type WizardStep = 'detecting' | 'existing' | 'select-backends' | 'assign-roles' | 'testing' | 'complete';
+type WizardStep = 'detecting' | 'existing' | 'select-backends' | 'assign-roles' | 'fallback-priority' | 'testing' | 'complete';
 type Role = 'architect' | 'implementer' | 'tester';
 
 interface RoleAssignment {
@@ -187,6 +187,72 @@ const AssignRolesStep = ({
     );
 };
 
+const FallbackPriorityStep = ({
+    enabledBackends,
+    fallbackPriority,
+    setFallbackPriority,
+    onContinue
+}: {
+    enabledBackends: string[];
+    fallbackPriority: string[];
+    setFallbackPriority: (p: string[]) => void;
+    onContinue: () => void;
+}) => {
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+    const handleSelect = (item: { value: string | number }) => {
+        if (item.value === 'continue') {
+            onContinue();
+        } else if (item.value === 'move-up' && selectedIndex !== null && selectedIndex > 0) {
+            const newOrder = [...fallbackPriority];
+            [newOrder[selectedIndex - 1], newOrder[selectedIndex]] =
+                [newOrder[selectedIndex], newOrder[selectedIndex - 1]];
+            setFallbackPriority(newOrder);
+            setSelectedIndex(selectedIndex - 1);
+        } else if (item.value === 'move-down' && selectedIndex !== null && selectedIndex < fallbackPriority.length - 1) {
+            const newOrder = [...fallbackPriority];
+            [newOrder[selectedIndex], newOrder[selectedIndex + 1]] =
+                [newOrder[selectedIndex + 1], newOrder[selectedIndex]];
+            setFallbackPriority(newOrder);
+            setSelectedIndex(selectedIndex + 1);
+        } else if (item.value === 'cancel') {
+            setSelectedIndex(null);
+        } else if (typeof item.value === 'number') {
+            setSelectedIndex(item.value);
+        }
+    };
+
+    // Build items list with current order + actions
+    const items: { label: string; value: string | number }[] = [
+        ...fallbackPriority.map((backend, idx) => ({
+            label: `${idx + 1}. ${backend}${idx === selectedIndex ? ' ◀' : ''}`,
+            value: idx
+        })),
+        ...(selectedIndex !== null ? [
+            { label: '  ↑ Move Up', value: 'move-up' as const },
+            { label: '  ↓ Move Down', value: 'move-down' as const },
+            { label: '  ✕ Cancel', value: 'cancel' as const },
+        ] : []),
+        { label: '→ Continue', value: 'continue' as const }
+    ];
+
+    return (
+        <Box flexDirection="column" padding={1}>
+            <Text bold color="cyan">🤖 unitAI Setup Wizard</Text>
+            <Text dimColor>Step 4: Configure Fallback Priority</Text>
+            <Box marginTop={1} flexDirection="column">
+                <Text dimColor>When a backend fails, these will be tried in order:</Text>
+                <Box marginTop={1}>
+                    <SelectInput items={items} onSelect={handleSelect} />
+                </Box>
+                <Box marginTop={1}>
+                    <Text dimColor>Select a backend to reorder, then use Move Up/Down</Text>
+                </Box>
+            </Box>
+        </Box>
+    );
+};
+
 const TestingStep = ({
     enabledBackends,
     onComplete
@@ -217,7 +283,7 @@ const TestingStep = ({
     return (
         <Box flexDirection="column" padding={1}>
             <Text bold color="cyan">🤖 unitAI Setup Wizard</Text>
-            <Text dimColor>Step 4: Testing connections...</Text>
+            <Text dimColor>Step 5: Testing connections...</Text>
             <Box marginTop={1} flexDirection="column">
                 {enabled.map(backend => (
                     <Box key={backend}>
@@ -238,17 +304,20 @@ const TestingStep = ({
 const CompleteStep = ({
     enabledBackends,
     backends,
-    roles
+    roles,
+    fallbackPriority
 }: {
     enabledBackends: Set<string>,
     backends: BackendInfo[],
-    roles: RoleAssignment
+    roles: RoleAssignment,
+    fallbackPriority: string[]
 }) => {
     useEffect(() => {
         const config = createConfig({
             enabledBackends: Array.from(enabledBackends),
             detectedBackends: backends.filter(b => b.available).map(b => b.name),
-            roles
+            roles,
+            fallbackPriority
         });
         saveConfig(config);
     }, []);
@@ -287,6 +356,7 @@ function SetupWizard() {
     const [enabledBackends, setEnabledBackends] = useState<Set<string>>(new Set());
     const [roles, setRoles] = useState<RoleAssignment>({ architect: '', implementer: '', tester: '' });
     const [existingConfig, setExistingConfig] = useState<UnitAIConfig | null>(null);
+    const [fallbackPriority, setFallbackPriority] = useState<string[]>([]);
 
     useEffect(() => {
         const detected = detectBackends();
@@ -365,7 +435,22 @@ function SetupWizard() {
                     enabledBackends={enabledBackends}
                     roles={roles}
                     setRoles={setRoles}
-                    onComplete={() => setStep('testing')}
+                    onComplete={() => {
+                        // Initialize fallback priority with enabled backends in detection order
+                        const enabled = Array.from(enabledBackends);
+                        setFallbackPriority(enabled);
+                        setStep('fallback-priority');
+                    }}
+                />
+            );
+
+        case 'fallback-priority':
+            return (
+                <FallbackPriorityStep
+                    enabledBackends={Array.from(enabledBackends)}
+                    fallbackPriority={fallbackPriority}
+                    setFallbackPriority={setFallbackPriority}
+                    onContinue={() => setStep('testing')}
                 />
             );
 
@@ -383,6 +468,7 @@ function SetupWizard() {
                     enabledBackends={enabledBackends}
                     backends={backends}
                     roles={roles}
+                    fallbackPriority={fallbackPriority}
                 />
             );
 
