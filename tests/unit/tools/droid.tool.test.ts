@@ -17,9 +17,9 @@ describe("droidTool", () => {
   it("should pass auto level and attachments to executeAIClient", async () => {
     const mockExecuteAIClient = vi.fn().mockResolvedValue("droid-ok");
 
-    vi.doMock("../../../src/utils/aiExecutor.js", async () => {
+    vi.doMock("../../../src/services/ai-executor.js", async () => {
       const actual = await vi.importActual<any>(
-        "../../../src/utils/aiExecutor.js"
+        "../../../src/services/ai-executor.js"
       );
       return {
         ...actual,

@@ -3,4 +3,4 @@
  */
 
 export * from './config.js';
-export * from './detectBackends.js';
+export * from './backend-detector.js';

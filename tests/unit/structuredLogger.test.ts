@@ -11,7 +11,7 @@ import {
   LogLevel,
   LogCategory,
   generateWorkflowId
-} from '../../src/utils/structuredLogger.js';
+} from '../../src/services/structured-logger.js';
 
 describe('StructuredLogger', () => {
   const testLogDir = path.join(process.cwd(), 'test-logs');

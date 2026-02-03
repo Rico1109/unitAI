@@ -7,7 +7,7 @@
  * - Test coverage analysis
  * - Fast iteration on test cases
  *
- * @module agents/TesterAgent
+ * @module agents/tester-agent
  */
 
 import { BaseAgent } from "./base/BaseAgent.js";

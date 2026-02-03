@@ -7,7 +7,7 @@
  */
 
 import { spawnSync } from 'child_process';
-import { detectBackends, BACKEND_METADATA } from '../config/detectBackends.js';
+import { detectBackends, BACKEND_METADATA } from '../config/backend-detector.js';
 import { loadConfig, getConfigPath, getConfigAge } from '../config/config.js';
 
 interface BackendStatus {

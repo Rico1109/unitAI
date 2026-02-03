@@ -7,7 +7,7 @@
  * @module permissionManager
  */
 
-import { getAuditTrail } from '../auditTrail.js';
+import { getAuditTrail } from '../../services/audit-trail.js';
 
 /**
  * Permission levels for autonomous operations

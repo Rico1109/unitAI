@@ -10,9 +10,9 @@
  * @module agents/index
  */
 
-import { ArchitectAgent } from "./ArchitectAgent.js";
-import { ImplementerAgent } from "./ImplementerAgent.js";
-import { TesterAgent } from "./TesterAgent.js";
+import { ArchitectAgent } from "./architect-agent.js";
+import { ImplementerAgent } from "./implementer-agent.js";
+import { TesterAgent } from "./tester-agent.js";
 import type { IAgent } from "../domain/agents/types.js";
 import { BACKENDS } from "../constants.js";
 import { getRoleBackend } from "../config/index.js";
@@ -206,8 +206,8 @@ export class AgentFactory {
 }
 
 // Re-export types and classes for convenience
-export { ArchitectAgent } from "./ArchitectAgent.js";
-export { ImplementerAgent } from "./ImplementerAgent.js";
-export { TesterAgent } from "./TesterAgent.js";
+export { ArchitectAgent } from "./architect-agent.js";
+export { ImplementerAgent } from "./implementer-agent.js";
+export { TesterAgent } from "./tester-agent.js";
 export { BaseAgent } from "./base/BaseAgent.js";
 export * from "../domain/agents/types.js";

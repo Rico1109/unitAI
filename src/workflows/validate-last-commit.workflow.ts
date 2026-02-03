@@ -7,7 +7,7 @@ import type {
   ProgressCallback,
   ValidateLastCommitParams
 } from "../domain/workflows/types.js";
-import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
+import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
 
 /**

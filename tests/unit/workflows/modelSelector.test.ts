@@ -10,8 +10,8 @@ import {
   getBackendStats,
   createTaskCharacteristics,
   type TaskCharacteristics
-} from '../../../src/workflows/modelSelector.js';
-import { BACKENDS } from '../../../src/utils/aiExecutor.js';
+} from '../../../src/workflows/model-selector.js';
+import { BACKENDS } from '../../../src/services/ai-executor.js';
 import { CircuitBreaker } from '../../../src/utils/reliability/circuitBreaker.js';
 import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 

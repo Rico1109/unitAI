@@ -27,8 +27,8 @@ vi.mock('fs', async () => {
 });
 
 // Mock AI Executor
-vi.mock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual<any>('../../src/utils/aiExecutor.js');
+vi.mock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual<any>('../../src/services/ai-executor.js');
     console.log('Mocking aiExecutor.js, actual keys:', Object.keys(actual));
     return {
         ...actual,

@@ -7,7 +7,7 @@
  * - Refactoring strategies
  * - Long-term impact analysis
  *
- * @module agents/ArchitectAgent
+ * @module agents/architect-agent
  */
 
 import { BaseAgent } from "./base/BaseAgent.js";

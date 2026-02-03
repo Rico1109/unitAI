@@ -17,8 +17,8 @@ export function mockQwenResponse(response: string, shouldFail = false): void {
   const responseRef = response;
   const shouldFailRef = shouldFail;
 
-  vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js');
+  vi.doMock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual('../../src/services/ai-executor.js');
     return {
       ...actual,
       executeQwenCLI: vi.fn().mockResolvedValue(shouldFailRef ? '' : responseRef)
@@ -33,8 +33,8 @@ export function mockGeminiResponse(response: string, shouldFail = false): void {
   const responseRef = response;
   const shouldFailRef = shouldFail;
 
-  vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js');
+  vi.doMock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual('../../src/services/ai-executor.js');
     return {
       ...actual,
       executeGeminiCLI: vi.fn().mockResolvedValue(shouldFailRef ? '' : responseRef)
@@ -49,8 +49,8 @@ export function mockRovodevResponse(response: string, shouldFail = false): void 
   const responseRef = response;
   const shouldFailRef = shouldFail;
 
-  vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js');
+  vi.doMock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual('../../src/services/ai-executor.js');
     return {
       ...actual,
       executeRovodevCLI: vi.fn().mockResolvedValue(shouldFailRef ? '' : responseRef)
@@ -64,8 +64,8 @@ export function mockRovodevResponse(response: string, shouldFail = false): void 
 export function mockAIExecutor(responses: Record<string, string>): void {
   const responsesRef = { ...responses };
 
-  vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
+  vi.doMock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual('../../src/services/ai-executor.js') as Record<string, unknown>;
     return {
       ...actual,
       // Ensure BACKENDS is always exported
@@ -100,8 +100,8 @@ export function mockAIExecutorWithDelay(responses: Record<string, string>, delay
   const responsesRef = { ...responses };
   const delayMsRef = delayMs;
 
-  vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
+  vi.doMock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual('../../src/services/ai-executor.js') as Record<string, unknown>;
     return {
       ...actual,
       // Ensure BACKENDS is always exported
@@ -129,8 +129,8 @@ export function mockAIExecutorWithFailure(
   const failAfterCallsRef = failAfterCalls;
   let callCount = 0;
 
-  vi.doMock('../../src/utils/aiExecutor.js', async () => {
-    const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
+  vi.doMock('../../src/services/ai-executor.js', async () => {
+    const actual = await vi.importActual('../../src/services/ai-executor.js') as Record<string, unknown>;
     return {
       ...actual,
       // Ensure BACKENDS is always exported

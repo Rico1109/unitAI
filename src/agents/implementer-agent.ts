@@ -9,7 +9,7 @@
  *
  * Future: Will integrate with Serena for surgical edits (Task 2.4)
  *
- * @module agents/ImplementerAgent
+ * @module agents/implementer-agent
  */
 
 import { BaseAgent } from "./base/BaseAgent.js";

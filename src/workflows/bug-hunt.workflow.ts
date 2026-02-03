@@ -7,10 +7,10 @@
 
 import { z } from 'zod';
 import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
-import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
+import { executeAIClient, BACKENDS } from '../services/ai-executor.js';
 import { formatWorkflowOutput } from './utils.js';
-import { selectParallelBackends, createTaskCharacteristics } from './modelSelector.js';
-import { logAudit } from '../utils/auditTrail.js';
+import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
+import { logAudit } from '../services/audit-trail.js';
 import { getDependencies } from '../dependencies.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';

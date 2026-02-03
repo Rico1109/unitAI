@@ -10,7 +10,7 @@ import {
   AuditTrail,
   AuditEntry,
   resetAuditTrail,
-} from '../../src/utils/auditTrail';
+} from '../../src/services/audit-trail';
 import { createTestDependencies } from '../utils/testDependencies.js';
 import type { AsyncDatabase } from '../../src/lib/async-db.js';
 

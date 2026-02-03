@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { BACKENDS, ERROR_MESSAGES } from "../constants.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
+import { executeAIClient } from "../services/ai-executor.js";
 import type { UnifiedTool, ToolExecutionContext } from "./registry.js";
 
 const askQwenSchema = z.object({

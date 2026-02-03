@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
 import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
-import { generateWorkflowId, structuredLogger } from "../utils/structuredLogger.js";
+import { generateWorkflowId, structuredLogger } from "../services/structured-logger.js";
 import type {
   WorkflowDefinition,
   ProgressCallback,
   ParallelReviewParams,
   ReviewFocus
 } from "../domain/workflows/types.js";
-import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
+import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
 
 /**

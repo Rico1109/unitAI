@@ -9,7 +9,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { stat, access } from "fs/promises";
 import { constants } from "fs";
-import { logger } from "./logger.js";
+import { logger } from "../utils/logger.js";
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';

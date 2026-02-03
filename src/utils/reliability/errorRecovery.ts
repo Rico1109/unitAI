@@ -5,7 +5,7 @@
  * for resilient autonomous operations.
  */
 
-import { structuredLogger, LogCategory, LogLevel } from '../structuredLogger.js';
+import { structuredLogger, LogCategory, LogLevel } from '../../services/structured-logger.js';
 
 /**
  * Error types for classification

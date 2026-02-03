@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
+import { executeAIClient, BACKENDS } from "../services/ai-executor.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
 import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "../domain/workflows/types.js";

@@ -11,8 +11,8 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
-import { AuditTrail, AuditEntry, AuditStats, getAuditTrail } from '../utils/auditTrail.js';
-import { TokenSavingsMetrics, TokenSavingsStats } from '../utils/tokenEstimator.js';
+import { AuditTrail, AuditEntry, AuditStats, getAuditTrail } from '../services/audit-trail.js';
+import { TokenSavingsMetrics, TokenSavingsStats } from '../services/token-estimator.js';
 import { logger } from '../utils/logger.js';
 import { ActivityRepository } from '../repositories/activity.js';
 import { getDependencies } from '../dependencies.js';

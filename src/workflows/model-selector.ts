@@ -5,8 +5,8 @@
  * Simpler and more pragmatic than meta-orchestration approaches.
  */
 
-import { BACKENDS } from '../utils/aiExecutor.js';
-import { logAudit } from '../utils/auditTrail.js';
+import { BACKENDS } from '../services/ai-executor.js';
+import { logAudit } from '../services/audit-trail.js';
 import { getFallbackPriority } from '../config/config.js';
 
 export interface TaskCharacteristics {

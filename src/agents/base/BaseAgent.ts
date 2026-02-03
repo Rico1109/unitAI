@@ -7,7 +7,7 @@
  * @module agents/base/BaseAgent
  */
 
-import { executeAIClient } from "../../utils/aiExecutor.js";
+import { executeAIClient } from "../../services/ai-executor.js";
 import { logger } from "../../utils/logger.js";
 import type {
   IAgent,

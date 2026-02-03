@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { getGitRepoInfo, getGitDiff, getDetailedGitStatus, getGitBranches, checkCLIAvailability, isGitRepository, getRecentCommitsWithDiffs, getDateRangeFromCommits } from "../utils/cli/gitHelper.js";
 import { formatWorkflowOutput } from "./utils.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
+import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS, AI_MODELS } from "../constants.js";
 import type { WorkflowDefinition, ProgressCallback, GitCommitInfo } from "../domain/workflows/types.js";
 

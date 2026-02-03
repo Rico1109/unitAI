@@ -1,4 +1,4 @@
-import { executeAIClient } from "../utils/aiExecutor.js";
+import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
 import {
   createPermissionManager,
@@ -12,7 +12,7 @@ import type {
   ReviewFocus,
   BaseWorkflowParams
 } from "../domain/workflows/types.js";
-import type { AIExecutionOptions } from "../utils/aiExecutor.js";
+import type { AIExecutionOptions } from "../services/ai-executor.js";
 
 /**
  * Esegue un'analisi AI con un backend specifico

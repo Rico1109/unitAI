@@ -1,9 +1,9 @@
 import { IBackendExecutor } from "./types.js";
-import { GeminiBackend } from "./GeminiBackend.js";
-import { CursorBackend } from "./CursorBackend.js";
-import { DroidBackend } from "./DroidBackend.js";
-import { QwenBackend } from "./QwenBackend.js";
-import { RovodevBackend } from "./RovodevBackend.js";
+import { GeminiBackend } from "./gemini-backend.js";
+import { CursorBackend } from "./cursor-backend.js";
+import { DroidBackend } from "./droid-backend.js";
+import { QwenBackend } from "./qwen-backend.js";
+import { RovodevBackend } from "./rovodev-backend.js";
 
 export class BackendRegistry {
   private backends = new Map<string, IBackendExecutor>();

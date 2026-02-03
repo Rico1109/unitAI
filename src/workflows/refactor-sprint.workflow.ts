@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { formatWorkflowOutput } from "./utils.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
+import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
 
 const refactorSprintSchema = z.object({

@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { render, Box, Text, useApp, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
 import Spinner from 'ink-spinner';
-import { detectBackends, BackendInfo, BACKEND_METADATA } from '../config/detectBackends.js';
+import { detectBackends, BackendInfo, BACKEND_METADATA } from '../config/backend-detector.js';
 import { loadConfig, saveConfig, createConfig, getConfigPath, UnitAIConfig } from '../config/config.js';
 
 type WizardStep = 'detecting' | 'existing' | 'select-backends' | 'assign-roles' | 'fallback-priority' | 'testing' | 'complete';
@@ -366,7 +366,7 @@ function SetupWizard() {
             setExistingConfig(existing);
             setStep('existing');
         } else {
-            const available = detected.filter(b => b.available).map(b => b.name);
+            const available = detected.filter((b: BackendInfo) => b.available).map((b: BackendInfo) => b.name);
             setEnabledBackends(new Set(available));
             setStep('select-backends');
         }

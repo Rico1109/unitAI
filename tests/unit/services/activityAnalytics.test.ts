@@ -5,8 +5,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActivityAnalytics } from '../../../src/services/activityAnalytics.js';
 import { ActivityRepository } from '../../../src/repositories/activity.js';
-import { AuditTrail } from '../../../src/utils/auditTrail.js';
-import { TokenSavingsMetrics } from '../../../src/utils/tokenEstimator.js';
+import { AuditTrail } from '../../../src/services/audit-trail.js';
+import { TokenSavingsMetrics } from '../../../src/services/token-estimator.js';
 import { createTestDependencies } from '../../utils/testDependencies.js';
 import type Database from 'better-sqlite3';
 import type { AsyncDatabase } from '../../../src/lib/async-db.js';

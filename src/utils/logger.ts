@@ -6,7 +6,7 @@
  *
  * Migration path:
  * - Old code: import { logger } from './utils/logger.js';
- * - New code: import { structuredLogger } from './utils/structuredLogger.js';
+ * - New code: import { structuredLogger } from './services/structured-logger.js';
  *
  * The logger API remains unchanged for backward compatibility.
  */

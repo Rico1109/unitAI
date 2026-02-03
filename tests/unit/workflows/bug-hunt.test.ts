@@ -4,13 +4,13 @@
 
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { bugHuntWorkflow } from '../../../src/workflows/bug-hunt.workflow.js';
-import * as aiExecutor from '../../../src/utils/aiExecutor.js';
-import * as auditTrail from '../../../src/utils/auditTrail.js';
+import * as aiExecutor from '../../../src/services/ai-executor.js';
+import * as auditTrail from '../../../src/services/audit-trail.js';
 import * as fs from 'fs';
 import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
-vi.mock('../../../src/utils/aiExecutor.js');
-vi.mock('../../../src/utils/auditTrail.js');
+vi.mock('../../../src/services/ai-executor.js');
+vi.mock('../../../src/services/audit-trail.js');
 vi.mock('fs');
 
 describe('bug-hunt workflow', () => {

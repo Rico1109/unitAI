@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AI_MODELS, ERROR_MESSAGES, BACKENDS } from "../constants.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
+import { executeAIClient } from "../services/ai-executor.js";
 import type { UnifiedTool, ToolExecutionContext } from "./registry.js";
 import { logger } from "../utils/logger.js";
 

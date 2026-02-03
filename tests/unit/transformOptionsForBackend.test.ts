@@ -24,7 +24,7 @@ vi.mock('../../src/utils/security/pathValidator.js', () => ({
 }));
 
 // Mock BackendRegistry
-vi.mock('../../src/backends/BackendRegistry.js', () => ({
+vi.mock('../../src/backends/backend-registry.js', () => ({
   BackendRegistry: {
     getInstance: () => ({
       getBackend: mocks.getBackend
@@ -33,7 +33,7 @@ vi.mock('../../src/backends/BackendRegistry.js', () => ({
 }));
 
 // Import subject under test
-import { transformOptionsForBackend, AIExecutionOptions } from '../../src/utils/aiExecutor.js';
+import { transformOptionsForBackend, AIExecutionOptions } from '../../src/services/ai-executor.js';
 
 describe('transformOptionsForBackend', () => {
   beforeEach(() => {

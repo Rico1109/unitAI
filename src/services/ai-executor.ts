@@ -2,13 +2,13 @@ import { BACKENDS } from "../constants.js";
 
 // Re-export BACKENDS for convenience
 export { BACKENDS };
-import { executeCommand } from "./cli/commandExecutor.js";
-import { logger } from "./logger.js";
-import { BackendRegistry } from "../backends/BackendRegistry.js";
+import { executeCommand } from "../utils/cli/commandExecutor.js";
+import { logger } from "../utils/logger.js";
+import { BackendRegistry } from "../backends/backend-registry.js";
 import { BackendExecutionOptions } from "../backends/types.js";
 import { getDependencies } from "../dependencies.js";
-import { selectFallbackBackend } from "../workflows/modelSelector.js";
-import { validateFilePaths } from "./security/pathValidator.js";
+import { selectFallbackBackend } from "../workflows/model-selector.js";
+import { validateFilePaths } from "../utils/security/pathValidator.js";
 
 /**
  * Options for executing AI CLI commands

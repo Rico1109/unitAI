@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { TokenSavingsMetrics, getMetricsCollector } from '../../src/utils/tokenEstimator.js';
+import { TokenSavingsMetrics, getMetricsCollector } from '../../src/services/token-estimator.js';
 import { createTestDependencies } from '../utils/testDependencies.js';
 import { initializeDependencies, closeDependencies } from '../../src/dependencies.js';
 import * as fs from 'fs';
@@ -39,7 +39,7 @@ describe('TokenSavingsMetrics', () => {
         source: 'enforcer-hook',
         blockedTool: 'Read',
         recommendedTool: 'serena',
-        target: 'src/utils/tokenEstimator.ts',
+        target: 'src/services/token-estimator.ts',
         estimatedSavings: 120,
         suggestionFollowed: false,
         metadata: { fileType: 'code' }

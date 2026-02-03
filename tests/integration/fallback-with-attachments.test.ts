@@ -62,12 +62,12 @@ vi.mock('../../src/utils/security/pathValidator.js', () => ({
 }));
 
 // Mock modelSelector
-vi.mock('../../src/workflows/modelSelector.js', () => ({
+vi.mock('../../src/workflows/model-selector.js', () => ({
   selectFallbackBackend: mocks.selectFallbackBackend
 }));
 
 // Import subject under test
-import { executeAIClient, AIExecutionOptions } from '../../src/utils/aiExecutor.js';
+import { executeAIClient, AIExecutionOptions } from '../../src/services/ai-executor.js';
 
 describe('Fallback with Attachments Integration', () => {
   beforeEach(() => {

@@ -2,8 +2,8 @@ import { z } from "zod";
 import { AgentFactory } from "../agents/index.js";
 import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
-import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
-import { selectOptimalBackend, createTaskCharacteristics } from "./modelSelector.js";
+import { executeAIClient, BACKENDS } from "../services/ai-executor.js";
+import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
 import type {
   WorkflowDefinition,

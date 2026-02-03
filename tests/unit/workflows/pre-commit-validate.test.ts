@@ -5,13 +5,13 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { preCommitValidateWorkflow } from '../../../src/workflows/pre-commit-validate.workflow.js';
 import * as gitHelper from '../../../src/utils/gitHelper.js';
-import * as aiExecutor from '../../../src/utils/aiExecutor.js';
-import * as auditTrail from '../../../src/utils/auditTrail.js';
+import * as aiExecutor from '../../../src/services/ai-executor.js';
+import * as auditTrail from '../../../src/services/audit-trail.js';
 import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
 vi.mock('../../../src/utils/gitHelper.js');
-vi.mock('../../../src/utils/aiExecutor.js');
-vi.mock('../../../src/utils/auditTrail.js');
+vi.mock('../../../src/services/ai-executor.js');
+vi.mock('../../../src/services/audit-trail.js');
 
 describe('pre-commit-validate workflow', () => {
   beforeEach(() => {

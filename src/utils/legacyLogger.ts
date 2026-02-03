@@ -6,7 +6,7 @@
  *
  * All logs now go to both console (stderr) AND structured log files.
  */
-import { structuredLogger, LogCategory } from './structuredLogger.js';
+import { structuredLogger, LogCategory } from '../services/structured-logger.js';
 import { LOG_PREFIX } from '../constants.js';
 
 /**

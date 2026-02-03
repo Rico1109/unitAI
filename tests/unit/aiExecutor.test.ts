@@ -58,7 +58,7 @@ vi.mock('../../src/utils/security/pathValidator.js', () => ({
 import {
   executeAIClient,
   AIExecutionOptions
-} from '../../src/utils/aiExecutor.js';
+} from '../../src/services/ai-executor.js';
 
 describe('AIExecutor', () => {
   beforeEach(() => {

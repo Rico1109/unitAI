@@ -11,13 +11,13 @@
 
 import { z } from 'zod';
 import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
-import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
-import { selectOptimalBackend, createTaskCharacteristics } from './modelSelector.js';
+import { executeAIClient, BACKENDS } from '../services/ai-executor.js';
+import { selectOptimalBackend, createTaskCharacteristics } from './model-selector.js';
 import { getDependencies } from '../dependencies.js';
 import { getStagedDiff } from '../utils/cli/gitHelper.js';
 import { formatWorkflowOutput } from './utils.js';
-import { logAudit } from '../utils/auditTrail.js';
-import { estimateFileTokens } from '../utils/tokenEstimator.js';
+import { logAudit } from '../services/audit-trail.js';
+import { estimateFileTokens } from '../services/token-estimator.js';
 import { resolve } from 'path';
 import { logger } from '../utils/logger.js';
 async function estimateDiffTokens(stagedDiff: string): Promise<{ files: string[]; tokens: number; }> {

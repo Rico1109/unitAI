@@ -127,8 +127,8 @@ describe('Workflow Integration Tests', () => {
       const delays = { gemini: 100, rovodev: 100 };
 
       // Mock with delays - include BACKENDS export
-      vi.doMock('../../src/utils/aiExecutor.js', async () => {
-        const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
+      vi.doMock('../../src/services/ai-executor.js', async () => {
+        const actual = await vi.importActual('../../src/services/ai-executor.js') as Record<string, unknown>;
         return {
           ...actual,
           executeAIClient: vi.fn().mockImplementation(async (config: any) => {
@@ -307,7 +307,7 @@ describe('Workflow Integration Tests', () => {
       ]);
 
       let callCount = 0;
-      vi.doMock('../../src/utils/aiExecutor.js', async () => ({
+      vi.doMock('../../src/services/ai-executor.js', async () => ({
         executeAIClient: vi.fn().mockImplementation(async (config: any) => {
           callCount++;
           if (callCount === 1) {
