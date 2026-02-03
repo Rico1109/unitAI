@@ -31,3 +31,8 @@ venv/
 .github/
 .mcp.json
 .cursor/mcp.json
+coverage/
+dist/
+data/audit.sqlite
+.claude/settings.json
+mcp.json.backup
