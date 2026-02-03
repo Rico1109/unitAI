@@ -291,8 +291,9 @@ export class CircuitBreaker {
 
   /**
    * Handle successful execution
+   * @param _backend - Backend name (ignored, kept for legacy API compatibility)
    */
-  private onSuccess(): void {
+  onSuccess(_backend?: string): void {
     this.failureCount = 0;
 
     if (this.state === CircuitState.HALF_OPEN) {
@@ -318,8 +319,10 @@ export class CircuitBreaker {
 
   /**
    * Handle failed execution
+   * @param error - Error or error message (for legacy API compatibility)
    */
-  private onFailure(error: Error): void {
+  onFailure(error: Error | string): void {
+    const err = typeof error === 'string' ? new Error(error) : error;
     this.failureCount++;
     this.lastFailureTime = Date.now();
 
@@ -329,9 +332,9 @@ export class CircuitBreaker {
         'circuit-breaker',
         this.config.name,
         'Circuit OPEN: test failed during HALF_OPEN',
-        { error: error.message }
+        { error: err.message }
       );
-      
+
       this.state = CircuitState.OPEN;
       this.successCount = 0;
     } else if (this.failureCount >= this.config.failureThreshold) {
@@ -340,13 +343,13 @@ export class CircuitBreaker {
         'circuit-breaker',
         this.config.name,
         'Circuit OPEN: failure threshold exceeded',
-        error,
+        err,
         {
           failureCount: this.failureCount,
           failureThreshold: this.config.failureThreshold
         }
       );
-      
+
       this.state = CircuitState.OPEN;
     }
   }
@@ -390,6 +393,32 @@ export class CircuitBreaker {
       successCount: this.successCount,
       lastFailureTime: this.lastFailureTime
     };
+  }
+
+  /**
+   * Check if circuit is available (legacy API compatibility)
+   * @param _backend - Backend name (ignored, kept for compatibility)
+   * @returns true if circuit is not OPEN
+   */
+  isAvailable(_backend?: string): boolean {
+    if (this.state === CircuitState.OPEN) {
+      // Check if we should move to half-open
+      if (Date.now() - this.lastFailureTime >= this.config.timeout) {
+        this.state = CircuitState.HALF_OPEN;
+        this.successCount = 0;
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Shutdown circuit breaker (legacy API compatibility)
+   */
+  shutdown(): void {
+    // No-op for in-memory circuit breaker
+    // Added for compatibility with old DB-backed implementation
   }
 }
 

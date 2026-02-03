@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { BACKENDS } from '../constants.js';
-import type { CircuitBreaker } from '../utils/reliability/circuitBreaker.js';
+import type { CircuitBreaker } from '../utils/reliability/errorRecovery.js';
 
 export interface UnitAIConfig {
     version: string;

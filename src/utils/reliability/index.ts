@@ -5,12 +5,15 @@
  * and error recovery mechanisms.
  */
 
-// Export DB-backed CircuitBreaker as primary
-export { CircuitBreaker, CircuitState } from './circuitBreaker.js';
-
-// Export in-memory CircuitBreaker with different name to avoid conflict
+// Export CircuitBreaker (only errorRecovery.js implementation remains)
 export {
-    CircuitBreaker as InMemoryCircuitBreaker,
-    CircuitState as InMemoryCircuitState,
+    CircuitBreaker,
+    CircuitState,
     CircuitBreakerRegistry
+} from './errorRecovery.js';
+
+// Export error recovery utilities
+export {
+    executeWithRecovery,
+    ErrorType
 } from './errorRecovery.js';

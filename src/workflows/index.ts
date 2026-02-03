@@ -224,3 +224,21 @@ export function getWorkflowSchema(workflowName: string): z.ZodSchema | undefined
   ensureWorkflowsInitialized();
   return workflowSchemas[workflowName as keyof typeof workflowSchemas];
 }
+
+// Re-export workflow execution functions for barrel export pattern
+export { executeParallelReview } from './parallel-review.workflow.js';
+export { executePreCommitValidate } from './pre-commit-validate.workflow.js';
+export { executeInitSession } from './init-session.workflow.js';
+export { executeValidateLastCommit } from './validate-last-commit.workflow.js';
+export { executeFeatureDesign } from './feature-design.workflow.js';
+export { executeBugHunt } from './bug-hunt.workflow.js';
+export { executeTriangulatedReview } from './triangulated-review.workflow.js';
+export { executeAutoRemediation } from './auto-remediation.workflow.js';
+export { executeRefactorSprint } from './refactor-sprint.workflow.js';
+export { executeOverthinker } from './overthinker.workflow.js';
+
+// Re-export workflow definitions
+export { parallelReviewWorkflow, preCommitValidateWorkflow, initSessionWorkflow, validateLastCommitWorkflow, featureDesignWorkflow, bugHuntWorkflow, triangulatedReviewWorkflow, autoRemediationWorkflow, refactorSprintWorkflow, overthinkerWorkflow };
+
+// Re-export utility functions
+export { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from './utils.js';

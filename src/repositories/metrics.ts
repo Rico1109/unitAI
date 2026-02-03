@@ -8,7 +8,7 @@
  *
  * Provides RED metrics: Rate, Error rate, Duration (P50/P95/P99)
  */
-import { AsyncDatabase } from '../lib/async-db.js';
+import { AsyncDatabase } from '../infrastructure/async-db.js';
 import { BaseRepository } from './base.js';
 
 export interface REDMetric {

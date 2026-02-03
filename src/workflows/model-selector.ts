@@ -94,7 +94,7 @@ const backendStats = new BackendStats();
 /**
  * Select optimal backend based on task characteristics
  */
-import type { CircuitBreaker } from '../utils/reliability/circuitBreaker.js';
+import type { CircuitBreaker } from '../utils/reliability/errorRecovery.js';
 
 /**
  * Select optimal backend based on task characteristics

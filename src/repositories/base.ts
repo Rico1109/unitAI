@@ -3,7 +3,7 @@
  *
  * Abstract class for data access layers using AsyncDatabase.
  */
-import { AsyncDatabase } from '../lib/async-db.js';
+import { AsyncDatabase } from '../infrastructure/async-db.js';
 
 export abstract class BaseRepository {
     protected db: AsyncDatabase;

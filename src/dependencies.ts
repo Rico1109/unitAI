@@ -6,9 +6,9 @@
 import Database from 'better-sqlite3'; // Keep for sync needs (CircuitBreaker)
 import path from 'path';
 import fs from 'fs';
-import { AsyncDatabase } from './lib/async-db.js';
+import { AsyncDatabase } from './infrastructure/async-db.js';
 import { logger } from './utils/logger.js';
-import { CircuitBreaker } from './utils/reliability/circuitBreaker.js';
+import { CircuitBreaker } from './utils/reliability/errorRecovery.js';
 import { ActivityRepository } from './repositories/activity.js';
 import { MetricsRepository } from './repositories/metrics.js';
 
@@ -86,9 +86,14 @@ export async function initializeDependencies(): Promise<AppDependencies> {
     const metricsRepo = new MetricsRepository(metricsDb);
     await metricsRepo.initializeSchema();
 
-    // Initialize Circuit Breaker with audit database for state persistence
+    // Initialize Circuit Breaker (in-memory implementation)
     logger.debug("Initializing Circuit Breaker");
-    const circuitBreaker = new CircuitBreaker(3, 5 * 60 * 1000, auditDbSync);
+    const circuitBreaker = new CircuitBreaker({
+        name: 'global',
+        failureThreshold: 3,
+        successThreshold: 1,
+        timeout: 5 * 60 * 1000
+    });
 
     dependencies = {
         activityDb,
