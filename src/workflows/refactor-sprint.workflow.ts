@@ -63,18 +63,18 @@ ${cursorPlan}`
   try {
     droidChecklist = await executeAIClient({
       backend: BACKENDS.DROID,
-      prompt: `Trasforma questo piano di refactoring in una checklist operativa pronta all'esecuzione.
+      prompt: `Transform this refactoring plan into an operational checklist ready for execution.
 
 Scope: ${scope}
 Depth: ${depth}
 
-Piano di riferimento:
+Reference plan:
 ${cursorPlan}
 
-Checklist richiesta:
-- Step dettagliati
-- Comandi/strumenti suggeriti
-- Criteri di completamento`,
+Requested checklist:
+- Detailed steps
+- Suggested commands/tools
+- Completion criteria`,
       auto: depth === "deep" ? "medium" : "low",
       outputFormat: "text"
     });

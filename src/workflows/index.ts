@@ -8,7 +8,7 @@ import type {
   BugHuntParams
 } from "../domain/workflows/types.js";
 
-// Import delle definizioni dei workflow
+// Import workflow definitions
 import { parallelReviewWorkflow } from "./parallel-review.workflow.js";
 import { preCommitValidateWorkflow } from "./pre-commit-validate.workflow.js";
 import { initSessionWorkflow } from "./init-session.workflow.js";
@@ -21,7 +21,7 @@ import { refactorSprintWorkflow } from "./refactor-sprint.workflow.js";
 import { overthinkerWorkflow } from "./overthinker.workflow.js";
 
 /**
- * Registro di tutti i workflow disponibili
+ * Registry of all available workflows
  */
 const workflowRegistry: Record<string, WorkflowDefinition> = {};
 let workflowsInitialized = false;
@@ -51,7 +51,7 @@ export function getWorkflow(name: string): WorkflowDefinition | undefined {
 }
 
 /**
- * Elenca tutti i workflow disponibili
+ * Lists all available workflows
  */
 export function listWorkflows(): string[] {
   ensureWorkflowsInitialized();
@@ -59,7 +59,7 @@ export function listWorkflows(): string[] {
 }
 
 /**
- * Esegue un workflow per nome
+ * Executes a workflow by name
  */
 export async function executeWorkflow(
   name: string,
@@ -69,26 +69,26 @@ export async function executeWorkflow(
   ensureWorkflowsInitialized();
   const workflow = getWorkflow(name);
   if (!workflow) {
-    throw new Error(`Workflow non trovato: ${name}`);
+    throw new Error(`Workflow not found: ${name}`);
   }
   
   try {
-    // Validazione dei parametri
+    // Parameter validation
     const validatedParams = workflow.schema.parse(params);
-    
-    // Esecuzione del workflow
+
+    // Workflow execution
     return await workflow.execute(validatedParams, onProgress);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errorDetails = error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", ");
-      throw new Error(`Parametri non validi per il workflow ${name}: ${errorDetails}`);
+      throw new Error(`Invalid parameters for workflow ${name}: ${errorDetails}`);
     }
     throw error;
   }
 }
 
 /**
- * Schema Zod per il router dei workflow
+ * Zod schema for the workflow router
  */
 export const smartWorkflowsSchema = z.object({
   workflow: z.enum([
@@ -102,80 +102,80 @@ export const smartWorkflowsSchema = z.object({
     "auto-remediation",
     "refactor-sprint",
     "overthinker"
-  ]).describe("Workflow da eseguire"),
-  params: z.record(z.any()).optional().describe("Parametri specifici del workflow")
+  ]).describe("Workflow to execute"),
+  params: z.record(z.any()).optional().describe("Workflow-specific parameters")
 });
 
 /**
- * Definizioni degli schemi per ogni workflow
+ * Definitions of schemas for each workflow
  */
 export const workflowSchemas = {
   "parallel-review": z.object({
-    files: z.array(z.string()).describe("File da analizzare"),
+    files: z.array(z.string()).describe("Files to analyze"),
     focus: z.enum(["architecture", "security", "performance", "quality", "all"])
-      .optional().default("all").describe("Area di focus dell'analisi"),
+      .optional().default("all").describe("Focus area of the analysis"),
     strategy: z.enum(["standard", "double-check"]).optional().default("standard")
-      .describe("Strategia di revisione"),
+      .describe("Review strategy"),
     backendOverrides: z.array(z.string()).optional()
-      .describe("Override manuale dei backend"),
+      .describe("Manual override of backends"),
     attachments: z.array(z.string()).optional()
-      .describe("File da allegare a Cursor/Droid"),
-    writeReport: z.boolean().optional().describe("Parametro legacy (non utilizzato)")
+      .describe("Files to attach to Cursor/Droid"),
+    writeReport: z.boolean().optional().describe("Legacy parameter (unused)")
   }),
   
   "pre-commit-validate": z.object({
     depth: z.enum(["quick", "thorough", "paranoid"])
-      .optional().default("thorough").describe("Profondità della validazione")
+      .optional().default("thorough").describe("Validation depth")
   }),
   
   "init-session": z.object({
     autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
     commitCount: z.number().int().min(1).max(50).optional()
-  }).describe("Parametri opzionali per init-session"),
+  }).describe("Optional parameters for init-session"),
   
   "validate-last-commit": z.object({
     commit_ref: z.string().optional().default("HEAD")
-      .describe("Riferimento al commit da validare")
+      .describe("Reference to the commit to validate")
   }),
 
   "feature-design": z.object({
-    featureDescription: z.string().describe("Descrizione della feature da implementare"),
-    targetFiles: z.array(z.string()).describe("File da creare o modificare"),
-    context: z.string().optional().describe("Contesto addizionale sul progetto"),
+    featureDescription: z.string().describe("Description of the feature to implement"),
+    targetFiles: z.array(z.string()).describe("Files to create or modify"),
+    context: z.string().optional().describe("Additional context about the project"),
     architecturalFocus: z.enum(["design", "refactoring", "optimization", "security", "scalability"])
-      .optional().default("design").describe("Focus dell'analisi architetturale"),
+      .optional().default("design").describe("Focus of the architectural analysis"),
     implementationApproach: z.enum(["incremental", "full-rewrite", "minimal"])
-      .optional().default("incremental").describe("Approccio implementativo"),
+      .optional().default("incremental").describe("Implementation approach"),
     testType: z.enum(["unit", "integration", "e2e"])
-      .optional().default("unit").describe("Tipo di test da generare")
+      .optional().default("unit").describe("Type of tests to generate")
   }),
 
   "bug-hunt": z.object({
-    symptoms: z.string().describe("Descrizione dei sintomi del problema"),
+    symptoms: z.string().describe("Description of the problem symptoms"),
     suspected_files: z.array(z.string()).optional()
-      .describe("File sospetti da analizzare"),
+      .describe("Suspect files to analyze"),
     attachments: z.array(z.string()).optional()
-      .describe("File aggiuntivi da allegare all'analisi (log, dump, ecc.)"),
+      .describe("Additional files to attach to the analysis (log, dump, etc.)"),
     backendOverrides: z.array(z.string()).optional()
-      .describe("Override manuale dei backend AI"),
+      .describe("Manual override of AI backends"),
     autonomyLevel: z.enum(["LOW", "MEDIUM", "HIGH", "AUTONOMOUS"]).optional()
   }),
   "triangulated-review": z.object({
-    files: z.array(z.string()).describe("File da analizzare"),
+    files: z.array(z.string()).describe("Files to analyze"),
     goal: z.enum(["bugfix", "refactor"]).optional().default("refactor")
-      .describe("Obiettivo principale della revisione"),
+      .describe("Main objective of the review"),
     autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
       .optional()
   }),
   "auto-remediation": z.object({
-    symptoms: z.string().describe("Descrizione del bug da correggere"),
+    symptoms: z.string().describe("Description of the bug to fix"),
     maxActions: z.number().int().min(1).max(10).optional()
-      .describe("Numero massimo di step nel piano"),
+      .describe("Maximum number of steps in the plan"),
     autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional()
   }),
   "refactor-sprint": z.object({
-    targetFiles: z.array(z.string()).describe("File da refactorizzare"),
-    scope: z.string().describe("Descrizione dello scope"),
+    targetFiles: z.array(z.string()).describe("Files to refactor"),
+    scope: z.string().describe("Description of the scope"),
     depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
     autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional()
   }),
@@ -193,15 +193,15 @@ export const workflowSchemas = {
 };
 
 /**
- * Inizializza il registro dei workflow
- * Questa funzione sarà chiamata dopo l'import di tutti i workflow
+ * Initializes the workflow registry
+ * This function will be called after importing all workflows
  */
 export function initializeWorkflowRegistry(): void {
   if (workflowsInitialized) {
     return;
   }
   workflowsInitialized = true;
-  // I workflow saranno registrati qui quando implementati
+  // Workflows will be registered here when implemented
   registerWorkflow("parallel-review", parallelReviewWorkflow);
   registerWorkflow("pre-commit-validate", preCommitValidateWorkflow);
   registerWorkflow("init-session", initSessionWorkflow);

@@ -33,7 +33,7 @@ const parallelReviewSchema = z.object({
 });
 
 /**
- * Esegue il workflow di revisione parallela
+ * Executes the parallel review workflow
  */
 export async function executeParallelReview(
   params: z.infer<typeof parallelReviewSchema>,
@@ -72,7 +72,7 @@ export async function executeParallelReview(
 
 Come Gemini, fornisci un'analisi approfondita con particolare attenzione a:
 - Architettura e design patterns
-- Impatto a lungo termine delle modifiche
+- Long-term impact of changes
 - Considerazioni sulla scalabilità
 - Best practices di ingegneria del software
 `;
@@ -90,11 +90,11 @@ Come Cursor Agent, genera un piano di refactoring dettagliato:
       case BACKENDS.DROID:
         return `${basePrompt}
 
-Come Factory Droid, agisci come verificatore autonomo:
-- Valuta se i suggerimenti precedenti sono sufficienti
-- Identifica eventuali lacune operative
-- Disegna un piano di remediation multi-step
-- Elenca check-list di convalida finale
+As Factory Droid, act as an autonomous verifier:
+- Evaluate if previous suggestions are sufficient
+- Identify any operational gaps
+- Design a multi-step remediation plan
+- List final validation checklists
 `;
 
       case BACKENDS.ROVODEV:
@@ -110,9 +110,9 @@ Come Rovo Dev, agisci come implementatore pratico:
         return `${basePrompt}
 
 Come Qwen, fornisci un'analisi logica e strutturata:
-- Verifica la coerenza del codice
-- Identifica edge cases non gestiti
-- Suggerisci ottimizzazioni algoritmiche
+- Verify code consistency
+- Identify unhandled edge cases
+- Suggest algorithmic optimizations
 `;
 
       default:
@@ -257,7 +257,7 @@ L'analisi potrebbe essere incompleta. Si consiglia di risolvere i problemi e rip
  */
 export const parallelReviewWorkflow: WorkflowDefinition = {
   name: 'parallel-review',
-  description: "Esegue un'analisi parallela del codice utilizzando Gemini, Cursor e Droid per fornire una revisione completa e multi-prospettiva",
+  description: "Executes a parallel code analysis using Gemini, Cursor and Droid to provide a complete and multi-perspective review",
   schema: parallelReviewSchema,
   execute: executeParallelReview
 };

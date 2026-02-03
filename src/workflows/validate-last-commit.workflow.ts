@@ -21,7 +21,7 @@ const validateLastCommitSchema = z.object({
 });
 
 /**
- * Esegue il workflow di validazione dell'ultimo commit
+ * Executes the last commit validation workflow
  */
 export async function executeValidateLastCommit(
   params: z.infer<typeof validateLastCommitSchema>,
@@ -31,7 +31,7 @@ export async function executeValidateLastCommit(
 
   onProgress?.(`Avvio validazione del commit: ${commit_ref}`);
 
-  // Verifica se siamo in un repository Git
+  // Check if we are in a Git repository
   if (!await isGitRepository()) {
     throw new Error("Directory corrente non è un repository Git");
   }
@@ -67,7 +67,7 @@ ${commitInfo.diff.substring(0, 3000)}${commitInfo.diff.length > 3000 ? "\n... (d
 Fornisci un'analisi dettagliata includendo:
 1. Breaking changes identificati
 2. Problemi di sicurezza o performance
-3. Violazioni delle best practices
+3. Best practices violations
 4. Problemi di qualità del codice
 5. Raccomandazioni specifiche
 6. Verdetto complessivo (APPROVATO/RIFIUTATO/NECESSARIA REVISIONE)
@@ -79,7 +79,7 @@ Fornisci un'analisi dettagliata includendo:
         return `${basePrompt}
 
 Come Gemini, fornisci un'analisi architetturale con attenzione a:
-- Impatto delle modifiche sull'architettura esistente
+- Impact of changes on existing architecture
 - Scalabilità e manutenibilità a lungo termine
 - Consistenza con i pattern di design del progetto
 - Considerazioni sull'integrazione con altri componenti
@@ -90,18 +90,18 @@ Come Gemini, fornisci un'analisi architetturale con attenzione a:
 
 Come Cursor Agent, fornisci un'analisi tecnica con focus su:
 - Correttezza del codice e potenziali bug
-- Efficienza degli algoritmi e complessità
-- Gestione degli errori e edge cases
+- Algorithm efficiency and complexity
+- Error handling and edge cases
 - Conformità con le convenzioni del linguaggio
 `;
 
       case BACKENDS.DROID:
         return `${basePrompt}
 
-Come Factory Droid, verifica l'implementazione pratica:
-- Correttezza della logica di business
-- Gestione degli errori
-- Conformità agli standard di progetto
+As Factory Droid, verify the practical implementation:
+- Correctness of business logic
+- Error handling
+- Compliance with project standards
 `;
 
       case BACKENDS.ROVODEV:
@@ -192,7 +192,7 @@ Basandosi sull'analisi parallela (${successful.map(r => r.backend).join(" + ")})
 `;
 
     // Logica per determinare il verdetto
-    // In un'implementazione reale, potremmo analizzare i testi delle risposte
+    // In a real implementation, we could analyze the response texts
     // Per ora, usiamo una logica semplificata
     const hasFailures = failed.length > 0;
     const hasSuccessfulAnalyses = successful.length > 0;
@@ -231,10 +231,10 @@ La validazione potrebbe essere incompleta. Si consiglia di risolvere i problemi 
   outputContent += `
 ## Raccomandazioni Finali
 
-1. **Revisione del codice**: Verifica manualmente le modifiche prima del merge
-2. **Test**: Esegui test completi per verificare che non ci siano regressioni
-3. **Documentazione**: Aggiorna la documentazione se necessario
-4. **Comunicazione**: Informa il team delle modifiche significative
+1. **Code Review**: Manually verify changes before merging
+2. **Test**: Run complete tests to verify there are no regressions
+3. **Documentation**: Update documentation if needed
+4. **Communication**: Inform the team of significant changes
 
 Per dettagli specifici, consulta le analisi individuali sopra.
 `;

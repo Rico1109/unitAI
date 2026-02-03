@@ -56,20 +56,20 @@ async function generateAutonomousRemediationPlan(
   stagedDiff: string,
   depth: string
 ): Promise<string> {
-  const prompt = `Agisci come Factory Droid (GLM-4.6) e genera un piano di remediation autonomo per questo diff git.
+  const prompt = `Act as Factory Droid (GLM-4.6) and generate an autonomous remediation plan for this git diff.
 
-Profondità richiesta: ${depth}
+Required depth: ${depth}
 
 Diff:
 \`\`\`diff
 ${stagedDiff}
 \`\`\`
 
-Produci un piano strutturato con:
-1. Priorità delle azioni (CRITICAL/HIGH/MEDIUM)
-2. Step consigliati (max 5)
-3. Verifiche automatiche suggerite
-4. Rischi residui`;
+Produce a structured plan with:
+1. Action priorities (CRITICAL/HIGH/MEDIUM)
+2. Suggested steps (max 5)
+3. Suggested automatic checks
+4. Residual risks`;
 
   const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('implementation');
@@ -91,7 +91,7 @@ Produci un piano strutturato con:
 export const preCommitValidateSchema = z.object({
   depth: z.enum(['quick', 'thorough', 'paranoid'])
     .default('thorough')
-    .describe('Profondità della validazione'),
+    .describe('Validation depth'),
   autonomyLevel: z.enum(['LOW', 'MEDIUM', 'HIGH', 'AUTONOMOUS'])
     .default('MEDIUM')
 });

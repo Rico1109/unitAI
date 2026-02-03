@@ -180,7 +180,7 @@ export async function getGitBranches(): Promise<string> {
 }
 
 /**
- * Verifica se un file è tracciato da Git
+ * Checks if a file is tracked by Git
  */
 export async function isFileTracked(filePath: string): Promise<boolean> {
   if (!await isGitRepository()) {
@@ -204,7 +204,7 @@ export async function getRecentCommitsWithDiffs(count: number = 10): Promise<Git
   }
 
   try {
-    // Ottieni gli hash degli ultimi N commits
+    // Get the hashes of the last N commits
     const logOutput = await runGitCommand(["log", "--oneline", `-${count}`]);
     const hashes = logOutput
       .trim()
@@ -227,7 +227,7 @@ export async function getRecentCommitsWithDiffs(count: number = 10): Promise<Git
 }
 
 /**
- * Estrae il range di date da un array di commits
+ * Extracts the date range from an array of commits
  */
 export function getDateRangeFromCommits(commits: GitCommitInfo[]): { oldest: string; newest: string } | null {
   if (commits.length === 0) {
@@ -242,7 +242,7 @@ export function getDateRangeFromCommits(commits: GitCommitInfo[]): { oldest: str
 }
 
 /**
- * Verifica la disponibilità dei comandi CLI necessari
+ * Checks the availability of required CLI commands
  */
 export async function checkCLIAvailability(): Promise<Record<string, boolean>> {
   // Map of display names to CLI command names

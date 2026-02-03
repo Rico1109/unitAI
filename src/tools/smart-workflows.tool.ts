@@ -3,7 +3,7 @@ import { executeWorkflow, smartWorkflowsSchema } from "../workflows/index.js";
 import type { ToolExecutionContext } from "./registry.js";
 
 /**
- * Esegue il workflow richiesto
+ * Executes the requested workflow
  */
 const executeSmartWorkflow = async (
   args: Record<string, any>,

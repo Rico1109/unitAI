@@ -15,7 +15,7 @@ import type {
 import type { AIExecutionOptions } from "../services/ai-executor.js";
 
 /**
- * Esegue un'analisi AI con un backend specifico
+ * Executes an AI analysis with a specific backend
  */
 export async function runAIAnalysis(
   backend: string,
@@ -57,7 +57,7 @@ export async function runAIAnalysis(
 }
 
 /**
- * Esegue analisi parallele con più backend AI
+ * Executes parallel analysis with multiple AI backends
  */
 export async function runParallelAnalysis(
   backends: string[],
@@ -98,7 +98,7 @@ export function synthesizeResults(results: AIAnalysisResult[]): string {
 
   // Aggiungi risultati riusciti
   if (successful.length > 0) {
-    synthesis += "## Risultati delle Analisi\n\n";
+    synthesis += "## Analysis Results\n\n";
 
     successful.forEach(result => {
       synthesis += `### ${result.backend}\n\n`;
@@ -134,7 +134,7 @@ export function buildCodeReviewPrompt(
 Concentrati sull'architettura del codice:
 - Struttura e organizzazione del progetto
 - Pattern di design utilizzati
-- Separazione delle responsabilità
+- Separation of responsibilities
 - Accoppiamento e coesione
 - Scalabilità e manutenibilità
 `;
@@ -144,7 +144,7 @@ Concentrati sull'architettura del codice:
 Concentrati sulla sicurezza del codice:
 - Vulnerabilità comuni (SQL injection, XSS, CSRF)
 - Gestione dell'autenticazione e autorizzazione
-- Validazione degli input
+- Input validation
 - Gestione dei dati sensibili
 - Configurazioni di sicurezza
 `;
@@ -152,21 +152,21 @@ Concentrati sulla sicurezza del codice:
     case "performance":
       focusInstructions = `
 Concentrati sulle prestazioni del codice:
-- Efficienza degli algoritmi
-- Utilizzo della memoria
-- Complessità computazionale
-- Ottimizzazioni possibili
-- Colli di bottiglia
+- Algorithm efficiency
+- Memory usage
+- Computational complexity
+- Possible optimizations
+- Bottlenecks
 `;
       break;
     case "quality":
       focusInstructions = `
-Concentrati sulla qualità del codice:
-- Leggibilità e manutenibilità
-- Copertura dei test
-- Gestione degli errori
-- Documentazione
-- Best practices del linguaggio
+Focus on code quality:
+- Readability and maintainability
+- Test coverage
+- Error handling
+- Documentation
+- Language best practices
 `;
       break;
     case "all":
@@ -217,19 +217,19 @@ Sintomi del problema: ${symptoms}
 
 ${filesSection}
 
-Analizza il problema seguendo questo approccio:
-1. Identifica le possibili cause radice
-2. Cerca pattern comuni di bug correlati
-3. Suggerisci un piano di debug
-4. Proponi soluzioni specifiche
-5. Indica come prevenire problemi simili in futuro
+Analyze the problem following this approach:
+1. Identify possible root causes
+2. Look for common bug patterns related
+3. Suggest a debugging plan
+4. Propose specific solutions
+5. Indicate how to prevent similar problems in the future
 
-Fai attenzione a:
+Pay attention to:
 - Race conditions
-- Errori di gestione null/undefined
-- Problemi asincroni
+- Null/undefined handling errors
+- Asynchronous issues
 - Memory leak
-- Errori di logica
+- Logic errors
 `;
 }
 
@@ -264,7 +264,7 @@ export function extractFileName(filePath: string): string {
 }
 
 /**
- * Verifica se un file è di un certo tipo
+ * Checks if a file is of a certain type
  */
 export function isFileType(filePath: string, extensions: string[]): boolean {
   const ext = filePath.split(".").pop()?.toLowerCase();
@@ -285,9 +285,9 @@ export function isFileType(filePath: string, extensions: string[]): boolean {
  * async function myWorkflow(params: MyWorkflowParams) {
  *   const permissions = createWorkflowPermissionManager(params);
  *
- *   // Verifica permessi prima di operazioni rischiose
+ *   // Check permissions before risky operations
  *   if (permissions.git.canCommit()) {
- *     // Esegui commit
+ *     // Execute commit
  *   }
  *
  *   // Oppure assert che lancia errore se non permesso
@@ -348,7 +348,7 @@ export function createAgentConfig(
  * Formatta i risultati di un agent per la visualizzazione
  *
  * Converte l'output strutturato di un agent in un formato leggibile
- * per l'utente, includendo metadata e gestione degli errori.
+ * for the user, including metadata and error handling.
  *
  * @param result - Risultato dell'esecuzione di un agent
  * @param agentName - Nome dell'agent (per il titolo)

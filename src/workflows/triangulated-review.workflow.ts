@@ -56,28 +56,28 @@ Genera suggerimenti concreti di refactoring con priorità e rischi residui.`;
   try {
     droidVerification = await executeAIClient({
       backend: BACKENDS.DROID,
-      prompt: `Verifica questo set di file e genera una checklist operativa per completare il goal "${goal}".
+      prompt: `Verify this set of files and generate an operational checklist to complete the goal "${goal}".
 File:
 ${files.join("\n")}
 
-Restituisci:
-- Step operativi (max 5)
-- Metriche/controlli per ciascun step
-- Rischi residui`,
+Return:
+- Operational steps (max 5)
+- Metrics/checks for each step
+- Residual risks`,
       auto: "low",
       outputFormat: "text",
       trustedSource: true  // Internal workflow - skip prompt blocking
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    droidVerification = `Impossibile eseguire Droid: ${errorMsg}`;
+    droidVerification = `Unable to execute Droid: ${errorMsg}`;
   }
 
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
 
   const content = `
-## Sintesi Analisi (Gemini + Cursor)
+## Analysis Summary (Gemini + Cursor)
 ${analysisResult.synthesis}
 
 ---
@@ -87,9 +87,9 @@ ${droidVerification}
 
 ---
 
-## Stato Backend
-- Successi: ${successful.map(r => r.backend).join(", ") || "Nessuno"}
-- Fallimenti: ${failed.map(r => `${r.backend} (${r.error})`).join(", ") || "Nessuno"}
+## Backend Status
+- Successes: ${successful.map(r => r.backend).join(", ") || "None"}
+- Failures: ${failed.map(r => `${r.backend} (${r.error})`).join(", ") || "None"}
 `;
 
   return formatWorkflowOutput(

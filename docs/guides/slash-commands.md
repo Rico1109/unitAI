@@ -28,9 +28,9 @@ I comandi slash forniscono un'interfaccia semplificata per eseguire task comuni 
 
 ## Comandi Disponibili
 
-### `/init-session` - Inizializzazione Sessione
+### `/init-session` - Session Initialization
 
-Inizializza una nuova sessione di lavoro con analisi automatica del contesto progetto.
+Initializes a new work session with automatic project context analysis.
 
 ```bash
 /init-session [opzioni]
@@ -70,7 +70,7 @@ Salva lavoro stabile con validazione automatica, memoria e commit.
 
 ### `/ai-task` - Esecuzione Workflow AI
 
-Esegue workflow unitAI con interfaccia semplificata.
+Executes unitAI workflows with a simplified interface.
 
 ```bash
 /ai-task <sottocomando> [parametri]
@@ -151,7 +151,7 @@ Ricerca documentazione across multiple sorgenti con selezione intelligente.
 
 ### `/help` - Aiuto Comandi
 
-Mostra questa guida di aiuto.
+Shows this help guide.
 
 ```bash
 /help [comando]

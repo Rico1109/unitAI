@@ -26,34 +26,34 @@ import type {
  */
 const featureDesignSchema = z.object({
   featureDescription: z.string()
-    .describe("Descrizione della feature da implementare"),
+    .describe("Description of the feature to implement"),
   targetFiles: z.array(z.string())
-    .describe("File da creare o modificare"),
+    .describe("Files to create or modify"),
   context: z.string().optional()
-    .describe("Contesto addizionale sul progetto"),
+    .describe("Additional context about the project"),
   architecturalFocus: z.enum(["design", "refactoring", "optimization", "security", "scalability"])
     .optional().default("design")
-    .describe("Focus dell'analisi architetturale"),
+    .describe("Focus of the architectural analysis"),
   implementationApproach: z.enum(["incremental", "full-rewrite", "minimal"])
     .optional().default("incremental")
-    .describe("Approccio implementativo"),
+    .describe("Implementation approach"),
   testType: z.enum(["unit", "integration", "e2e"])
     .optional().default("unit")
-    .describe("Tipo di test da generare"),
+    .describe("Type of tests to generate"),
   autonomyLevel: z.nativeEnum(AutonomyLevel)
-    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)"),
+    .optional().describe("Autonomy level for workflow operations (default: read-only)"),
   validationBackends: z.array(z.enum(["ask-gemini", "cursor-agent", "droid"]))
     .optional()
-    .describe("Backend aggiuntivi per validare il piano generato"),
+    .describe("Additional backends to validate the generated plan"),
   attachments: z.array(z.string())
     .optional()
-    .describe("File di supporto (es. specifiche, log) da allegare ai backend aggiuntivi")
+    .describe("Support files (e.g. specifications, logs) to attach to additional backends")
 });
 
 export type FeatureDesignParams = z.infer<typeof featureDesignSchema>;
 
 /**
- * Esegue il workflow di feature design
+ * Executes the feature design workflow
  *
  * Orchestration Flow:
  * 1. Architecture Phase - ArchitectAgent analyzes and designs

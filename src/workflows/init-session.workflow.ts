@@ -202,19 +202,19 @@ Please provide a synthesized analysis of these commits.`;
 }
 
 /**
- * Esegue il workflow di inizializzazione sessione
+ * Executes the session initialization workflow
  */
 export async function executeInitSession(
   params: z.infer<typeof initSessionSchema>,
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { autonomyLevel, commitCount } = initSessionSchema.parse(params);
-  onProgress?.("Avvio inizializzazione sessione... (Starting session initialization...)");
+  onProgress?.("Starting session initialization... (Starting session initialization...)");
 
   const sections: string[] = [];
   const metadata: Record<string, any> = {};
 
-  // Verifica se siamo in un repository Git
+  // Check if we are in a Git repository
   const isRepo = await isGitRepository();
   metadata.isGitRepository = isRepo;
 
@@ -348,8 +348,8 @@ La directory corrente non è un repository Git.
 `);
   }
 
-  // Verifica disponibilità CLI
-  onProgress?.("Verifica disponibilità CLI...");
+  // Check CLI availability
+  onProgress?.("Check CLI availability...");
   try {
     const cliAvailability = await checkCLIAvailability();
     metadata.cliAvailability = cliAvailability;
@@ -378,7 +378,7 @@ Alcuni workflow potrebbero non funzionare correttamente.
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     sections.push(`
-## Errore nella verifica CLI
+## Error in CLI verification
 
 ${errorMsg}
 `);
@@ -397,9 +397,9 @@ ${errorMsg}
 - **Directory di lavoro**: ${process.cwd()}
 `);
 
-  onProgress?.("Sessione inizializzata con successo");
+  onProgress?.("Session initialized successfully");
 
-  return formatWorkflowOutput("Report Inizializzazione Sessione (Session Initialization Report)", sections.join("\n"), metadata);
+  return formatWorkflowOutput("Session Initialization Report (Session Initialization Report)", sections.join("\n"), metadata);
 }
 
 /**
@@ -407,7 +407,7 @@ ${errorMsg}
  */
 export const initSessionWorkflow: WorkflowDefinition = {
   name: 'init-session',
-  description: "Inizializza la sessione corrente analizzando il repository Git e verificando la disponibilità delle CLI",
+  description: "Initializes the current session by analyzing the Git repository and checking CLI availability",
   schema: initSessionSchema,
   execute: executeInitSession
 };
