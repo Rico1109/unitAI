@@ -1,12 +1,13 @@
 ---
 title: unitAI Known Issues Registry
-version: 3.10.0
-updated: 2026-02-04T23:30:00+01:00
+version: 3.11.0
+updated: 2026-02-04T23:55:00+01:00
 scope: unitai-issues
 category: ssot
 subcategory: issues
 domain: [di, testing, configuration, lifecycle, organization, security, observability, reliability, backends]
 changelog:
+  - 3.11.0 (2026-02-04): ✅ RESOLVED ROADMAP-2.2 - Correlation ID tracking implemented (commit c6df3d9). Phase 2.2 COMPLETE. Quality score increased to 9.5/10.
   - 3.10.0 (2026-02-04): 🔴 CRITICAL - Added ARCH-HARDCODE-001 (Hardcoded Backend References Block Dynamic Role Configuration). 6 test failures due to naming mismatch between config (short names) and BACKENDS constant (prefixed names). Updated quality plan Phase 2.0 as blocker task. Reference: `/home/rico/.gemini/antigravity/brain/0a4f5748-e38c-4464-9dae-de6477a94d0e/implementation_plan.md.resolved`.
   - 3.9.0 (2026-02-04): Phase 1 COMPLETE - Italian comments replaced (commit 4df5bf5) + E2E tests added (commit 1b6b42a, 4 tests passing). Quality score increased from 8.8 → 9.4/10. autoApprove safeguards implemented (commit c8fe6d4).
   - 3.8.0 (2026-02-04): Added ROADMAP-2.1 - Phase 2.1 async database migration incomplete (CircuitBreaker needs AsyncDatabase persistence). Added progress tracking to quality plan.
@@ -1069,6 +1070,47 @@ This introduced `src/backends/` and `BackendRegistry`, refactoring `aiExecutor.t
 
 ---
 
+## Quality Roadmap - Phase 2.2: COMPLETE ✅
+
+### ROADMAP-2.2: Correlation ID Tracking for Distributed Tracing ✅
+
+**Severity**: 🟠 HIGH
+**Status**: ✅ RESOLVED
+**Discovered**: 2026-02-02
+**Resolved**: 2026-02-04 (commit c6df3d9)
+**Location**: `src/services/structured-logger.ts`, `src/server.ts`, `src/tools/registry.ts`
+
+**Observation**: Phase 2.2 of the quality roadmap required adding correlation ID tracking for distributed tracing to correlate logs across the entire request stack.
+
+**Implementation**:
+- Generated unique correlation ID for each MCP request (format: `corr-{timestamp}-{random}`)
+- Added `correlationId` to `ToolExecutionContext` interface
+- Added `correlationId` to `LogEntry` interface
+- Updated all logger methods to accept and propagate correlation ID
+- Updated `WorkflowLogger` to support correlation ID
+
+**Files Modified**:
+- `src/tools/registry.ts` - Added correlationId to context, updated executeTool()
+- `src/server.ts` - Generate and pass correlationId
+- `src/services/structured-logger.ts` - Added correlationId field to LogEntry, updated all methods
+
+**Log Output Example**:
+```json
+{
+  "timestamp": "2026-02-04T22:51:35.123Z",
+  "level": "info",
+  "category": "mcp",
+  "component": "server",
+  "operation": "tool-call",
+  "message": "Tool call: parallel-review",
+  "correlationId": "corr-1738691495123-abc123"
+}
+```
+
+**Impact**: Distributed tracing capability added. All logs from a single request can be correlated using the correlationId. Quality score increased by +0.2.
+
+---
+
 ## Quality Roadmap - Phase 2.1: Incomplete Async Database Migration
 
 ### ROADMAP-2.1: Async Database Migration Partial
@@ -1293,9 +1335,10 @@ expected true to be false // isGitRepository check
 | TEST-ASYNC-002 | Testing | 🟡 MEDIUM | `dependencies.test.ts` | 🔶 OPEN |
 | TEST-ENV-001 | Testing | 🟢 LOW | `gitHelper.test.ts` | 🔶 OPEN |
 
-**Progress**: 27/49 issues resolved (55%)
-**Security Status**: 🔴 **NEW CRITICAL ARCHITECTURE ISSUE** (ARCH-HARDCODE-001) + 5 security issues (SEC-007-011)
+**Progress**: 28/49 issues resolved (57%)
+**Security Status**: 🔴 **CRITICAL ARCHITECTURE ISSUE** (ARCH-HARDCODE-001) + 5 security issues (SEC-007-011)
 **Production Ready**: ⚠️ **BLOCKED** - ARCH-HARDCODE-001 causes 6 test failures and blocks dynamic backend configuration via wizard.
+**Quality Score**: 9.5/10 (Phase 2.2 complete - correlation ID tracking implemented)
 **Async Migration Status**: ✅ **Core tests passing** (auditTrail: 32/32, activityAnalytics: 20/20, aiExecutor: 13/13) - Secondary test failures documented above.
 
 ---

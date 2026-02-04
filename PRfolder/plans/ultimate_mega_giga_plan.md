@@ -95,7 +95,7 @@
  ├─────────────────────────────────┼──────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
  │ 1.2 Add E2E tests (3 workflows) │ DONE ✓   │ +0.5 ✓ │ tests/e2e/parallel-review.e2e.test.tstests/e2e/pre-commit-validate.e2e.test.tstests/e2e/init-session.e2e.test.ts │
  └─────────────────────────────────┴──────────┴────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- Phase 2: Code Quality (Week 2-3) → 9.3/10 (1/4 tasks done, 1 critical blocker)
+ Phase 2: Code Quality (Week 2-3) → 9.5/10 (2/4 tasks done, 1 critical blocker)
  ┌─────────────────────────────────────────────────┬──────────┬────────┬───────────────────────────────────────────────────────────────────────────────────────────┐
  │                      Task                       │  Effort  │ Impact │                                           Files                                           │
  ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
@@ -103,7 +103,7 @@
  ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
  │ 2.1 Complete async database migration           │ 1-2 days │ +0.3   │ src/dependencies.tssrc/repositories/circuit-breaker.repository.ts (new)                   │
  ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
- │ 2.2 Add correlation IDs                         │ 2-3 days │ +0.2   │ src/services/structured-logger.tssrc/server.ts                                            │
+ │ 2.2 Add correlation IDs                         │ DONE ✓   │ +0.2 ✓ │ src/services/structured-logger.tssrc/server.tssrc/tools/registry.ts                      │
  ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
  │ 2.3 Add autoApprove safeguards                  │ DONE ✓   │ +0.1 ✓ │ src/backends/cursor-backend.tssrc/backends/rovodev-backend.tssrc/backends/qwen-backend.ts │
  └─────────────────────────────────────────────────┴──────────┴────────┴───────────────────────────────────────────────────────────────────────────────────────────┘
@@ -285,36 +285,44 @@ CREATE TABLE circuit_breaker_state (
 ```
 
  ---
- Phase 2.2: Add Correlation IDs
+ Phase 2.2: Add Correlation IDs ✅ DONE
 
- Files to modify:
- - src/services/structured-logger.ts - Add correlation ID field
- - src/server.ts - Generate correlation ID for each request
- - src/tools/registry.ts - Propagate correlation ID
+ **Status**: COMPLETED (commit c6df3d9)
 
- Implementation:
- // src/server.ts
- import { randomUUID } from 'node:crypto';
+ **Implementation**:
+ Generated unique correlation ID for each MCP request using format: `corr-{timestamp}-{random}`
 
- async handleRequest(request: CallToolRequest): Promise<CallToolResult> {
-   const correlationId = randomUUID();
-   const context = { requestId, correlationId, onProgress };
-
-   return executeTool(toolName, args, context);
- }
+ Files modified:
+ - `src/tools/registry.ts`
+   - Added `correlationId` to `ToolExecutionContext`
+   - Updated `executeTool()` to generate and pass correlation ID
+ - `src/server.ts`
+   - Generate correlation ID for each request
+   - Pass correlation ID through request context
+ - `src/services/structured-logger.ts`
+   - Added `correlationId` to `LogEntry` interface
+   - Updated all log methods to accept and propagate correlation ID
+   - Updated `forWorkflow()` to accept and pass correlation ID
+   - Updated `WorkflowLogger` to propagate correlation ID
 
  Log output:
  {
-   "timestamp": "2026-02-04T10:30:00Z",
+   "timestamp": "2026-02-04T22:51:35.123Z",
    "level": "info",
-   "correlationId": "550e8400-e29b-41d4-a716-446655440000",
-   "workflowId": "parallel-review-123",
-   "message": "Backend execution started"
+   "category": "mcp",
+   "component": "server",
+   "operation": "tool-call",
+   "message": "Tool call: parallel-review [requestId: mcp-..., correlationId: corr-...]",
+   "correlationId": "corr-1738691495123-abc123"
  }
 
- Verification:
- - All log entries include correlation ID
- - Correlation ID propagates through entire request stack
+ **Verification**:
+ - ✅ All log entries include correlation ID
+ - ✅ Correlation ID propagates through entire request stack
+ - ✅ TypeScript compilation passes
+ - ✅ Tests pass (aiExecutor: 13/13)
+
+--
 
  ---
  Phase 2.3: Add autoApprove Safeguards ✅ DONE
