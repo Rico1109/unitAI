@@ -22,7 +22,7 @@ import type {
  */
 
 /**
- * Schema Zod per il workflow feature-design
+ * Zod schema for feature-design workflow
  */
 const featureDesignSchema = z.object({
   featureDescription: z.string()
@@ -180,7 +180,7 @@ export async function executeFeatureDesign(
       onProgress?.("✅ Implementation phase completed successfully");
     }
     if (!implementerResult.success) {
-      onProgress?.("🛠️ Cursor Agent fallback per suggerimenti di implementazione...");
+      onProgress?.("🛠️ Cursor Agent fallback for implementation suggestions...");
       try {
         const cursorPlan = await executeAIClient({
           backend: BACKENDS.CURSOR,
@@ -191,7 +191,7 @@ Target files: ${targetFiles.join(", ")}
 Context (se disponibile):
 ${context || "N/A"}
 
-Genera suggerimenti concreti di implementazione (patch outline, rischi, test consigliati).`,
+Generate concrete implementation suggestions (patch outline, risks, recommended tests).`,
           attachments: attachments.length ? attachments : targetFiles.slice(0, 3),
           outputFormat: "text",
           autoApprove: false
@@ -199,7 +199,7 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
         finalOutput += `\n## Cursor Agent Fallback Suggestions\n\n${cursorPlan}\n\n---\n\n`;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        finalOutput += `\n## Cursor Agent Fallback Suggestions\n\nImpossibile generare suggerimenti: ${errorMsg}\n\n---\n\n`;
+        finalOutput += `\n## Cursor Agent Fallback Suggestions\n\nUnable to generate suggestions: ${errorMsg}\n\n---\n\n`;
       }
     }
 
@@ -290,7 +290,7 @@ Genera suggerimenti concreti di implementazione (patch outline, rischi, test con
   }
 
   if (validationBackends.length > 0) {
-    onProgress?.("🔎 Validazione addizionale con backend selezionati...");
+    onProgress?.("🔎 Additional validation with selected backends...");
     const validationOutputs: string[] = [];
 
     for (const backendName of validationBackends) {
@@ -345,7 +345,7 @@ ${finalOutput}`,
         validationOutputs.push(`### ${label}\n${output}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        validationOutputs.push(`### ${label || backendName}\nImpossibile completare la validazione: ${errorMsg}`);
+        validationOutputs.push(`### ${label || backendName}\nUnable to complete validation: ${errorMsg}`);
       }
     }
 
@@ -364,7 +364,7 @@ ${finalOutput}`,
 }
 
 /**
- * Definizione del workflow feature-design
+ * Definition of feature-design workflow
  */
 export const featureDesignWorkflow: WorkflowDefinition = {
   name: 'feature-design',

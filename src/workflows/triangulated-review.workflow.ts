@@ -6,7 +6,7 @@ import { executeAIClient } from "../services/ai-executor.js";
 
 const triangulatedReviewSchema = z.object({
   files: z.array(z.string())
-    .min(1, "Specificare almeno un file da analizzare"),
+    .min(1, "Specify at least one file to analyze"),
   goal: z.enum(["bugfix", "refactor"])
     .optional()
     .default("refactor"),
@@ -32,12 +32,12 @@ export async function executeTriangulatedReview(
         return `${basePrompt}
 
 Focus:
-- Allineamento architetturale
-- Impatto a lungo termine rispetto all'obiettivo ${goal}`;
+- Architectural alignment
+- Long-term impact relative to goal ${goal}`;
       case BACKENDS.CURSOR:
         return `${basePrompt}
 
-Genera suggerimenti concreti di refactoring con priorità e rischi residui.`;
+Generate concrete refactoring suggestions with priorities and residual risks.`;
       default:
         return basePrompt;
     }

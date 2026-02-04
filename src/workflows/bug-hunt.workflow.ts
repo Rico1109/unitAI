@@ -192,7 +192,7 @@ Provide:
         geminiAnalysis = result;
       }).catch(error => {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        geminiAnalysis = `Impossibile completare l'analisi con Gemini: ${errorMsg}`;
+        geminiAnalysis = `Unable to complete analysis with Gemini: ${errorMsg}`;
       })
     );
   } else if (runQwen) {
@@ -210,7 +210,7 @@ Provide root cause analysis and potential side effects.`,
         qwenAnalysis = result;
       }).catch(error => {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        qwenAnalysis = `Impossibile completare l'analisi con Qwen: ${errorMsg}`;
+        qwenAnalysis = `Unable to complete analysis with Qwen: ${errorMsg}`;
       })
     );
   }
@@ -227,57 +227,57 @@ Provide root cause analysis and potential side effects.`,
   }
 
   if (hypothesisBackend) {
-    onProgress?.(`🧠 Generazione ipotesi con ${hypothesisBackend}...`);
+    onProgress?.(`🧠 Generating hypotheses with ${hypothesisBackend}...`);
     try {
       hypothesis = await executeAIClient({
         backend: hypothesisBackend,
-        prompt: `Agisci come investigatore del codice. Hai i seguenti sintomi e file analizzati.
+        prompt: `Act as a code investigator. You have the following symptoms and analyzed files.
 Symptoms: ${symptoms}
-Files principali:
+Main files:
 ${filesToAnalyze.join("\n")}
-Genera:
-1. 3-5 ipotesi ordinate per probabilità
-2. Evidenze richieste per confermarle
-3. Esperimenti/strumenti suggeriti
-4. Metriche da monitorare`,
+Generate:
+1. 3-5 hypotheses ordered by probability
+2. Evidence required to confirm them
+3. Suggested experiments/tools
+4. Metrics to monitor`,
         attachments,
         outputFormat: "text"
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      hypothesis = `Impossibile eseguire ${hypothesisBackend}: ${errorMsg}`;
+      hypothesis = `Unable to execute ${hypothesisBackend}: ${errorMsg}`;
     }
   }
 
   let remediationPlan = '';
   // Use Droid OR Rovodev for remediation
   if (runDroid) {
-    onProgress?.('🤖 Preparazione piano di remediation con Droid...');
+    onProgress?.('🤖 Preparing remediation plan with Droid...');
     try {
       remediationPlan = await executeAIClient({
         backend: BACKENDS.DROID,
-        prompt: `Crea un piano operativo per risolvere i bug descritti.
+        prompt: `Create an operational plan to resolve the described bugs.
 Symptoms: ${symptoms}
 Files:
 ${filesToAnalyze.join("\n")}
-Output richiesto:
-- Step di remediation (max 5) con priorità
-- Verifiche automatiche per ciascun step
-- Rischi residui`,
+Required output:
+- Remediation steps (max 5) with priorities
+- Automated checks for each step
+- Residual risks`,
         auto: "medium",
         attachments,
         outputFormat: "text"
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      remediationPlan = `Impossibile generare fix plan con Droid: ${errorMsg}`;
+      remediationPlan = `Unable to generate fix plan with Droid: ${errorMsg}`;
     }
   } else if (runRovodev) {
-    onProgress?.('🤖 Preparazione piano di remediation con Rovodev...');
+    onProgress?.('🤖 Preparing remediation plan with Rovodev...');
     try {
       remediationPlan = await executeAIClient({
         backend: BACKENDS.ROVODEV,
-        prompt: `Crea un piano operativo per risolvere i bug descritti.
+        prompt: `Create an operational plan to resolve the described bugs.
   Symptoms: ${symptoms}
   Files:
   ${filesToAnalyze.join("\n")}`,
@@ -285,7 +285,7 @@ Output richiesto:
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      remediationPlan = `Impossibile generare fix plan con Rovodev: ${errorMsg}`;
+      remediationPlan = `Unable to generate fix plan with Rovodev: ${errorMsg}`;
     }
   }
 

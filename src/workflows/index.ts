@@ -43,7 +43,7 @@ export function registerWorkflow<TParams>(
 }
 
 /**
- * Ottiene un workflow dal registro
+ * Gets a workflow from the registry
  */
 export function getWorkflow(name: string): WorkflowDefinition | undefined {
   ensureWorkflowsInitialized();
@@ -218,7 +218,7 @@ export function initializeWorkflowRegistry(): void {
 }
 
 /**
- * Ottiene lo schema Zod per un workflow specifico
+ * Gets the Zod schema for a specific workflow
  */
 export function getWorkflowSchema(workflowName: string): z.ZodSchema | undefined {
   ensureWorkflowsInitialized();

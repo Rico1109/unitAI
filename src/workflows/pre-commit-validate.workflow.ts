@@ -299,7 +299,7 @@ export async function executePreCommitValidate(
 
   const diffEstimation = await estimateDiffTokens(stagedDiff);
   if (diffEstimation.tokens > 0) {
-    onProgress?.(`📏 Token stimati per il diff: ~${diffEstimation.tokens}`);
+    onProgress?.(`📏 Estimated tokens for diff: ~${diffEstimation.tokens}`);
     logger.info(`[pre-commit-validate] Estimated token budget: ~${diffEstimation.tokens}`);
   }
 
@@ -327,7 +327,7 @@ export async function executePreCommitValidate(
 
   let remediationSection = '';
   if (params.depth === 'paranoid') {
-    onProgress?.('🤖 Generazione piano di remediation con Droid...');
+    onProgress?.('🤖 Generating remediation plan with Droid...');
     try {
       const remediationPlan = await generateAutonomousRemediationPlan(stagedDiff, params.depth);
       remediationSection = `
@@ -340,7 +340,7 @@ ${remediationPlan}
       remediationSection = `
 ## Autonomous Remediation Plan (Droid/Rovodev)
 
-Impossibile generare il piano: ${errorMsg}
+Unable to generate plan: ${errorMsg}
 `;
     }
   }
@@ -348,7 +348,7 @@ Impossibile generare il piano: ${errorMsg}
   const tokenSection = diffEstimation.tokens > 0 ? `
 ## Token Estimate
 
-~${diffEstimation.tokens.toLocaleString()} token stimati per i file modificati (${diffEstimation.files.length} file)
+~${diffEstimation.tokens.toLocaleString()} estimated tokens for modified files (${diffEstimation.files.length} file)
 ` : '';
 
   const finalReport = `${report}

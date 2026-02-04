@@ -351,7 +351,7 @@ export function createAgentConfig(
  * for the user, including metadata and error handling.
  *
  * @param result - Result of an agent execution
- * @param agentName - Nome dell'agent (per il titolo)
+ * @param agentName - Agent name (for title)
  * @returns Stringa formattata pronta per la visualizzazione
  *
  * @example
