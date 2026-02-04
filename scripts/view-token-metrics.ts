@@ -83,10 +83,10 @@ function formatTimestamp(date: Date): string {
 /**
  * Display detailed metrics list
  */
-function showDetailedMetrics(metrics: TokenSavingsMetrics, options: CLIOptions) {
+async function showDetailedMetrics(metrics: TokenSavingsMetrics, options: CLIOptions) {
   const startTime = new Date(Date.now() - options.days * 24 * 60 * 60 * 1000);
-  
-  const results = metrics.query({
+
+  const results = await metrics.query({
     startTime,
     source: options.source,
     blockedTool: options.blockedTool
@@ -127,13 +127,13 @@ async function main() {
   }
 
   try {
-    const metrics = getMetricsCollector();
+    const metrics = await getMetricsCollector();
 
     if (options.detailed) {
-      showDetailedMetrics(metrics, options);
+      await showDetailedMetrics(metrics, options);
     } else {
       // Show summary report
-      const report = metrics.getSummaryReport(options.days);
+      const report = await metrics.getSummaryReport(options.days);
       console.log(report);
     }
 

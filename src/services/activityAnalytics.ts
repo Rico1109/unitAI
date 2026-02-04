@@ -149,7 +149,7 @@ export class ActivityAnalytics {
     const auditStats = await this.auditTrail.getStats({ startTime, endTime });
 
     // Get token savings statistics
-    const tokenStats = this.tokenMetrics.getStats({ startTime, endTime });
+    const tokenStats = await this.tokenMetrics.getStats({ startTime, endTime });
 
     // Get MCP activities
     const activities = await this.queryActivities({ startTime, endTime });
@@ -406,12 +406,12 @@ export class ActivityAnalytics {
   /**
    * Close all database connections
    */
-  close(): void {
-    // Repository handling is managed by DI container typically, 
-    // but if we own resources we can close them. 
+  async close(): Promise<void> {
+    // Repository handling is managed by DI container typically,
+    // but if we own resources we can close them.
     // Here we delegate up or ignore since DI container closes db.
     this.auditTrail.close();
-    this.tokenMetrics.close();
+    await this.tokenMetrics.close();
   }
 
   /**
@@ -437,7 +437,9 @@ export async function getActivityAnalytics(): Promise<ActivityAnalytics> {
       const repo = new ActivityRepository(deps.activityDb);
       await repo.initializeSchema();
       const audit = await getAuditTrail();
-      const tokens = new TokenSavingsMetrics(deps.tokenDbSync);
+      // Use AsyncDatabase and await initialization
+      const tokens = new TokenSavingsMetrics(deps.tokenDb);
+      await tokens.initializeSchema();
       analyticsInstance = new ActivityAnalytics(repo, audit, tokens);
     } catch (e) {
       // Fallback for scripts/tests that might not have init dependencies

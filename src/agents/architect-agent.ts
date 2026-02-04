@@ -12,6 +12,7 @@
 
 import { BaseAgent } from "./base/BaseAgent.js";
 import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/config.js";
 import type {
   ArchitectInput,
   ArchitectOutput,
@@ -28,7 +29,7 @@ import type {
 export class ArchitectAgent extends BaseAgent<ArchitectInput, ArchitectOutput> {
   readonly name = "ArchitectAgent";
   readonly description = "High-level system design, architecture analysis, and strategic planning using Gemini";
-  readonly preferredBackend = BACKENDS.GEMINI;
+  readonly preferredBackend = getRoleBackend('architect');
   readonly fallbackBackend = undefined; // Gemini-only for architectural reasoning
 
   /**

@@ -29,6 +29,7 @@ describe('ActivityAnalytics', () => {
     const audit = new AuditTrail(testDeps.auditDb);
     await audit.initializeSchema();
     const tokens = new TokenSavingsMetrics(testDeps.tokenDb);
+    await tokens.initializeSchema();
 
     // Create analytics instance with injected dependencies
     analytics = new ActivityAnalytics(repo, audit, tokens);
@@ -39,7 +40,7 @@ describe('ActivityAnalytics', () => {
     analytics.close();
     await testDeps.activityDb.closeAsync();
     await testDeps.auditDb.closeAsync();
-    testDeps.tokenDb.close();
+    await testDeps.tokenDb.closeAsync();
   });
 
   describe('recordActivity', () => {

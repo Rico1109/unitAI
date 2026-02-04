@@ -45,6 +45,6 @@ export function createTestDependencies() {
   return {
     activityDb: new MockAsyncDatabase(':memory:') as any,
     auditDb: new MockAsyncDatabase(':memory:') as any,
-    tokenDb: new Database(':memory:')
+    tokenDb: new MockAsyncDatabase(':memory:') as any
   };
 }

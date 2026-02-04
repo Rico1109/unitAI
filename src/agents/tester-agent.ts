@@ -12,6 +12,7 @@
 
 import { BaseAgent } from "./base/BaseAgent.js";
 import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/config.js";
 import type {
   TesterInput,
   TesterOutput,
@@ -26,8 +27,8 @@ import type {
  */
 export class TesterAgent extends BaseAgent<TesterInput, TesterOutput> {
   readonly name = "TesterAgent";
-  readonly description = "Fast test generation and coverage analysis using Cursor Agent";
-  readonly preferredBackend = BACKENDS.CURSOR;
+  readonly description = "Fast test generation and coverage analysis using configured tester backend";
+  readonly preferredBackend = getRoleBackend('tester');
   readonly fallbackBackend = undefined; // Cursor-only for speed
 
   /**

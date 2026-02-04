@@ -3,6 +3,7 @@ import { BACKENDS } from "../constants.js";
 import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { executeAIClient } from "../services/ai-executor.js";
+import { getRoleBackend } from "../config/config.js";
 
 const triangulatedReviewSchema = z.object({
   files: z.array(z.string())
@@ -22,40 +23,44 @@ export async function executeTriangulatedReview(
 ): Promise<string> {
   const { files, goal } = params;
 
-  onProgress?.(`🧭 Triangulated review avviata su ${files.length} file (goal: ${goal})`);
+  onProgress?.(`🧭 Triangulated review started on ${files.length} files (goal: ${goal})`);
+
+  // Determine configured backends for roles
+  const architectBackend = getRoleBackend('architect');   // Was Gemini
+  const testerBackend = getRoleBackend('tester');         // Was Cursor
+  const implementerBackend = getRoleBackend('implementer'); // Was Droid
 
   const promptBuilder = (backend: string): string => {
     const basePrompt = buildCodeReviewPrompt(files, goal === "bugfix" ? "security" : "quality");
 
-    switch (backend) {
-      case BACKENDS.GEMINI:
-        return `${basePrompt}
+    if (backend === architectBackend) {
+      return `${basePrompt}
 
 Focus:
 - Architectural alignment
 - Long-term impact relative to goal ${goal}`;
-      case BACKENDS.CURSOR:
-        return `${basePrompt}
+    } else if (backend === testerBackend) {
+      return `${basePrompt}
 
 Generate concrete refactoring suggestions with priorities and residual risks.`;
-      default:
-        return basePrompt;
+    } else {
+      return basePrompt;
     }
   };
 
   const analysisResult = await runParallelAnalysis(
-    [BACKENDS.GEMINI, BACKENDS.CURSOR],
+    [architectBackend, testerBackend],
     promptBuilder,
     onProgress,
-    (backend) => backend === BACKENDS.CURSOR
+    (backend) => backend === testerBackend
       ? { attachments: files.slice(0, 5), outputFormat: "text", trustedSource: true }
       : { trustedSource: true }  // All internal workflows are trusted
   );
 
-  let droidVerification = "";
+  let verificationResult = "";
   try {
-    droidVerification = await executeAIClient({
-      backend: BACKENDS.DROID,
+    verificationResult = await executeAIClient({
+      backend: implementerBackend,
       prompt: `Verify this set of files and generate an operational checklist to complete the goal "${goal}".
 File:
 ${files.join("\n")}
@@ -70,20 +75,20 @@ Return:
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    droidVerification = `Unable to execute Droid: ${errorMsg}`;
+    verificationResult = `Unable to execute verification (${implementerBackend}): ${errorMsg}`;
   }
 
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
 
   const content = `
-## Analysis Summary (Gemini + Cursor)
+## Analysis Summary (Architect & Tester)
 ${analysisResult.synthesis}
 
 ---
 
-## Autonomous Verification (Droid)
-${droidVerification}
+## Autonomous Verification (Implementer)
+${verificationResult}
 
 ---
 
@@ -106,7 +111,7 @@ ${droidVerification}
 
 export const triangulatedReviewWorkflow: WorkflowDefinition = {
   name: "triangulated-review",
-  description: "Confronta prospettive multiple (Gemini, Cursor, Droid) per bugfix/refactor di file specifici",
+  description: "Compares multiple perspectives (Gemini, Cursor, Droid) for bugfix/refactor of specific files",
   schema: triangulatedReviewSchema,
   execute: executeTriangulatedReview
 };

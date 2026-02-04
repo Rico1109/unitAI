@@ -19,6 +19,7 @@
     "setup": "tsx src/cli/setup.tsx",
     "health": "tsx src/cli/health.ts",
     "test": "vitest run",
+    "test:e2e": "vitest run tests/e2e",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "view-metrics": "tsc && node dist/scripts/view-token-metrics.js",

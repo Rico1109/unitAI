@@ -7,7 +7,7 @@
 
 import { BACKENDS } from '../services/ai-executor.js';
 import { logAudit } from '../services/audit-trail.js';
-import { getFallbackPriority } from '../config/config.js';
+import { getFallbackPriority, getRoleBackend, isBackendEnabled } from '../config/config.js';
 
 export interface TaskCharacteristics {
   complexity: 'low' | 'medium' | 'high';
@@ -106,48 +106,55 @@ export async function selectOptimalBackend(
 ): Promise<string> {
   const candidates = allowedBackends || Object.values(BACKENDS);
 
-  // Filter out unavailable backends
+  // 1. Filter by Configured/Enabled Backends
+  const enabledCandidates = candidates.filter(b => isBackendEnabled(b));
+
+  // 2. Filter out unavailable backends (Circuit Breaker)
   const availabilityChecks = await Promise.all(
-    candidates.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
+    enabledCandidates.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
   );
   const availableCandidates = availabilityChecks
     .filter((check) => check.available)
     .map((check) => check.backend);
 
   if (availableCandidates.length === 0) {
-    // If all are down, return a default (likely Gemini or Qwen) and let the circuit breaker throw the error
-    // or return the "least failed" one. For now, return primary fallback.
-    return BACKENDS.QWEN;
+    // If all are down, use emergency fallback from config or Qwen
+    const priority = getFallbackPriority();
+    const emergency = priority.find(b => enabledCandidates.includes(b));
+    return emergency || BACKENDS.QWEN;
   }
 
   // Helper to check if a backend is available
   const isAvailable = (b: string) => availableCandidates.includes(b);
 
-  // 1. Architectural tasks -> Gemini > Qwen > Droid > Cursor
+  // 3. Determine Preferred Role based on Task
+  let role: 'architect' | 'implementer' | 'tester' = 'tester';
+
   if (task.requiresArchitecturalThinking || task.domain === 'architecture') {
-    if (isAvailable(BACKENDS.GEMINI)) return BACKENDS.GEMINI;
-    if (isAvailable(BACKENDS.QWEN)) return BACKENDS.QWEN;
-    if (isAvailable(BACKENDS.DROID)) return BACKENDS.DROID;
-    return availableCandidates[0];
+    role = 'architect';
+  } else if (task.requiresCodeGeneration && !task.requiresSpeed) {
+    role = 'implementer';
+  } else if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
+    role = 'tester';
   }
 
-  // 2. Code generation / Implementation -> Droid > Qwen
-  if (task.requiresCodeGeneration && !task.requiresSpeed) {
-    if (isAvailable(BACKENDS.QWEN)) return BACKENDS.QWEN; // Prefer Qwen for code generation
-    if (isAvailable(BACKENDS.DROID)) return BACKENDS.DROID;
-    return availableCandidates[0];
+  const preferredBackend = getRoleBackend(role);
+
+  // 4. Return Preferred if Available
+  if (isAvailable(preferredBackend)) {
+    return preferredBackend;
   }
 
-  // 3. Debugging / Testing / Refactoring -> Qwen
-  if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
-    if (isAvailable(BACKENDS.QWEN)) return BACKENDS.QWEN;
-    if (isAvailable(BACKENDS.DROID)) return BACKENDS.DROID;
-    return availableCandidates[0];
+  // 5. Fallback: Use Configured Priority
+  const priority = getFallbackPriority();
+  for (const b of priority) {
+    if (isAvailable(b)) return b;
   }
 
-  // 4. Default fallback
   return availableCandidates[0];
 }
+
+
 
 /**
  * Select multiple backends for parallel analysis
@@ -158,11 +165,13 @@ export async function selectParallelBackends(
   count: number = 2
 ): Promise<string[]> {
   const selections: string[] = [];
-  // Updated Priority: Gemini -> Qwen -> Droid -> Rovodev
-  const allBackends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID, BACKENDS.ROVODEV];
+  const priority = getFallbackPriority();
+
+  // Filter by enabled backends
+  const enabled = priority.filter(b => isBackendEnabled(b));
 
   const availabilityChecks = await Promise.all(
-    allBackends.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
+    enabled.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
   );
   const available = availabilityChecks
     .filter((check) => check.available)

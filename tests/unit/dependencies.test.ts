@@ -174,18 +174,12 @@ describe('dependencies', () => {
   // Suite 3: Database Initialization
   // =================================================================
   describe('Database Initialization', () => {
-    it('should create databases (sync and async)', async () => {
+    it('should create databases (all async)', async () => {
       // Act
       await dependencies.initializeDependencies();
 
-      // Assert: 2 Sync Database instances created (audit, token)
-      expect(mockDatabase).toHaveBeenCalledTimes(2);
-      expect(mockDatabase).toHaveBeenCalledWith(
-        expect.stringContaining('audit.sqlite')
-      );
-      expect(mockDatabase).toHaveBeenCalledWith(
-        expect.stringContaining('token-metrics.sqlite')
-      );
+      // Assert: No Sync Database instances created
+      expect(mockDatabase).toHaveBeenCalledTimes(0);
 
       // Assert: 4 AsyncDatabase instances created
       expect(AsyncDatabase).toHaveBeenCalledTimes(4);
@@ -195,13 +189,15 @@ describe('dependencies', () => {
       expect(AsyncDatabase).toHaveBeenCalledWith(expect.stringContaining('red-metrics.sqlite'));
     });
 
-    it('should enable WAL mode for sync databases', async () => {
+    it('should enable WAL mode for databases', async () => {
       // Act
       await dependencies.initializeDependencies();
 
-      // Assert: pragma called 2 times (once per Sync DB)
-      expect(mockDbInstance.pragma).toHaveBeenCalledTimes(2);
-      expect(mockDbInstance.pragma).toHaveBeenCalledWith('journal_mode = WAL');
+      // Assert: AsyncDatabase.execAsync called for PRAGMA
+      const asyncDbInstances = vi.mocked(AsyncDatabase).mock.results.map(r => r.value);
+      asyncDbInstances.forEach(db => {
+         expect(db.execAsync).toHaveBeenCalledWith('PRAGMA journal_mode = WAL;');
+      });
     });
 
     it('should return AppDependencies with all required properties', async () => {
@@ -259,8 +255,8 @@ describe('dependencies', () => {
       // Act
       await dependencies.closeDependencies();
 
-      // Assert: close called 2 times (one per Sync DB)
-      expect(mockDbInstance.close).toHaveBeenCalledTimes(2);
+      // Assert: close called 0 times (no Sync DBs)
+      expect(mockDbInstance.close).toHaveBeenCalledTimes(0);
 
       // Assert: closeAsync called on all async DBs
       asyncDbInstances.forEach(db => {
@@ -343,7 +339,7 @@ describe('dependencies', () => {
       await dependencies.initializeDependencies();
 
       // Assert: New Database instances created
-      expect(mockDatabase).toHaveBeenCalledTimes(2);
+      expect(mockDatabase).toHaveBeenCalledTimes(0);
       expect(AsyncDatabase).toHaveBeenCalledTimes(4);
     });
   });

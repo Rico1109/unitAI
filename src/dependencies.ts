@@ -19,9 +19,6 @@ export interface AppDependencies {
     tokenDb: AsyncDatabase;
     metricsDb: AsyncDatabase;
     circuitBreaker: CircuitBreaker;
-    // Keep a sync instance for legacy/difficult-to-refactor components
-    auditDbSync: Database.Database;
-    tokenDbSync: Database.Database;
     // Add other shared DBs or services here as we migrate them
 }
 
@@ -57,18 +54,12 @@ export async function initializeDependencies(): Promise<AppDependencies> {
     logger.debug(`Opening Audit DB at ${auditDbPath}`);
     const auditDb = new AsyncDatabase(auditDbPath);
     await auditDb.execAsync('PRAGMA journal_mode = WAL;');
-    // Sync version for CircuitBreaker
-    const auditDbSync = new Database(auditDbPath);
-    auditDbSync.pragma('journal_mode = WAL');
 
     // Initialize Token Metrics Database
     const tokenDbPath = path.join(dataDir, 'token-metrics.sqlite');
     logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
     const tokenDb = new AsyncDatabase(tokenDbPath);
     await tokenDb.execAsync('PRAGMA journal_mode = WAL;');
-    // Sync version for TokenSavingsMetrics
-    const tokenDbSync = new Database(tokenDbPath);
-    tokenDbSync.pragma('journal_mode = WAL');
 
     // Initialize RED Metrics Database
     const metricsDbPath = path.join(dataDir, 'red-metrics.sqlite');
@@ -100,9 +91,7 @@ export async function initializeDependencies(): Promise<AppDependencies> {
         auditDb,
         tokenDb,
         metricsDb,
-        circuitBreaker,
-        auditDbSync,
-        tokenDbSync
+        circuitBreaker
     };
 
     return dependencies;
@@ -130,22 +119,6 @@ export async function closeDependencies(): Promise<void> {
             dependencies.circuitBreaker.shutdown();
         } catch (error) {
             logger.error("Error persisting circuit breaker state during shutdown", error);
-        }
-
-        // Close the synchronous DB connection
-        if (dependencies.auditDbSync) {
-            try {
-                dependencies.auditDbSync.close();
-            } catch (error) {
-                logger.error("Error closing audit database sync connection", error);
-            }
-        }
-        if (dependencies.tokenDbSync) {
-            try {
-                dependencies.tokenDbSync.close();
-            } catch (error) {
-                logger.error("Error closing token database sync connection", error);
-            }
         }
 
         // Close all async databases

@@ -10,7 +10,7 @@ import { promisify } from "util";
 import { stat, access } from "fs/promises";
 import { constants } from "fs";
 import { logger } from "../utils/logger.js";
-import Database from 'better-sqlite3';
+import { AsyncDatabase } from '../infrastructure/async-db.js';
 import * as path from 'path';
 import * as fs from 'fs';
 import { getDependencies } from '../dependencies.js';
@@ -370,18 +370,18 @@ export function formatToolSuggestion(suggestion: ToolSuggestion): string {
  * Stores metrics in SQLite database for analysis and reporting.
  */
 export class TokenSavingsMetrics {
-  private db: Database.Database;
+  private db: AsyncDatabase;
 
-  constructor(db: Database.Database) {
+  constructor(db: AsyncDatabase) {
     this.db = db;
-    this.initializeSchema();
+    // Schema initialization should be awaited by the caller/factory
   }
 
   /**
    * Initialize database schema for metrics
    */
-  private initializeSchema(): void {
-    this.db.exec(`
+  async initializeSchema(): Promise<void> {
+    await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS token_savings_metrics (
         id TEXT PRIMARY KEY,
         timestamp INTEGER NOT NULL,
@@ -413,19 +413,17 @@ export class TokenSavingsMetrics {
   /**
    * Record a token savings metric
    */
-  record(metric: Omit<TokenSavingsMetric, 'id' | 'timestamp'>): string {
+  async record(metric: Omit<TokenSavingsMetric, 'id' | 'timestamp'>): Promise<string> {
     const id = this.generateId();
     const timestamp = Date.now();
 
     try {
-      const stmt = this.db.prepare(`
+      await this.db.runAsync(`
         INSERT INTO token_savings_metrics (
           id, timestamp, source, blocked_tool, recommended_tool,
           target, estimated_savings, actual_tokens_avoided, suggestion_followed, metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      stmt.run(
+      `, [
         id,
         timestamp,
         metric.source,
@@ -436,7 +434,7 @@ export class TokenSavingsMetrics {
         metric.actualTokensAvoided || null,
         metric.suggestionFollowed ? 1 : 0,
         JSON.stringify(metric.metadata || {})
-      );
+      ]);
 
       logger.debug(`Recorded token savings metric: ${id}, estimated savings: ${metric.estimatedSavings} tokens`);
       return id;
@@ -450,7 +448,7 @@ export class TokenSavingsMetrics {
   /**
    * Query metrics with filters
    */
-  query(filters: MetricsQueryFilters = {}): TokenSavingsMetric[] {
+  async query(filters: MetricsQueryFilters = {}): Promise<TokenSavingsMetric[]> {
     let sql = 'SELECT * FROM token_savings_metrics WHERE 1=1';
     const params: any[] = [];
 
@@ -492,7 +490,7 @@ export class TokenSavingsMetrics {
     }
 
     try {
-      const rows = this.db.prepare(sql).all(...params);
+      const rows = await this.db.allAsync(sql, params);
       return rows.map((row: any) => this.rowToMetric(row));
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -504,8 +502,8 @@ export class TokenSavingsMetrics {
   /**
    * Get aggregate statistics
    */
-  getStats(filters?: Pick<MetricsQueryFilters, 'source' | 'startTime' | 'endTime'>): TokenSavingsStats {
-    const metrics = this.query(filters);
+  async getStats(filters?: Pick<MetricsQueryFilters, 'source' | 'startTime' | 'endTime'>): Promise<TokenSavingsStats> {
+    const metrics = await this.query(filters);
 
     const stats: TokenSavingsStats = {
       totalSuggestions: metrics.length,
@@ -567,15 +565,13 @@ export class TokenSavingsMetrics {
   /**
    * Update a metric with actual token savings (when available)
    */
-  updateActualSavings(metricId: string, actualTokensAvoided: number): void {
+  async updateActualSavings(metricId: string, actualTokensAvoided: number): Promise<void> {
     try {
-      const stmt = this.db.prepare(`
+      await this.db.runAsync(`
         UPDATE token_savings_metrics
         SET actual_tokens_avoided = ?
         WHERE id = ?
-      `);
-
-      stmt.run(actualTokensAvoided, metricId);
+      `, [actualTokensAvoided, metricId]);
       logger.debug(`Updated metric ${metricId} with actual savings: ${actualTokensAvoided} tokens`);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -586,9 +582,9 @@ export class TokenSavingsMetrics {
   /**
    * Get metrics summary for reporting
    */
-  getSummaryReport(days: number = 7): string {
+  async getSummaryReport(days: number = 7): Promise<string> {
     const startTime = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const stats = this.getStats({ startTime });
+    const stats = await this.getStats({ startTime });
 
     let report = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     report += `📊 Token Savings Report (Last ${days} days)\n`;
@@ -634,8 +630,8 @@ export class TokenSavingsMetrics {
   /**
    * Close database connection
    */
-  close(): void {
-    this.db.close();
+  async close(): Promise<void> {
+    await this.db.closeAsync();
   }
 }
 
@@ -645,10 +641,13 @@ let metricsInstance: TokenSavingsMetrics | null = null;
 /**
  * Get or create the global metrics instance
  */
-export function getMetricsCollector(): TokenSavingsMetrics {
+export async function getMetricsCollector(): Promise<TokenSavingsMetrics> {
   if (!metricsInstance) {
     const deps = getDependencies();
-    metricsInstance = new TokenSavingsMetrics(deps.tokenDbSync);
+    // Use async database instance
+    metricsInstance = new TokenSavingsMetrics(deps.tokenDb);
+    // Initialize schema on first creation
+    await metricsInstance.initializeSchema();
   }
   return metricsInstance;
 }

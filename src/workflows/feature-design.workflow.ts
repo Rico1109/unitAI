@@ -188,7 +188,7 @@ export async function executeFeatureDesign(
 
 Target files: ${targetFiles.join(", ")}
 
-Context (se disponibile):
+Context (if available):
 ${context || "N/A"}
 
 Generate concrete implementation suggestions (patch outline, risks, recommended tests).`,

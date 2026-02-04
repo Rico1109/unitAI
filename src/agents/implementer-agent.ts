@@ -14,6 +14,7 @@
 
 import { BaseAgent } from "./base/BaseAgent.js";
 import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/config.js";
 import type {
   ImplementerInput,
   ImplementerOutput,
@@ -29,8 +30,8 @@ import type {
  */
 export class ImplementerAgent extends BaseAgent<ImplementerInput, ImplementerOutput> {
   readonly name = "ImplementerAgent";
-  readonly description = "Precise code implementation with production-quality standards using Droid (GLM-4.6)";
-  readonly preferredBackend = BACKENDS.DROID;
+  readonly description = "Precise code implementation with production-quality standards using configured implementer backend";
+  readonly preferredBackend = getRoleBackend('implementer');
   readonly fallbackBackend = undefined;
 
   /**
