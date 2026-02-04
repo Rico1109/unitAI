@@ -4,6 +4,7 @@ import { executeCommand } from "../utils/cli/commandExecutor.js";
 import { sanitizePrompt, validatePromptNotEmpty } from "../utils/security/promptSanitizer.js";
 import { validateFilePaths } from "../utils/security/pathValidator.js";
 import { logger } from "../utils/logger.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 
 export class CursorBackend implements IBackendExecutor {
   readonly name = BACKENDS.CURSOR;
@@ -16,7 +17,8 @@ export class CursorBackend implements IBackendExecutor {
       attachments = [],
       autoApprove = false,
       onProgress,
-      trustedSource = false
+      trustedSource = false,
+      autonomyLevel
     } = options;
 
     // SECURITY: Validate and sanitize prompt
@@ -33,7 +35,16 @@ export class CursorBackend implements IBackendExecutor {
 
     // Force mode allows file edits (equivalent to auto-approve)
     if (autoApprove) {
-      args.push(CLI.FLAGS.CURSOR.FORCE);
+      // SAFEGUARD: Only allow autoApprove if strict conditions are met
+      const isHighAutonomy = autonomyLevel === AutonomyLevel.HIGH;
+      const isExplicitlyAllowed = process.env.UNITAI_ALLOW_AUTO_APPROVE === "true";
+      const isNotProduction = process.env.NODE_ENV !== "production";
+
+      if (isHighAutonomy && isExplicitlyAllowed && isNotProduction) {
+        args.push(CLI.FLAGS.CURSOR.FORCE);
+      } else {
+        logger.warn("Auto-approve request denied by safeguards. Requires HIGH autonomy, UNITAI_ALLOW_AUTO_APPROVE=true, and non-production env.");
+      }
     }
 
     if (outputFormat) {

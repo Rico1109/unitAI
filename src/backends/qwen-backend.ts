@@ -3,6 +3,7 @@ import { BACKENDS, CLI, STATUS_MESSAGES } from "../constants.js";
 import { executeCommand } from "../utils/cli/commandExecutor.js";
 import { sanitizePrompt, validatePromptNotEmpty } from "../utils/security/promptSanitizer.js";
 import { logger } from "../utils/logger.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
 
 export class QwenBackend implements IBackendExecutor {
   readonly name = BACKENDS.QWEN;
@@ -15,7 +16,8 @@ export class QwenBackend implements IBackendExecutor {
       autoApprove,
       outputFormat,
       onProgress,
-      trustedSource = false
+      trustedSource = false,
+      autonomyLevel
     } = options;
 
     // SECURITY: Validate and sanitize prompt
@@ -34,7 +36,16 @@ export class QwenBackend implements IBackendExecutor {
 
     // Auto-approve mode (YOLO)
     if (autoApprove) {
-      args.push(CLI.FLAGS.QWEN.YOLO);
+      // SAFEGUARD: Only allow autoApprove if strict conditions are met
+      const isHighAutonomy = autonomyLevel === AutonomyLevel.HIGH;
+      const isExplicitlyAllowed = process.env.UNITAI_ALLOW_AUTO_APPROVE === "true";
+      const isNotProduction = process.env.NODE_ENV !== "production";
+
+      if (isHighAutonomy && isExplicitlyAllowed && isNotProduction) {
+        args.push(CLI.FLAGS.QWEN.YOLO);
+      } else {
+        logger.warn("Auto-approve request denied by safeguards. Requires HIGH autonomy, UNITAI_ALLOW_AUTO_APPROVE=true, and non-production env.");
+      }
     }
 
     // Output format

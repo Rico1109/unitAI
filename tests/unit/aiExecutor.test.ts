@@ -94,12 +94,17 @@ describe('AIExecutor', () => {
     });
 
     it('should include attachments, force and output format flags', async () => {
+      // Set up environment for auto-approve safeguards
+      process.env.NODE_ENV = 'development';
+      process.env.UNITAI_ALLOW_AUTO_APPROVE = 'true';
+
       await executeAIClient({
         backend: BACKENDS.CURSOR,
         prompt: 'Plan refactor',
         attachments: ['test-file.ts'],
         autoApprove: true,
-        outputFormat: 'json'
+        outputFormat: 'json',
+        autonomyLevel: 'high' as any
       });
 
       const args = mocks.executeCommand.mock.calls[0][1];
@@ -109,6 +114,42 @@ describe('AIExecutor', () => {
       expect(args).toContain('/abs/test-file.ts');
       expect(args).toContain('--output-format');
       expect(args).toContain('json');
+
+      // Clean up
+      delete process.env.UNITAI_ALLOW_AUTO_APPROVE;
+      delete process.env.NODE_ENV;
+    });
+
+    it('should block auto-approve when safeguards are not met', async () => {
+      // Set up production environment (should block auto-approve)
+      process.env.NODE_ENV = 'production';
+      process.env.UNITAI_ALLOW_AUTO_APPROVE = 'true';
+
+      await executeAIClient({
+        backend: BACKENDS.CURSOR,
+        prompt: 'Plan refactor',
+        attachments: ['test-file.ts'],
+        autoApprove: true,
+        outputFormat: 'json',
+        autonomyLevel: 'high' as any
+      });
+
+      const args = mocks.executeCommand.mock.calls[0][1];
+      expect(args).toContain('--print');
+      // Should NOT contain --force because safeguards block it in production
+      expect(args).not.toContain('--force');
+      expect(args).toContain('--file');
+      expect(args).toContain('/abs/test-file.ts');
+      expect(args).toContain('--output-format');
+      expect(args).toContain('json');
+      // Should log a warning
+      expect(mocks.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Auto-approve request denied by safeguards')
+      );
+
+      // Clean up
+      delete process.env.UNITAI_ALLOW_AUTO_APPROVE;
+      delete process.env.NODE_ENV;
     });
   });
 
