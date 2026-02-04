@@ -1,9 +1,12 @@
 /**
  * Unit tests for Git Helper
+ *
+ * Note: These tests are environment-dependent and require a git repository.
+ * They should be converted to fully isolated tests with mocked git commands (LOW priority).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mockGitCommand, mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
+import { createMockGitDiff, mockGitCommand, mockGitCommands, resetMockGitCommands } from '../utils/mockGit.js';
 
 describe('GitHelper', () => {
   beforeEach(() => {
@@ -19,34 +22,48 @@ describe('GitHelper', () => {
 
   describe('isGitRepository', () => {
     it('should return true when in git repository', async () => {
-      mockGitCommand('rev-parse --git-dir', '.git');
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockResolvedValue('.git');
+
       const { isGitRepository } = await import('../../src/utils/cli/gitHelper.js');
       const result = await isGitRepository();
+
+      spy.mockRestore();
       expect(result).toBe(true);
     });
 
     it('should return false when not in git repository', async () => {
-      mockGitCommand('rev-parse --git-dir', '', 128);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockRejectedValue(new Error('Command failed with exit code 128'));
+
       const { isGitRepository } = await import('../../src/utils/cli/gitHelper.js');
       const result = await isGitRepository();
+
+      spy.mockRestore();
       expect(result).toBe(false);
     });
   });
 
   describe('getGitRepoInfo', () => {
     it('should return complete repository information', async () => {
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        { command: 'branch --show-current', output: 'main' },
-        { command: 'status --porcelain', output: '' },
-        { command: 'log --oneline -5', output: 'abc123 Commit message\ndef456 Another commit' },
-        { command: 'diff --cached --name-only', output: 'src/index.ts' },
-        { command: 'diff --name-only', output: 'README.md' }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('branch --show-current')) return 'main';
+        if (invoked.includes('status --porcelain')) return '';
+        if (invoked.includes('log --oneline -5')) return 'abc123 Commit message\ndef456 Another commit';
+        if (invoked.includes('diff --cached --name-only')) return 'src/index.ts';
+        if (invoked.includes('diff --name-only')) return 'README.md';
+
+        return '';
+      });
 
       const { getGitRepoInfo } = await import('../../src/utils/cli/gitHelper.js');
       const info = await getGitRepoInfo();
 
+      spy.mockRestore();
       expect(info.currentBranch).toBe('main');
       expect(info.recentCommits).toHaveLength(2);
       expect(info.stagedFiles).toContain('src/index.ts');
@@ -54,25 +71,34 @@ describe('GitHelper', () => {
     });
 
     it('should throw error when not in git repository', async () => {
-      mockGitCommand('rev-parse --git-dir', '', 128);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockRejectedValue(new Error('Command failed with exit code 128'));
 
       const { getGitRepoInfo } = await import('../../src/utils/cli/gitHelper.js');
-      await expect(getGitRepoInfo()).rejects.toThrow('non è un repository Git');
+      await expect(getGitRepoInfo()).rejects.toThrow('not a Git repository');
+
+      spy.mockRestore();
     });
 
     it('should handle empty staged and modified files', async () => {
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        { command: 'branch --show-current', output: 'main' },
-        { command: 'status --porcelain', output: '' },
-        { command: 'log --oneline -5', output: 'abc123 Commit' },
-        { command: 'diff --cached --name-only', output: '' },
-        { command: 'diff --name-only', output: '' }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('branch --show-current')) return 'main';
+        if (invoked.includes('status --porcelain')) return '';
+        if (invoked.includes('log --oneline -5')) return 'abc123 Commit';
+        if (invoked.includes('diff --cached --name-only')) return '';
+        if (invoked.includes('diff --name-only')) return '';
+
+        return '';
+      });
 
       const { getGitRepoInfo } = await import('../../src/utils/cli/gitHelper.js');
       const info = await getGitRepoInfo();
 
+      spy.mockRestore();
       expect(info.stagedFiles).toEqual([]);
       expect(info.modifiedFiles).toEqual([]);
     });
@@ -86,19 +112,24 @@ describe('GitHelper', () => {
         ['-  console.log("goodbye");']
       );
 
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        {
-          command: 'show --format=%H|%an|%ad|%s --date=iso HEAD',
-          output: 'abc123|John Doe|2024-01-15 10:30:00 +0000|Fix bug\n' + mockDiff
-        },
-        { command: 'show --format= HEAD', output: mockDiff },
-        { command: 'show --format= --name-only HEAD', output: 'src/index.ts' }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('show --format=%H|%an|%ad|%s --date=iso HEAD')) {
+          return 'abc123|John Doe|2024-01-15 10:30:00 +0000|Fix bug\n' + mockDiff;
+        }
+        if (invoked.includes('show --format= HEAD')) return mockDiff;
+        if (invoked.includes('show --format= --name-only HEAD')) return 'src/index.ts';
+
+        return '';
+      });
 
       const { getGitCommitInfo } = await import('../../src/utils/cli/gitHelper.js');
       const info = await getGitCommitInfo('HEAD');
 
+      spy.mockRestore();
       expect(info.hash).toBe('abc123');
       expect(info.author).toBe('John Doe');
       expect(info.message).toBe('Fix bug');
@@ -107,10 +138,13 @@ describe('GitHelper', () => {
     });
 
     it('should throw error when not in git repository', async () => {
-      mockGitCommand('rev-parse --git-dir', '', 128);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockRejectedValue(new Error('Command failed with exit code 128'));
 
       const { getGitCommitInfo } = await import('../../src/utils/cli/gitHelper.js');
-      await expect(getGitCommitInfo()).rejects.toThrow('non è un repository Git');
+      await expect(getGitCommitInfo()).rejects.toThrow('not a Git repository');
+
+      spy.mockRestore();
     });
   });
 
@@ -119,26 +153,30 @@ describe('GitHelper', () => {
       const mockDiff1 = createMockGitDiff('file1.ts', ['+line1'], ['-line0']);
       const mockDiff2 = createMockGitDiff('file2.ts', ['+line2'], ['-line1']);
 
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        { command: 'log --oneline', output: 'abc123 Commit 1\ndef456 Commit 2' },
-        {
-          command: 'show --format=%H|%an|%ad|%s --date=iso abc123',
-          output: 'abc123|Author1|2024-01-15 10:00:00 +0000|Commit 1\n' + mockDiff1
-        },
-        { command: 'show --format= abc123', output: mockDiff1 },
-        { command: 'show --format= --name-only abc123', output: 'file1.ts' },
-        {
-          command: 'show --format=%H|%an|%ad|%s --date=iso def456',
-          output: 'def456|Author2|2024-01-14 10:00:00 +0000|Commit 2\n' + mockDiff2
-        },
-        { command: 'show --format= def456', output: mockDiff2 },
-        { command: 'show --format= --name-only def456', output: 'file2.ts' }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('log --oneline')) return 'abc123 Commit 1\ndef456 Commit 2';
+        if (invoked.includes('show --format=%H|%an|%ad|%s --date=iso abc123')) {
+          return 'abc123|Author1|2024-01-15 10:00:00 +0000|Commit 1\n' + mockDiff1;
+        }
+        if (invoked.includes('show --format= abc123')) return mockDiff1;
+        if (invoked.includes('show --format= --name-only abc123')) return 'file1.ts';
+        if (invoked.includes('show --format=%H|%an|%ad|%s --date=iso def456')) {
+          return 'def456|Author2|2024-01-14 10:00:00 +0000|Commit 2\n' + mockDiff2;
+        }
+        if (invoked.includes('show --format= def456')) return mockDiff2;
+        if (invoked.includes('show --format= --name-only def456')) return 'file2.ts';
+
+        return '';
+      });
 
       const { getRecentCommitsWithDiffs } = await import('../../src/utils/cli/gitHelper.js');
       const commits = await getRecentCommitsWithDiffs(2);
 
+      spy.mockRestore();
       expect(commits).toHaveLength(2);
       expect(commits[0].hash).toBe('abc123');
       expect(commits[1].hash).toBe('def456');
@@ -149,49 +187,65 @@ describe('GitHelper', () => {
     it('should return staged changes diff', async () => {
       const mockDiff = createMockGitDiff('src/test.ts', ['+new code'], ['-old code']);
 
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        { command: 'diff --cached', output: mockDiff }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('diff --cached')) return mockDiff;
+
+        return '';
+      });
 
       const { getStagedDiff } = await import('../../src/utils/cli/gitHelper.js');
       const diff = await getStagedDiff();
 
+      spy.mockRestore();
       expect(diff).toContain('+new code');
       expect(diff).toContain('-old code');
     });
 
     it('should return empty string when no staged changes', async () => {
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        { command: 'diff --cached', output: '' }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('diff --cached')) return '';
+
+        return '';
+      });
 
       const { getStagedDiff } = await import('../../src/utils/cli/gitHelper.js');
       const diff = await getStagedDiff();
 
+      spy.mockRestore();
       expect(diff).toBe('');
     });
   });
 
   describe('getCurrentBranch', () => {
     it('should return current branch name', async () => {
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '.git' },
-        { command: 'branch --show-current', output: 'feature/new-feature' }
-      ]);
+      const commandExecutor = await import('../../src/utils/cli/commandExecutor.js');
+      const spy = vi.spyOn(commandExecutor, 'executeCommand').mockImplementation(async (cmd: string, args: string[] = []) => {
+        const invoked = [cmd, ...args].join(' ').trim();
+
+        if (invoked.includes('rev-parse --git-dir')) return '.git';
+        if (invoked.includes('branch --show-current')) return 'feature/new-feature';
+
+        return '';
+      });
 
       const { getCurrentBranch } = await import('../../src/utils/cli/gitHelper.js');
       const branch = await getCurrentBranch();
 
+      spy.mockRestore();
       expect(branch).toBe('feature/new-feature');
     });
   });
 
   describe('checkCLIAvailability', () => {
     it('should detect available CLI commands', async () => {
-      mockGitCommand('--version', 'version 2.40.0');
-
       const { checkCLIAvailability } = await import('../../src/utils/cli/gitHelper.js');
       const available = await checkCLIAvailability();
 
@@ -202,8 +256,6 @@ describe('GitHelper', () => {
     });
 
     it('should detect unavailable CLI commands', async () => {
-      mockGitCommand('--version', '', 127);
-
       const { checkCLIAvailability } = await import('../../src/utils/cli/gitHelper.js');
       const available = await checkCLIAvailability();
 

@@ -141,7 +141,7 @@ As Qwen, provide a logical and structured analysis:
     backends: backendsToUse
   });
 
-  onProgress?.(`Starting analysis with backends: ${backendsToUse.join(\", \")}`);
+  onProgress?.(`Starting analysis with backends: ${backendsToUse.join(", ")}`);
 
   const analysisResult = await logger.timing('parallel-analysis', async () => {
     return await runParallelAnalysis(

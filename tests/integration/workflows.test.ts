@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mockGitHelper, mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
 import { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 import { createMockProgressCallback } from '../utils/testHelpers.js';
-import { mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
 import { mockAIExecutor } from '../utils/mockAI.js';
 import Database from 'better-sqlite3';
 
@@ -106,7 +106,7 @@ describe('Workflow Integration Tests', () => {
       }, callback);
 
       expect(result).toContain('Parallel');
-      expect(result).toContain('Revisione');
+      expect(result).toContain('Code Review');
       expect(messages.length).toBeGreaterThan(0);
     });
 
@@ -213,7 +213,7 @@ describe('Workflow Integration Tests', () => {
       });
 
       // Should use all 3 backends
-      expect(result).toContain('Sintesi Analisi (Gemini + Cursor)');
+      expect(result).toContain('Analysis Summary (Gemini + Cursor)');
       expect(result).toContain('Autonomous Verification (Droid)');
     });
   });
@@ -286,9 +286,9 @@ describe('Workflow Integration Tests', () => {
 
   describe('Workflow error handling', () => {
     it('should handle git command failures gracefully', async () => {
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '', exitCode: 128 }
-      ]);
+      // Mock isGitRepository to return false
+      const { isGitRepository: mockIsGitRepo } = await import('../../src/utils/cli/gitHelper.js');
+      vi.spyOn(await import('../../src/utils/cli/gitHelper.js'), 'isGitRepository').mockResolvedValue(false);
 
       const { executeInitSession } = await import('../../src/workflows/init-session.workflow.js');
 
@@ -297,7 +297,7 @@ describe('Workflow Integration Tests', () => {
         commitCount: 1
       });
 
-      expect(result).toContain('non è un repository Git');
+      expect(result).toContain('not a Git repository');
     });
 
     it('should handle AI execution failures with fallback', async () => {

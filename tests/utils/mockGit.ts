@@ -120,6 +120,7 @@ export function mockGitHelper(overrides: Partial<Record<string, any>> = {}): voi
     const actual = await vi.importActual('../../src/utils/cli/gitHelper.js');
     return {
       ...actual,
+      isGitRepository: vi.fn().mockResolvedValue(overridesRef.isGitRepository !== undefined ? overridesRef.isGitRepository : true),
       getRecentCommitsWithDiffs: vi.fn().mockResolvedValue(overridesRef.getRecentCommitsWithDiffs || []),
       getStagedDiff: vi.fn().mockResolvedValue(overridesRef.getStagedDiff || ''),
       getCurrentBranch: vi.fn().mockResolvedValue(overridesRef.getCurrentBranch || 'main'),
