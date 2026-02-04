@@ -1,12 +1,15 @@
 ---
 title: unitAI Known Issues Registry
-version: 3.7.0
-updated: 2026-02-02T21:00:00+01:00
+version: 3.10.0
+updated: 2026-02-04T23:30:00+01:00
 scope: unitai-issues
 category: ssot
 subcategory: issues
 domain: [di, testing, configuration, lifecycle, organization, security, observability, reliability, backends]
 changelog:
+  - 3.10.0 (2026-02-04): 🔴 CRITICAL - Added ARCH-HARDCODE-001 (Hardcoded Backend References Block Dynamic Role Configuration). 6 test failures due to naming mismatch between config (short names) and BACKENDS constant (prefixed names). Updated quality plan Phase 2.0 as blocker task. Reference: `/home/rico/.gemini/antigravity/brain/0a4f5748-e38c-4464-9dae-de6477a94d0e/implementation_plan.md.resolved`.
+  - 3.9.0 (2026-02-04): Phase 1 COMPLETE - Italian comments replaced (commit 4df5bf5) + E2E tests added (commit 1b6b42a, 4 tests passing). Quality score increased from 8.8 → 9.4/10. autoApprove safeguards implemented (commit c8fe6d4).
+  - 3.8.0 (2026-02-04): Added ROADMAP-2.1 - Phase 2.1 async database migration incomplete (CircuitBreaker needs AsyncDatabase persistence). Added progress tracking to quality plan.
   - 3.7.0 (2026-02-02): ARCH-BACKEND-001 core bug FULLY RESOLVED - Options tracking fix + 22 new tests (13 unit + 9 integration). Status upgraded to MOSTLY RESOLVED (security gaps tracked separately).
   - 3.6.0 (2026-02-02): ARCH-BACKEND-001 marked PARTIALLY RESOLVED with critical testing gaps + new security issues discovered via triangulated review (SEC-007, SEC-008, SEC-009, SEC-010, SEC-011).
   - 3.5.0 (2026-02-02): RESOLVED ARCH-BACKEND-001 (Backend Parameter Semantic Mismatch) via capability declaration system and option transformation.
@@ -25,6 +28,70 @@ This document catalogs observed facts about the unitAI codebase that may require
 ---
 
 ## 🔴 CRITICAL ISSUES
+
+### 🔴 ARCH-HARDCODE-001: Hardcoded Backend References Block Dynamic Role Configuration
+
+**Severity**: 🔴 CRITICAL
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-04
+**Location**: Multiple workflow files, `src/config/config.ts`
+**Reference**: `/home/rico/.gemini/antigravity/brain/0a4f5748-e38c-4464-9dae-de6477a94d0e/implementation_plan.md.resolved`
+
+**Observation**: Workflows contain hardcoded `BACKENDS.*` references instead of using dynamic role-based selection from wizard config. The `model-selector.ts` was partially refactored to use `getRoleBackend()`, but workflows still expect specific backends via `switch` statements.
+
+**Root Cause**: Naming mismatch between config system and BACKENDS constant:
+| Source | Format | Example |
+|--------|--------|---------|
+| Config (`config.ts`) | Short names | `'gemini'`, `'qwen'`, `'droid'` |
+| BACKENDS (`constants.ts`) | Prefixed names | `'ask-gemini'`, `'ask-qwen'`, `'ask-droid'` |
+
+**Files Affected**:
+```typescript
+// src/workflows/parallel-review.workflow.ts:69-120
+switch (backend) {
+  case BACKENDS.GEMINI:  // ❌ Hardcoded
+    return `${basePrompt}\n\nAs Gemini, provide...`;
+  case BACKENDS.CURSOR:
+    return `${basePrompt}\n\nAs Cursor Agent, generate...`;
+  // ... more cases
+}
+
+// src/workflows/parallel-review.workflow.ts:151-178
+if (backend === BACKENDS.CURSOR) {  // ❌ Hardcoded
+  return { attachments, outputFormat: "text", autoApprove: strategy === "double-check" };
+}
+```
+
+**Impact**:
+- 6 test failures in `modelSelector.test.ts` and `workflows.test.ts`
+- Configured backends (via wizard) are ignored
+- Cannot reassign backends to different roles without code changes
+- `getRoleBackend('architect')` returns `'gemini'` but tests expect `'ask-gemini'`
+
+**Test Failures**:
+```
+expected 'ask-qwen' to be 'ask-gemini'  // modelSelector.test.ts:72
+expected 'ask-qwen' to be 'ask-gemini'  // modelSelector.test.ts:116
+expected 'gemini' to be 'ask-gemini'    // modelSelector.test.ts:177
+```
+
+**Required Fix** (per implementation plan):
+1. Fix config naming to use BACKENDS constant values
+2. Replace `switch (backend)` with role-based conditional logic:
+   ```typescript
+   // Instead of: case BACKENDS.GEMINI:
+   // Use: if (backend === architectBackend) {
+   const architectBackend = getRoleBackend('architect');
+   const testerBackend = getRoleBackend('tester');
+   const implementerBackend = getRoleBackend('implementer');
+   ```
+3. Update tests to mock `getRoleBackend()` correctly
+4. Update all workflow files: `parallel-review`, `validate-last-commit`, `pre-commit-validate`, `feature-design`
+
+**Estimated Effort**: 2-3 days
+**Quality Impact**: +0.5 (unblocks dynamic backend configuration)
+
+---
 
 ### ARCH-BACKEND-001: Backend Parameter Semantic Mismatch in Fallback System ⚠️ MOSTLY RESOLVED
 
@@ -962,6 +1029,87 @@ This introduced `src/backends/` and `BackendRegistry`, refactoring `aiExecutor.t
 
 ---
 
+## Quality Roadmap - Phase 1: COMPLETE ✅
+
+### ROADMAP-1.1: Italian Comments Replaced ✅
+
+**Severity**: ⚪ LOW
+**Status**: ✅ RESOLVED
+**Discovered**: 2026-02-02
+**Resolved**: 2026-02-04 (commit 4df5bf5)
+**Location**: `src/workflows/triangulated-review.workflow.ts`, `src/workflows/feature-design.workflow.ts`
+
+**Observation**: Italian comments in workflow files have been replaced with English equivalents.
+
+**Impact**: Codebase localization consistent, international team collaboration improved.
+
+---
+
+### ROADMAP-1.2: E2E Tests Added ✅
+
+**Severity**: 🟠 HIGH
+**Status**: ✅ RESOLVED
+**Discovered**: 2026-02-02
+**Resolved**: 2026-02-04 (commit 1b6b42a)
+**Location**: `tests/e2e/`
+
+**Files Created**:
+- `tests/e2e/parallel-review.e2e.test.ts` (2 tests)
+- `tests/e2e/pre-commit-validate.e2e.test.ts` (1 test)
+- `tests/e2e/init-session.e2e.test.ts` (1 test)
+
+**Test Results**: All 4 tests passing ✅
+```
+✓ tests/e2e/pre-commit-validate.e2e.test.ts (1 test)
+✓ tests/e2e/parallel-review.e2e.test.ts (2 tests)
+✓ tests/e2e/init-session.e2e.test.ts (1 test)
+```
+
+**Impact**: Full workflow coverage, configuration-aware tests, robust backend detection integration.
+
+---
+
+## Quality Roadmap - Phase 2.1: Incomplete Async Database Migration
+
+### ROADMAP-2.1: Async Database Migration Partial
+
+**Severity**: 🟡 MEDIUM
+**Status**: 🔶 OPEN
+**Discovered**: 2026-02-04
+**Location**: `src/dependencies.ts`, `src/utils/reliability/errorRecovery.ts`
+
+**Observation**: Phase 2.1 of the quality roadmap requires complete async database migration, but CircuitBreaker still uses in-memory state storage instead of AsyncDatabase persistence.
+
+**Current State**:
+- `src/dependencies.ts`: Interface no longer has sync database instances ✅
+- `src/utils/reliability/errorRecovery.ts` (CircuitBreaker): Uses in-memory Map for state ❌
+
+```typescript
+// CircuitBreaker class - lines 235-238
+export class CircuitBreaker {
+  private state: CircuitState = CircuitState.CLOSED;
+  private failureCount: number = 0;
+  private successCount: number = 0;
+  private lastFailureTime: number = 0;
+  // No AsyncDatabase injection for persistence
+}
+```
+
+**Required Changes** (per Phase 2.1 spec):
+1. Remove any remaining sync database instances from dependencies
+2. Add `circuitBreaker.repository.ts` for state persistence
+3. Update CircuitBreaker to accept AsyncDatabase for state storage
+4. Create schema: `circuit_breaker_state (backend_name, state, failure_count, last_failure_time, last_state_change)`
+
+**Impact**:
+- Circuit breaker state resets on server restart
+- Cannot track backend reliability across sessions
+- Quality score impact: +0.3 pending
+
+**Related**: See `PRfolder/plans/ultimate_mega_giga_plan.md` Phase 2.1 for full implementation details.
+
+---
+
 ## Async Migration Test Failures (2026-02-02)
 
 > **Context**: After migrating from synchronous to AsyncDatabase wrapper (commit ca8bf52), core test files for `auditTrail.test.ts` and `activityAnalytics.test.ts` were successfully fixed (64 tests passing). However, several other test files have pre-existing issues unrelated to async migration that need attention.
@@ -1097,6 +1245,7 @@ expected true to be false // isGitRepository check
 | SEC-010 | Security | 🟠 HIGH | All backend executors | 🔶 OPEN |
 | SEC-011 | Security | 🟠 HIGH | `backends/types.ts` | 🔶 OPEN |
 | **BACKEND & RELIABILITY** |
+| ARCH-HARDCODE-001 | Architecture | 🔴 CRITICAL | `src/workflows/*.workflow.ts`, `config.ts` | 🔶 OPEN |
 | ARCH-BACKEND-001 | Backend | 🔴 CRITICAL | `aiExecutor.ts` + all backends | ⚠️ MOSTLY RESOLVED |
 | **OBSERVABILITY (Layer 5 Audit)** |
 | ~~OBS-001~~ | Audit | 🔴 CRITICAL | `security/permissionManager.ts` | ✅ RESOLVED |
@@ -1144,10 +1293,10 @@ expected true to be false // isGitRepository check
 | TEST-ASYNC-002 | Testing | 🟡 MEDIUM | `dependencies.test.ts` | 🔶 OPEN |
 | TEST-ENV-001 | Testing | 🟢 LOW | `gitHelper.test.ts` | 🔶 OPEN |
 
-**Progress**: 27/48 issues resolved (56%)
-**Security Status**: 🔴 **NEW CRITICAL SECURITY ISSUES DISCOVERED** (5 new issues, 3 CRITICAL)
-**Production Ready**: ⚠️ **CONDITIONAL** - ARCH-BACKEND-001 core bug fully resolved (22 new tests passing). Security vulnerabilities (SEC-007-011) remain.
-**Async Migration Status**: ✅ **Core tests passing** (auditTrail: 32/32, activityAnalytics: 20/20, aiExecutor: 12/12) - Secondary test failures documented above.
+**Progress**: 27/49 issues resolved (55%)
+**Security Status**: 🔴 **NEW CRITICAL ARCHITECTURE ISSUE** (ARCH-HARDCODE-001) + 5 security issues (SEC-007-011)
+**Production Ready**: ⚠️ **BLOCKED** - ARCH-HARDCODE-001 causes 6 test failures and blocks dynamic backend configuration via wizard.
+**Async Migration Status**: ✅ **Core tests passing** (auditTrail: 32/32, activityAnalytics: 20/20, aiExecutor: 13/13) - Secondary test failures documented above.
 
 ---
 

@@ -3,7 +3,6 @@
  *
  * Manages the lifecycle and injection of services, repositories, and databases.
  */
-import Database from 'better-sqlite3'; // Keep for sync needs (CircuitBreaker)
 import path from 'path';
 import fs from 'fs';
 import { AsyncDatabase } from './infrastructure/async-db.js';

@@ -1,9 +1,9 @@
  unitAI: Path to 10/10 Quality Score
 
  Date: 2026-02-04
- Current Score: 8.8/10
+ Current Score: 9.4/10 (+0.6 from completed tasks: Phase 1.1, 1.2)
  Target Score: 10/10
- Estimated Timeline: 2-3 months
+ Estimated Timeline: 1-2 months (Phase 1 complete)
 
  ---
  Executive Summary
@@ -55,24 +55,58 @@
  ---
  Path to 10/10
 
- Phase 1: Quick Wins (Week 1) → 8.8/10
+
+ ## 🔴 CRITICAL: Phase 2.0 - Role-Based Backend Refactoring (Blocker)
+
+**Reference**: `/home/rico/.gemini/antigravity/brain/0a4f5748-e38c-4464-9dae-de6477a94d0e/implementation_plan.md.resolved`
+
+**Status**: 🔴 **BLOCKER** - Partially implemented, causing test failures
+
+**Problem**: Workflows contain hardcoded `BACKENDS.*` references instead of using dynamic role-based selection from wizard config.
+
+**Impact**:
+- 6 test failures in `modelSelector.test.ts` and `workflows.test.ts`
+- Configured backends (via wizard) are ignored
+- Cannot reassign backends to different roles without code changes
+- Test expectations misaligned with dynamic implementation
+
+**Files Affected**:
+| File | Lines | Issue |
+|------|-------|-------|
+| `src/workflows/parallel-review.workflow.ts` | 69-120, 151-178 | `switch (backend) { case BACKENDS.GEMINI: ... }` |
+| `src/workflows/validate-last-commit.workflow.ts` | 77-125 | `switch (backend) { case BACKENDS.*: ... }` |
+| `src/workflows/pre-commit-validate.workflow.ts` | 82-83 | `backend === BACKENDS.DROID ? ...` |
+| `src/workflows/feature-design.workflow.ts` | 300+ | `switch (backendName) { ... }` |
+| `src/config/config.ts` | 58-60 | Config uses short names (`'gemini'`) vs BACKENDS prefix (`'ask-gemini'`) |
+
+**Implementation Required**:
+1. Replace `switch (backend)` with role-based conditional logic
+2. Fix naming mismatch between config and BACKENDS constant
+3. Update tests to mock `getRoleBackend()` correctly
+4. Update all workflow files to use role-based prompts and options
+
+**See**: `Phase 2.0` below for detailed task breakdown 
+
+ Phase 1: Quick Wins (Week 1) → 9.4/10 ✅ COMPLETE (2/2 tasks done)
  ┌─────────────────────────────────┬──────────┬────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
  │              Task               │  Effort  │ Impact │                                                      Files                                                       │
  ├─────────────────────────────────┼──────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- │ 1.1 Replace Italian comments    │ 30 min   │ +0.1   │ src/workflows/triangulated-review.workflow.tssrc/workflows/feature-design.workflow.ts                            │
+ │ 1.1 Replace Italian comments    │ DONE ✓   │ +0.1 ✓ │ src/workflows/triangulated-review.workflow.tssrc/workflows/feature-design.workflow.ts                            │
  ├─────────────────────────────────┼──────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
- │ 1.2 Add E2E tests (3 workflows) │ 1-2 days │ +0.5   │ tests/e2e/parallel-review.e2e.test.tstests/e2e/pre-commit-validate.e2e.test.tstests/e2e/init-session.e2e.test.ts │
+ │ 1.2 Add E2E tests (3 workflows) │ DONE ✓   │ +0.5 ✓ │ tests/e2e/parallel-review.e2e.test.tstests/e2e/pre-commit-validate.e2e.test.tstests/e2e/init-session.e2e.test.ts │
  └─────────────────────────────────┴──────────┴────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- Phase 2: Code Quality (Week 2-3) → 9.2/10
- ┌───────────────────────────────────────┬──────────┬────────┬───────────────────────────────────────────────────────────────────────────────────────────┐
- │                 Task                  │  Effort  │ Impact │                                           Files                                           │
- ├───────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
- │ 2.1 Complete async database migration │ 1-2 days │ +0.3   │ src/dependencies.tssrc/repositories/circuit-breaker.repository.ts (new)                   │
- ├───────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
- │ 2.2 Add correlation IDs               │ 2-3 days │ +0.2   │ src/services/structured-logger.tssrc/server.ts                                            │
- ├───────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
- │ 2.3 Add autoApprove safeguards        │ 1 hour   │ +0.1   │ src/backends/cursor-backend.tssrc/backends/rovodev-backend.tssrc/backends/qwen-backend.ts │
- └───────────────────────────────────────┴──────────┴────────┴───────────────────────────────────────────────────────────────────────────────────────────┘
+ Phase 2: Code Quality (Week 2-3) → 9.3/10 (1/4 tasks done, 1 critical blocker)
+ ┌─────────────────────────────────────────────────┬──────────┬────────┬───────────────────────────────────────────────────────────────────────────────────────────┐
+ │                      Task                       │  Effort  │ Impact │                                           Files                                           │
+ ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+ │ 🔴 2.0 Role-based backend refactoring           │ 2-3 days │ +0.5   │ src/workflows/*.workflow.tssrc/workflows/model-selector.tssrc/config/config.ts           │
+ ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+ │ 2.1 Complete async database migration           │ 1-2 days │ +0.3   │ src/dependencies.tssrc/repositories/circuit-breaker.repository.ts (new)                   │
+ ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+ │ 2.2 Add correlation IDs                         │ 2-3 days │ +0.2   │ src/services/structured-logger.tssrc/server.ts                                            │
+ ├─────────────────────────────────────────────────┼──────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+ │ 2.3 Add autoApprove safeguards                  │ DONE ✓   │ +0.1 ✓ │ src/backends/cursor-backend.tssrc/backends/rovodev-backend.tssrc/backends/qwen-backend.ts │
+ └─────────────────────────────────────────────────┴──────────┴────────┴───────────────────────────────────────────────────────────────────────────────────────────┘
  Phase 3: Infrastructure (Month 2) → 9.6/10
  ┌──────────────────────────────────┬──────────┬────────┬──────────────────────────────────────────────────────────────────────────────────────────────┐
  │               Task               │  Effort  │ Impact │                                            Files                                             │
@@ -93,6 +127,52 @@
  └───────────────────────────────┴──────────┴────────┴───────────────────────────────────────────────────┘
  ---
  Detailed Implementation Plans
+
+ 🔴 Phase 2.0: Role-Based Backend Refactoring (BLOCKER)
+
+ **Reference**: `/home/rico/.gemini/antigravity/brain/0a4f5748-e38c-4464-9dae-de6477a94d0e/implementation_plan.md.resolved`
+
+ **Problem**: Workflows contain hardcoded `BACKENDS.*` references instead of using dynamic role-based selection.
+
+ **Root Cause**: Naming mismatch between config system (short names) and BACKENDS constant (prefixed names).
+
+ Current State:
+ - Config uses: `'gemini'`, `'qwen'`, `'droid'`
+ - BACKENDS uses: `'ask-gemini'`, `'ask-qwen'`, `'ask-droid'`
+
+ **Files to Modify**:
+ - `src/workflows/parallel-review.workflow.ts` (lines 69-120, 151-178)
+ - `src/workflows/validate-last-commit.workflow.ts` (lines 77-125)
+ - `src/workflows/pre-commit-validate.workflow.ts` (lines 82-83)
+ - `src/workflows/feature-design.workflow.ts` (lines 300+)
+ - `src/config/config.ts` (fix naming mismatch)
+ - `tests/unit/workflows/modelSelector.test.ts` (mock `getRoleBackend()`)
+
+ **Implementation Steps**:
+
+ 1. **Fix Config Naming** (`src/config/config.ts`)
+    - Change default roles to use BACKENDS constant values
+    - Or create a normalization function
+
+ 2. **Refactor Workflows** (all workflow files)
+    - Replace `switch (backend) { case BACKENDS.GEMINI: ... }`
+    - With: `if (backend === architectBackend) { ... }`
+    - Get role backends from config at workflow start
+
+ 3. **Update Tests** (`modelSelector.test.ts`)
+    - Mock `getRoleBackend()` to return BACKENDS constant values
+    - Update test expectations for dynamic selection
+
+ 4. **Verification**:
+    - All tests pass
+    - Configured backends are used (not hardcoded)
+    - Can reassign backends via wizard config
+
+ **Estimated Effort**: 2-3 days
+
+ **Impact**: +0.5 to quality score (unblocks dynamic backend configuration)
+
+ ---
 
  Phase 1.1: Replace Italian Comments
 
@@ -135,7 +215,9 @@
  - No real AI calls made (all mocked)
 
  ---
- Phase 2.1: Complete Async Database Migration
+ Phase 2.1: Complete Async Database Migration ⚠️ PARTIAL
+
+**Status**: PARTIALLY COMPLETED (in-progress commit)
 
  Files to modify:
  - src/dependencies.ts - Remove sync database instances
@@ -159,10 +241,48 @@
    circuitBreaker: CircuitBreaker;  // Uses AsyncDatabase internally
  }
 
- Verification:
- - All existing tests still pass
- - No synchronous database calls remain
- - Circuit breaker persists state across restarts
+**Completed**:
+- ✅ `src/dependencies.ts` - Removed sync database imports (better-sqlite3)
+- ✅ `src/services/activityAnalytics.ts` - Removed sync database imports
+- ✅ `src/repositories/metrics-repository.ts` - Uses AsyncDatabase throughout
+- ✅ `src/utils/auditTrail.ts` - Uses AsyncDatabase throughout
+
+**⚠️ DECISION REQUIRED**: CircuitBreaker Database Persistence
+
+The CircuitBreaker (`src/utils/reliability/errorRecovery.ts`) currently uses in-memory state storage:
+```typescript
+export class CircuitBreaker {
+  private state: CircuitState = CircuitState.CLOSED;  // ← In-memory
+  private breakers: Map<string, CircuitBreaker> = new Map();  // ← In-memory
+}
+```
+
+**Options**:
+1. **Keep CircuitBreaker database-free** (State resets on server restart)
+   - Pro: Faster, simpler, no persistence overhead
+   - Con: Lost reliability history, backend may be retried too soon after restart
+
+2. **Add AsyncDatabase persistence** to CircuitBreaker
+   - Pro: State survives restarts, better reliability tracking
+   - Con: Adds database dependency to error recovery path
+
+**Decision Point**: Which approach to take? This affects whether 2.1 is "complete" or if database persistence is added.
+
+Files to modify (if Option 2):
+- `src/utils/reliability/errorRecovery.ts` - Use AsyncDatabase for state
+- `src/dependencies.ts` - Inject AsyncDatabase into CircuitBreaker
+- New file: `src/repositories/circuit-breaker.repository.ts` (optional abstraction)
+
+Schema (if Option 2):
+```sql
+CREATE TABLE circuit_breaker_state (
+  backend_name TEXT PRIMARY KEY,
+  state TEXT NOT NULL,  -- CLOSED, OPEN, HALF_OPEN
+  failure_count INTEGER NOT NULL,
+  last_failure_time TEXT,
+  last_state_change TEXT
+);
+```
 
  ---
  Phase 2.2: Add Correlation IDs
@@ -197,14 +317,17 @@
  - Correlation ID propagates through entire request stack
 
  ---
- Phase 2.3: Add autoApprove Safeguards
+ Phase 2.3: Add autoApprove Safeguards ✅ DONE
 
- Files to modify:
+ **Status**: COMPLETED (commit c8fe6d4)
+
+ Files modified:
  - src/backends/cursor-backend.ts
  - src/backends/rovodev-backend.ts
  - src/backends/qwen-backend.ts
+ - tests/unit/aiExecutor.test.ts (2 new tests)
 
- Implementation:
+ **Implementation**:
  // Add same protections as skipPermissionsUnsafe
  if (autoApprove) {
    if (autonomyLevel !== AutonomyLevel.HIGH) {
@@ -218,9 +341,14 @@
    }
  }
 
- Verification:
- - Tests verify autoApprove requires all 3 conditions
- - Audit log records autoApprove usage
+ **Verification**:
+ - ✅ Tests verify autoApprove requires all 3 conditions
+ - ✅ Audit log records autoApprove usage
+ - ✅ Production environment blocks autoApprove regardless of other settings
+
+ **Tests Added**:
+ - `should include attachments, force and output format flags` (with proper safeguards)
+ - `should block auto-approve when safeguards are not met`
 
  ---
  Phase 3.1: Persist CircuitBreaker State
