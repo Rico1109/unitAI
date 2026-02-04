@@ -4,10 +4,11 @@ import { ERROR_MESSAGES } from "../constants.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 /**
- * Tool execution context - provides requestId and progress callback
+ * Tool execution context - provides requestId, correlationId and progress callback
  */
 export interface ToolExecutionContext {
   requestId: string;
+  correlationId: string;
   onProgress?: (message: string) => void;
 }
 
@@ -109,7 +110,8 @@ export async function executeTool(
   name: string,
   args: Record<string, any>,
   onProgress?: (message: string) => void,
-  requestId?: string
+  requestId?: string,
+  correlationId?: string
 ): Promise<string> {
   // Find the tool
   const tool = toolRegistry.find(t => t.name === name);
@@ -120,9 +122,13 @@ export async function executeTool(
   // Generate requestId if not provided
   const effectiveRequestId = requestId || `req-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
+  // Generate correlationId if not provided (for distributed tracing)
+  const effectiveCorrelationId = correlationId || `corr-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
   // Create execution context
   const context: ToolExecutionContext = {
     requestId: effectiveRequestId,
+    correlationId: effectiveCorrelationId,
     onProgress
   };
 

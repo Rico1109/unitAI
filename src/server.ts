@@ -52,22 +52,23 @@ export class UnitAIServer {
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name: toolName, arguments: args = {} } = request.params;
 
-            // Generate unique requestId for this MCP request
+            // Generate unique requestId and correlationId for this MCP request
             const requestId = `mcp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+            const correlationId = `corr-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-            logger.info(`Tool call: ${toolName} [requestId: ${requestId}]`);
+            logger.info(`Tool call: ${toolName} [requestId: ${requestId}, correlationId: ${correlationId}]`);
 
             if (!toolExists(toolName)) {
-                logger.error(`Tool not found: ${toolName} [requestId: ${requestId}]`);
+                logger.error(`Tool not found: ${toolName} [requestId: ${requestId}, correlationId: ${correlationId}]`);
                 throw new Error(`Tool '${toolName}' not found`);
                 // Note: SDK handles errors and returns isError: true
             }
 
-            // Progress callback with requestId
-            const onProgress = (msg: string) => logger.progress(`[${requestId}] ${msg}`);
+            // Progress callback with requestId and correlationId
+            const onProgress = (msg: string) => logger.progress(`[${requestId}|${correlationId}] ${msg}`);
 
             try {
-                const result = await executeTool(toolName, args, onProgress, requestId);
+                const result = await executeTool(toolName, args, onProgress, requestId, correlationId);
                 return {
                     content: [
                         {
@@ -78,7 +79,7 @@ export class UnitAIServer {
                 };
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                logger.error(`Tool ${toolName} failed [requestId: ${requestId}]: ${errorMessage}`);
+                logger.error(`Tool ${toolName} failed [requestId: ${requestId}, correlationId: ${correlationId}]: ${errorMessage}`);
                 throw error; // Let SDK wrap it
             }
         });

@@ -46,6 +46,7 @@ export interface LogEntry {
   metadata?: Record<string, unknown>;
   duration?: number;              // Milliseconds (for timing)
   workflowId?: string;            // To correlate logs for same workflow
+  correlationId?: string;         // For distributed tracing across services
   parentSpanId?: string;          // For distributed tracing (future)
 }
 
@@ -312,7 +313,8 @@ export class StructuredLogger {
     component: string,
     operation: string,
     message: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    correlationId?: string
   ): void {
     this.log({
       level: LogLevel.DEBUG,
@@ -320,7 +322,8 @@ export class StructuredLogger {
       component,
       operation,
       message,
-      metadata
+      metadata,
+      ...(correlationId && { correlationId })
     });
   }
 
@@ -332,7 +335,8 @@ export class StructuredLogger {
     component: string,
     operation: string,
     message: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    correlationId?: string
   ): void {
     this.log({
       level: LogLevel.INFO,
@@ -340,7 +344,8 @@ export class StructuredLogger {
       component,
       operation,
       message,
-      metadata
+      metadata,
+      ...(correlationId && { correlationId })
     });
   }
 
@@ -352,7 +357,8 @@ export class StructuredLogger {
     component: string,
     operation: string,
     message: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    correlationId?: string
   ): void {
     this.log({
       level: LogLevel.WARN,
@@ -360,7 +366,8 @@ export class StructuredLogger {
       component,
       operation,
       message,
-      metadata
+      metadata,
+      ...(correlationId && { correlationId })
     });
   }
 
@@ -373,7 +380,8 @@ export class StructuredLogger {
     operation: string,
     message: string,
     error?: Error,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    correlationId?: string
   ): void {
     this.log({
       level: LogLevel.ERROR,
@@ -387,7 +395,8 @@ export class StructuredLogger {
           name: error.name,
           message: error.message,
           stack: error.stack
-        } : undefined
+        } : undefined,
+        ...(correlationId && { correlationId })
       }
     });
   }
@@ -395,8 +404,8 @@ export class StructuredLogger {
   /**
    * Create workflow-scoped logger
    */
-  forWorkflow(workflowId: string, workflowName: string): WorkflowLogger {
-    return new WorkflowLogger(this, workflowId, workflowName);
+  forWorkflow(workflowId: string, workflowName: string, correlationId?: string): WorkflowLogger {
+    return new WorkflowLogger(this, workflowId, workflowName, correlationId);
   }
 
   /**
@@ -554,13 +563,14 @@ export class StructuredLogger {
 }
 
 /**
- * Workflow-scoped logger - auto-inject workflowId
+ * Workflow-scoped logger - auto-inject workflowId and correlationId
  */
 export class WorkflowLogger {
   constructor(
     private baseLogger: StructuredLogger,
     private workflowId: string,
-    private workflowName: string
+    private workflowName: string,
+    private correlationId?: string
   ) {}
 
   /**
@@ -575,7 +585,8 @@ export class WorkflowLogger {
       {
         ...metadata,
         workflowId: this.workflowId
-      }
+      },
+      this.correlationId
     );
   }
 
@@ -593,7 +604,8 @@ export class WorkflowLogger {
         workflowId: this.workflowId,
         backend,
         promptLength: prompt.length
-      }
+      },
+      this.correlationId
     );
   }
 
@@ -610,7 +622,8 @@ export class WorkflowLogger {
         ...metadata,
         workflowId: this.workflowId,
         allowed
-      }
+      },
+      this.correlationId
     );
   }
 
@@ -627,7 +640,8 @@ export class WorkflowLogger {
       {
         ...metadata,
         workflowId: this.workflowId
-      }
+      },
+      this.correlationId
     );
   }
 
@@ -650,7 +664,8 @@ export class WorkflowLogger {
           workflowId: this.workflowId,
           duration,
           success: true
-        }
+        },
+        this.correlationId
       );
 
       return result;
@@ -667,7 +682,8 @@ export class WorkflowLogger {
           workflowId: this.workflowId,
           duration,
           success: false
-        }
+        },
+        this.correlationId
       );
 
       throw error;
