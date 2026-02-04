@@ -2,13 +2,33 @@
  * Tests for Token Savings Metrics Collection
  */
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { TokenSavingsMetrics, getMetricsCollector } from '../../src/services/token-estimator.js';
 import { createTestDependencies } from '../utils/testDependencies.js';
-import { initializeDependencies, closeDependencies } from '../../src/dependencies.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import type Database from 'better-sqlite3';
+
+// Mock dependencies to avoid real DB initialization and "Dependencies not initialized" error
+vi.mock('../../src/dependencies.js', () => {
+  const mockDb = {
+    prepare: vi.fn(() => ({
+      run: vi.fn(),
+      get: vi.fn(),
+      all: vi.fn()
+    })),
+    pragma: vi.fn(),
+    exec: vi.fn()
+  };
+
+  return {
+    initializeDependencies: vi.fn(),
+    closeDependencies: vi.fn(),
+    getDependencies: vi.fn().mockReturnValue({
+      tokenDbSync: mockDb
+    })
+  };
+});
 
 describe('TokenSavingsMetrics', () => {
   let metrics: TokenSavingsMetrics;
@@ -268,16 +288,6 @@ describe('TokenSavingsMetrics', () => {
   });
 
   describe('getMetricsCollector singleton', () => {
-    beforeAll(() => {
-      // Initialize dependencies for singleton test
-      initializeDependencies();
-    });
-
-    afterAll(() => {
-      // Cleanup dependencies
-      closeDependencies();
-    });
-
     it('should return the same instance', () => {
       const instance1 = getMetricsCollector();
       const instance2 = getMetricsCollector();

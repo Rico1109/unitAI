@@ -2,7 +2,7 @@
  * Tests for model selector
  */
 
-import { describe, it, expect, beforeEach, vi, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   selectOptimalBackend,
   selectParallelBackends,
@@ -13,7 +13,27 @@ import {
 } from '../../../src/workflows/model-selector.js';
 import { BACKENDS } from '../../../src/services/ai-executor.js';
 import { CircuitBreaker } from '../../../src/utils/reliability/index.js';
-import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
+
+// Mock dependencies to avoid real DB initialization
+vi.mock('../../../src/dependencies.js', () => {
+  const mockDb = {
+    prepare: vi.fn(() => ({
+      run: vi.fn(),
+      get: vi.fn(),
+      all: vi.fn()
+    })),
+    pragma: vi.fn(),
+    exec: vi.fn()
+  };
+
+  return {
+    initializeDependencies: vi.fn(),
+    closeDependencies: vi.fn(),
+    getDependencies: vi.fn().mockReturnValue({
+      tokenDbSync: mockDb
+    })
+  };
+});
 
 describe('Model Selector', () => {
   let mockCB: CircuitBreaker;
@@ -24,7 +44,7 @@ describe('Model Selector', () => {
   });
 
   describe('selectOptimalBackend', () => {
-    it('should select Qwen for fast + low complexity tasks', () => {
+    it('should select Qwen for fast + low complexity tasks', async () => {
       const task: TaskCharacteristics = {
         complexity: 'low',
         tokenBudget: 5000,
@@ -34,11 +54,11 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backend = selectOptimalBackend(task, mockCB);
+      const backend = await selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
-    it('should select Gemini for architectural thinking', () => {
+    it('should select Gemini for architectural thinking', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -48,11 +68,11 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backend = selectOptimalBackend(task, mockCB);
+      const backend = await selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
-    it('should select Qwen for code generation + high complexity', () => {
+    it('should select Qwen for code generation + high complexity', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 40000,
@@ -62,11 +82,11 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backend = selectOptimalBackend(task, mockCB);
+      const backend = await selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
-    it('should select by domain: security -> Qwen', () => {
+    it('should select by domain: security -> Qwen', async () => {
       const task: TaskCharacteristics = {
         complexity: 'medium',
         tokenBudget: 20000,
@@ -77,11 +97,11 @@ describe('Model Selector', () => {
         domain: 'security'
       };
 
-      const backend = selectOptimalBackend(task, mockCB);
+      const backend = await selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
-    it('should select by domain: architecture -> Gemini', () => {
+    it('should select by domain: architecture -> Gemini', async () => {
       const task: TaskCharacteristics = {
         complexity: 'medium',
         tokenBudget: 30000,
@@ -92,11 +112,11 @@ describe('Model Selector', () => {
         domain: 'architecture'
       };
 
-      const backend = selectOptimalBackend(task, mockCB);
+      const backend = await selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
-    it('should select by domain: debugging -> Qwen', () => {
+    it('should select by domain: debugging -> Qwen', async () => {
       const task: TaskCharacteristics = {
         complexity: 'medium',
         tokenBudget: 30000,
@@ -107,11 +127,11 @@ describe('Model Selector', () => {
         domain: 'debugging'
       };
 
-      const backend = selectOptimalBackend(task, mockCB);
+      const backend = await selectOptimalBackend(task, mockCB);
       expect(backend).toBe(BACKENDS.QWEN);
     });
 
-    it('should respect allowed backends constraint', () => {
+    it('should respect allowed backends constraint', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -122,13 +142,13 @@ describe('Model Selector', () => {
       };
 
       // Only QWEN and DROID are allowed, so one of them should be selected
-      const backend = selectOptimalBackend(task, mockCB, [BACKENDS.QWEN, BACKENDS.DROID]);
+      const backend = await selectOptimalBackend(task, mockCB, [BACKENDS.QWEN, BACKENDS.DROID]);
       expect([BACKENDS.QWEN, BACKENDS.DROID]).toContain(backend);
     });
   });
 
   describe('selectParallelBackends', () => {
-    it('should select 2 complementary backends', () => {
+    it('should select 2 complementary backends', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -138,12 +158,12 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backends = selectParallelBackends(task, mockCB, 2);
+      const backends = await selectParallelBackends(task, mockCB, 2);
       expect(backends).toHaveLength(2);
       expect(new Set(backends).size).toBe(2); // No duplicates
     });
 
-    it('should complement Gemini with Qwen', () => {
+    it('should complement Gemini with Qwen', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -153,12 +173,12 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backends = selectParallelBackends(task, mockCB, 2);
+      const backends = await selectParallelBackends(task, mockCB, 2);
       expect(backends[0]).toBe(BACKENDS.GEMINI);
       expect(backends[1]).toBe(BACKENDS.QWEN);
     });
 
-    it('should select up to 3 backends', () => {
+    it('should select up to 3 backends', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -168,7 +188,7 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      const backends = selectParallelBackends(task, mockCB, 3);
+      const backends = await selectParallelBackends(task, mockCB, 3);
       expect(backends.length).toBeLessThanOrEqual(3);
     });
   });
@@ -184,23 +204,17 @@ describe('Model Selector', () => {
         requiresCreativity: false
       };
 
-      initializeDependencies();
+      recordBackendUsage(BACKENDS.GEMINI, task, true, 1500);
+      recordBackendUsage(BACKENDS.GEMINI, task, true, 1600);
+      recordBackendUsage(BACKENDS.GEMINI, task, false, 2000);
 
-      try {
-        recordBackendUsage(BACKENDS.GEMINI, task, true, 1500);
-        recordBackendUsage(BACKENDS.GEMINI, task, true, 1600);
-        recordBackendUsage(BACKENDS.GEMINI, task, false, 2000);
+      const stats = getBackendStats();
+      const geminiStats = stats.find(s => s.backend === BACKENDS.GEMINI);
 
-        const stats = getBackendStats();
-        const geminiStats = stats.find(s => s.backend === BACKENDS.GEMINI);
-
-        expect(geminiStats).toBeDefined();
-        expect(geminiStats?.totalCalls).toBe(3);
-        expect(geminiStats?.successfulCalls).toBe(2);
-        expect(geminiStats?.failedCalls).toBe(1);
-      } finally {
-        closeDependencies();
-      }
+      expect(geminiStats).toBeDefined();
+      expect(geminiStats?.totalCalls).toBe(3);
+      expect(geminiStats?.successfulCalls).toBe(2);
+      expect(geminiStats?.failedCalls).toBe(1);
     });
   });
 
