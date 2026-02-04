@@ -2,26 +2,38 @@
  * Tests for bug-hunt workflow
  */
 
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { bugHuntWorkflow } from '../../../src/workflows/bug-hunt.workflow.js';
 import * as aiExecutor from '../../../src/services/ai-executor.js';
 import * as auditTrail from '../../../src/services/audit-trail.js';
 import * as fs from 'fs';
-import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
 vi.mock('../../../src/services/ai-executor.js');
 vi.mock('../../../src/services/audit-trail.js');
 vi.mock('fs');
 
+// Mock dependencies to avoid initialization errors
+vi.mock('../../../src/dependencies.js', () => ({
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+  getDependencies: vi.fn().mockReturnValue({
+    activityDb: {},
+    auditDb: {},
+    tokenDb: {},
+    circuitBreaker: {
+      isAvailable: vi.fn().mockResolvedValue(true),
+      execute: vi.fn((fn) => fn()),
+      getState: vi.fn().mockReturnValue('CLOSED'),
+      reset: vi.fn(),
+      shutdown: vi.fn()
+    }
+  })
+}));
+
 describe('bug-hunt workflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    initializeDependencies();
     vi.mocked(auditTrail.logAudit).mockResolvedValue(undefined);
-  });
-
-  afterAll(() => {
-    closeDependencies();
   });
 
   it('should analyze provided files', async () => {

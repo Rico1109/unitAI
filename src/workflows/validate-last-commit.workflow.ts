@@ -11,7 +11,7 @@ import { selectParallelBackends, createTaskCharacteristics } from "./model-selec
 import { getDependencies } from '../dependencies.js';
 
 /**
- * Schema Zod per il workflow validate-last-commit
+ * Zod schema for the validate-last-commit workflow
  */
 const validateLastCommitSchema = z.object({
   commit_ref: z.string().optional().default("HEAD")
@@ -29,7 +29,7 @@ export async function executeValidateLastCommit(
 ): Promise<string> {
   const { commit_ref } = params;
 
-  onProgress?.(`Avvio validazione del commit: ${commit_ref}`);
+  onProgress?.(`Starting commit validation: ${commit_ref}`);
 
   // Check if we are in a Git repository
   if (!await isGitRepository()) {
@@ -73,26 +73,26 @@ Provide a detailed analysis including:
 6. Overall verdict (APPROVED/REJECTED/REVISION NEEDED)
 `;
 
-    // Personalizzazione per backend specifici
+    // Customization for specific backends
     switch (backend) {
       case BACKENDS.GEMINI:
         return `${basePrompt}
 
 As Gemini, provide an architectural analysis focusing on:
 - Impact of changes on existing architecture
-- Scalabilità e manutenibilità a lungo termine
-- Consistenza con i pattern di design del progetto
-- Considerazioni sull'integrazione con altri componenti
+- Long-term scalability and maintainability
+- Consistency with project design patterns
+- Integration considerations with other components
 `;
 
       case BACKENDS.CURSOR:
         return `${basePrompt}
 
 As Cursor Agent, provide a technical analysis focusing on:
-- Correttezza del codice e potenziali bug
+- Code correctness and potential bugs
 - Algorithm efficiency and complexity
 - Error handling and edge cases
-- Conformità con le convenzioni del linguaggio
+- Compliance with language conventions
 `;
 
       case BACKENDS.DROID:
@@ -127,7 +127,7 @@ As Qwen, provide a logical analysis:
     }
   };
 
-  // Esecuzione dell'analisi parallela
+  // Execute parallel analysis
   onProgress?.("Starting parallel analysis...");
 
   const { circuitBreaker } = getDependencies();
@@ -165,9 +165,9 @@ As Qwen, provide a logical analysis:
 ## Commit Information
 
 - **Hash**: ${commitInfo.hash}
-- **Autore**: ${commitInfo.author}
-- **Data**: ${commitInfo.date}
-- **Messaggio**: ${commitInfo.message}
+- **Author**: ${commitInfo.author}
+- **Date**: ${commitInfo.date}
+- **Message**: ${commitInfo.message}
 - **Modified files**: ${commitInfo.files.length}
 
 ### Modified Files
@@ -191,65 +191,65 @@ Based on parallel analysis (${successful.map(r => r.backend).join(" + ")}):
 
 `;
 
-    // Logica per determinare il verdetto
+    // Logic to determine the verdict
     // In a real implementation, we could analyze the response texts
-    // Per ora, usiamo una logica semplificata
+    // For now, we use simplified logic
     const hasFailures = failed.length > 0;
     const hasSuccessfulAnalyses = successful.length > 0;
 
     if (hasFailures && !hasSuccessfulAnalyses) {
-      outputContent += `### ❌ RIFIUTATO
+      outputContent += `### ❌ REJECTED
 
-L'analisi non può essere completata a causa di errori nei backend.
+Analysis could not be completed due to backend errors.
 `;
     } else if (hasFailures) {
-      outputContent += `### ⚠️ NECESSARIA REVISIONE PARZIALE
+      outputContent += `### ⚠️ PARTIAL REVISION NEEDED
 
-Alcune analisi sono fallite, ma quelle completate suggeriscono la necessità di revisione.
+Some analyses failed, but completed ones suggest the need for revision.
 `;
     } else {
-      outputContent += `### ✅ APPROVATO CON RISERVE
+      outputContent += `### ✅ APPROVED WITH RESERVATIONS
 
-L'analisi è stata completata con successo. Si raccomanda di attenere alle raccomandazioni fornite.
+Analysis completed successfully. Adherence to recommendations is advised.
 `;
     }
   }
 
-  // Avvisi se alcuni backend sono falliti
+  // Warnings if some backends failed
   if (failed.length > 0) {
     outputContent += `
-## ⚠️ Avvisi
+## ⚠️ Warnings
 
-I seguenti backend non hanno completato l'analisi:
+The following backends did not complete the analysis:
 ${failed.map(f => `- **${f.backend}**: ${f.error}`).join("\n")}
 
-La validazione potrebbe essere incompleta. Si consiglia di risolvere i problemi e riprovare.
+Validation may be incomplete. It is recommended to resolve issues and try again.
 `;
   }
 
-  // Raccomandazioni finali
+  // Final recommendations
   outputContent += `
-## Raccomandazioni Finali
+## Final Recommendations
 
 1. **Code Review**: Manually verify changes before merging
 2. **Test**: Run complete tests to verify there are no regressions
 3. **Documentation**: Update documentation if needed
 4. **Communication**: Inform the team of significant changes
 
-Per dettagli specifici, consulta le analisi individuali sopra.
+For specific details, consult the individual analyses above.
 `;
 
-  onProgress?.(`Validazione commit completata: ${successful.length}/${analysisResult.results.length} analisi riuscite`);
+  onProgress?.(`Commit validation completed: ${successful.length}/${analysisResult.results.length} successful analyses`);
 
-  return formatWorkflowOutput(`Validazione Commit (Commit Validation): ${commit_ref}`, outputContent, metadata);
+  return formatWorkflowOutput(`Commit Validation: ${commit_ref}`, outputContent, metadata);
 }
 
 /**
- * Definizione del workflow validate-last-commit
+ * Definition of the validate-last-commit workflow
  */
 export const validateLastCommitWorkflow: WorkflowDefinition = {
   name: 'validate-last-commit',
-  description: "Valida un commit Git specifico utilizzando analisi parallela con Gemini e Cursor per identificare problemi e breaking changes",
+  description: "Validates a specific Git commit using parallel analysis with Gemini and Cursor to identify issues and breaking changes",
   schema: validateLastCommitSchema,
   execute: executeValidateLastCommit
 };

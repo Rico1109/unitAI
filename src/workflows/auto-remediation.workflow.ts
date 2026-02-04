@@ -5,7 +5,7 @@ import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
 
 const autoRemediationSchema = z.object({
-  symptoms: z.string().min(1, "Descrivere i sintomi del problema"),
+  symptoms: z.string().min(1, "Describe the problem symptoms"),
   maxActions: z.number().int().min(1).max(10).optional().default(5),
   autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
   attachments: z.array(z.string()).optional()
@@ -19,27 +19,27 @@ export async function executeAutoRemediation(
 ): Promise<string> {
   const { symptoms, maxActions, attachments = [] } = params;
 
-  onProgress?.("🛠️ Generazione piano di auto-remediation con Droid...");
+  onProgress?.("🛠️ Generating auto-remediation plan with Droid...");
 
   let plan = "";
   try {
     plan = await executeAIClient({
       backend: BACKENDS.DROID,
-      prompt: `Sintomi: ${symptoms}
+      prompt: `Symptoms: ${symptoms}
 
-Genera un piano operativo in massimo ${maxActions} step.
-Per ogni step fornisci:
-- Azione proposta
-- Output atteso
-- Controlli/verifiche
-- Rischi residui`,
+Generate an operational plan in maximum ${maxActions} steps.
+For each step provide:
+- Proposed action
+- Expected output
+- Checks/verifications
+- Residual risks`,
       auto: "medium",
       attachments,
       outputFormat: "text"
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    plan = `Impossibile generare piano di remediation: ${errorMsg}`;
+    plan = `Unable to generate remediation plan: ${errorMsg}`;
   }
 
   const content = `
@@ -64,7 +64,7 @@ ${plan}
 
 export const autoRemediationWorkflow: WorkflowDefinition = {
   name: "auto-remediation",
-  description: "Genera un piano di remediation automatico tramite Factory Droid",
+  description: "Generates an automatic remediation plan using Factory Droid",
   schema: autoRemediationSchema,
   execute: executeAutoRemediation
 };

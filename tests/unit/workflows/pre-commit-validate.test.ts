@@ -2,26 +2,38 @@
  * Tests for pre-commit-validate workflow
  */
 
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { preCommitValidateWorkflow } from '../../../src/workflows/pre-commit-validate.workflow.js';
-import * as gitHelper from '../../../src/utils/gitHelper.js';
+import * as gitHelper from '../../../src/utils/cli/gitHelper.js';
 import * as aiExecutor from '../../../src/services/ai-executor.js';
 import * as auditTrail from '../../../src/services/audit-trail.js';
-import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
-vi.mock('../../../src/utils/gitHelper.js');
+vi.mock('../../../src/utils/cli/gitHelper.js');
 vi.mock('../../../src/services/ai-executor.js');
 vi.mock('../../../src/services/audit-trail.js');
+
+// Mock dependencies to avoid initialization errors
+vi.mock('../../../src/dependencies.js', () => ({
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+  getDependencies: vi.fn().mockReturnValue({
+    activityDb: {},
+    auditDb: {},
+    tokenDb: {},
+    circuitBreaker: {
+      isAvailable: vi.fn().mockResolvedValue(true),
+      execute: vi.fn((fn) => fn()),
+      getState: vi.fn().mockReturnValue('CLOSED'),
+      reset: vi.fn(),
+      shutdown: vi.fn()
+    }
+  })
+}));
 
 describe('pre-commit-validate workflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    initializeDependencies();
     vi.mocked(auditTrail.logAudit).mockResolvedValue(undefined);
-  });
-
-  afterAll(() => {
-    closeDependencies();
   });
 
   it('should return message when no staged files', async () => {

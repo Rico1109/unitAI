@@ -20,10 +20,19 @@ vi.mock('../../src/utils/logger.js', () => ({
 }));
 
 // Mock CircuitBreaker
-vi.mock('../../src/utils/reliability/index.js', () => ({
-  CircuitBreaker: vi.fn().mockImplementation(() => ({
-    shutdown: vi.fn(),
-  })),
+const mockShutdown = vi.fn();
+const mockCircuitBreakerInstance = {
+  shutdown: mockShutdown,
+  isAvailable: vi.fn().mockResolvedValue(true),
+  execute: vi.fn((fn) => fn()),
+  getState: vi.fn().mockReturnValue('CLOSED'),
+  reset: vi.fn(),
+};
+const MockCircuitBreaker = vi.fn().mockImplementation(() => mockCircuitBreakerInstance);
+
+vi.mock('../../src/utils/reliability/errorRecovery.js', () => ({
+  CircuitBreaker: MockCircuitBreaker,
+  CircuitBreakerRegistry: vi.fn(),
 }));
 
 // Mock AsyncDatabase
@@ -77,6 +86,8 @@ describe('dependencies', () => {
     vi.clearAllMocks();
     mockDatabase.mockReturnValue(mockDbInstance);
     mockFs.existsSync.mockReturnValue(true);
+    mockShutdown.mockClear();
+    MockCircuitBreaker.mockClear();
 
     // Reset module to clear singleton
     vi.resetModules();
@@ -211,17 +222,16 @@ describe('dependencies', () => {
   // =================================================================
   describe('Circuit Breaker Initialization', () => {
     it('should initialize circuit breaker with audit database', async () => {
-      // Arrange
-      const { CircuitBreaker } = await import('../../src/utils/reliability/index.js');
-
       // Act
       await dependencies.initializeDependencies();
 
-      // Assert
-      expect(CircuitBreaker).toHaveBeenCalledWith(
-        3,                // failure threshold
-        5 * 60 * 1000,    // 5 minutes timeout
-        expect.anything() // auditDb (sync)
+      // Assert: CircuitBreaker now uses config object
+      expect(MockCircuitBreaker).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureThreshold: 3,
+          timeout: 5 * 60 * 1000,
+          name: 'global'
+        })
       );
     });
   });
@@ -232,13 +242,13 @@ describe('dependencies', () => {
   describe('Cleanup', () => {
     it('should call shutdown on circuit breaker', async () => {
       // Arrange
-      const deps = await dependencies.initializeDependencies();
+      await dependencies.initializeDependencies();
 
       // Act
       await dependencies.closeDependencies();
 
       // Assert
-      expect(deps.circuitBreaker.shutdown).toHaveBeenCalled();
+      expect(mockShutdown).toHaveBeenCalled();
     });
 
     it('should close databases', async () => {

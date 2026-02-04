@@ -2,32 +2,32 @@ import { z } from "zod";
 import { AutonomyLevel } from "../../utils/security/permissionManager.js";
 
 /**
- * Tipo di callback per progresso dell'esecuzione
+ * Callback type for execution progress reporting
  */
 export type ProgressCallback = (message: string) => void;
 
 /**
- * Parametri base per tutti i workflow
- * Include il livello di autonomia per il sistema di permessi
+ * Base parameters for all workflows
+ * Includes autonomy level for the permission system
  */
 export interface BaseWorkflowParams {
   /**
-   * Livello di autonomia per le operazioni del workflow
+   * Autonomy level for workflow operations
    * @default AutonomyLevel.READ_ONLY
    */
   autonomyLevel?: AutonomyLevel;
   /**
-   * Override dei backend AI da utilizzare durante l'esecuzione
+   * Override of AI backends to use during execution
    */
   backendOverrides?: string[];
   /**
-   * Allegati da passare agli strumenti AI (per prompt contestuali)
+   * Attachments to pass to AI tools (for contextual prompts)
    */
   attachments?: string[];
 }
 
 /**
- * Interfaccia base per la definizione di un workflow
+ * Base interface for workflow definition
  */
 export interface WorkflowDefinition<TParams = any> {
   name: string;
@@ -37,7 +37,7 @@ export interface WorkflowDefinition<TParams = any> {
 }
 
 /**
- * Risultato dell'esecuzione di un workflow
+ * Result of workflow execution
  */
 export interface WorkflowResult {
   success: boolean;
@@ -46,17 +46,17 @@ export interface WorkflowResult {
 }
 
 /**
- * Tipi di focus per l'analisi del codice
+ * Code analysis focus types
  */
 export type ReviewFocus = "architecture" | "security" | "performance" | "quality" | "all";
 
 /**
- * Livelli di profondità per la validazione
+ * Validation depth levels
  */
 export type ValidationDepth = "quick" | "thorough" | "paranoid";
 
 /**
- * Parametri per il workflow parallel-review
+ * Parameters for the parallel-review workflow
  */
 export interface ParallelReviewParams extends BaseWorkflowParams {
   files: string[];
@@ -64,21 +64,21 @@ export interface ParallelReviewParams extends BaseWorkflowParams {
 }
 
 /**
- * Parametri per il workflow pre-commit-validate
+ * Parameters for the pre-commit-validate workflow
  */
 export interface PreCommitValidateParams extends BaseWorkflowParams {
   depth: ValidationDepth;
 }
 
 /**
- * Parametri per il workflow validate-last-commit
+ * Parameters for the validate-last-commit workflow
  */
 export interface ValidateLastCommitParams extends BaseWorkflowParams {
   commit_ref?: string;
 }
 
 /**
- * Parametri per il workflow bug-hunt
+ * Parameters for the bug-hunt workflow
  */
 export interface BugHuntParams extends BaseWorkflowParams {
   symptoms: string;
@@ -86,7 +86,7 @@ export interface BugHuntParams extends BaseWorkflowParams {
 }
 
 /**
- * Risultato dell'analisi AI
+ * Result of AI analysis
  */
 export interface AIAnalysisResult {
   backend: string;
@@ -97,7 +97,7 @@ export interface AIAnalysisResult {
 }
 
 /**
- * Risultato dell'analisi parallela
+ * Result of parallel analysis
  */
 export interface ParallelAnalysisResult {
   results: AIAnalysisResult[];
@@ -105,7 +105,7 @@ export interface ParallelAnalysisResult {
 }
 
 /**
- * Informazioni sul repository Git
+ * Git repository information
  */
 export interface GitRepoInfo {
   currentBranch: string;
@@ -116,7 +116,7 @@ export interface GitRepoInfo {
 }
 
 /**
- * Informazioni su un commit Git
+ * Git commit information
  */
 export interface GitCommitInfo {
   hash: string;

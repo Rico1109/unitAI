@@ -100,13 +100,8 @@ describe('server', () => {
   // Suite 1: Server Initialization
   // =================================================================
   describe('Server Initialization', () => {
-    it('should initialize dependencies on construction', () => {
-      // Act
-      new UnitAIServer();
-
-      // Assert
-      expect(mockInitializeDependencies).toHaveBeenCalled();
-    });
+    // Note: initializeDependencies is called in start(), not constructor
+    // See "Server Lifecycle" suite for dependency initialization tests
 
     it('should create MCP Server with config', async () => {
       // Arrange

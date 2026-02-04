@@ -1,12 +1,13 @@
 ---
 title: unitAI Architecture SSOT
-version: 2.2.0
-updated: 2026-01-28T12:00:00+01:00
+version: 2.3.0
+updated: 2026-02-04T14:30:00+01:00
 scope: unitai-architecture
 category: ssot
 subcategory: architecture
 domain: [mcp, typescript, ai-orchestration]
 changelog:
+  - 2.3.0 (2026-02-04): Added AsyncDatabase interface documentation and updated project structure.
   - 2.2.0 (2026-01-28): Updated project structure to include all missing folders and files.
   - 2.1.0 (2026-01-24): Updated DI container to include auditDb and tokenDb.
   - 2.0.0 (2026-01-24): Complete rewrite for zero-context readers.
@@ -86,8 +87,15 @@ unitAI/
 │   │   ├── config.ts         # ~/.unitai/config.json
 │   │   └── detectBackends.ts # CLI availability check
 │   │
-│   ├── services/
+│   ├── services/             # Stateful service classes
+│   │   ├── ai-executor.ts    # CLI backend execution hub
+│   │   ├── audit-trail.ts    # SQLite audit log
+│   │   ├── token-estimator.ts # Token usage tracking
+│   │   ├── structured-logger.ts # File-based JSON logging
 │   │   └── activityAnalytics.ts # Usage tracking
+│   │
+│   ├── infrastructure/       # Infrastructure abstractions
+│   │   └── async-db.ts       # Worker thread DB wrapper
 │   │
 │   └── repositories/         # Data access layer
 │       ├── base.ts
@@ -318,6 +326,74 @@ This pattern ensures:
 
 ---
 
+### infrastructure/async-db.ts (AsyncDatabase Interface)
+
+**Worker thread wrapper providing async/await interface for better-sqlite3.**
+
+```typescript
+export class AsyncDatabase {
+  constructor(dbPath: string)
+
+  // Async operations
+  execAsync(sql: string): Promise<void>
+  runAsync(sql: string, params: any[]): Promise<Database.RunResult>
+  getAsync<T>(sql: string, params: any[]): Promise<T | undefined>
+  allAsync<T>(sql: string, params: any[]): Promise<T[]>
+  closeAsync(): Promise<void>
+}
+```
+
+**Architecture:**
+- Uses Node.js `worker_threads` to run SQLite operations in background thread
+- Main thread communicates via `postMessage` with correlation ID tracking
+- Worker thread maintains prepared statement cache for performance
+- Async/await interface prevents blocking event loop during DB operations
+
+**Message Protocol:**
+```typescript
+// Main → Worker
+{
+  type: 'exec' | 'prepare_run' | 'prepare_get' | 'prepare_all' | 'close',
+  sql: string,
+  params: any[],
+  correlationId: number
+}
+
+// Worker → Main
+{
+  correlationId: number,
+  data?: any,     // success result
+  error?: string  // error message
+}
+```
+
+**Usage in DI Container:**
+```typescript
+export interface AppDependencies {
+  activityDb: AsyncDatabase;   // MCP activity tracking
+  auditDb: AsyncDatabase;      // Autonomous operations audit trail
+  tokenDb: AsyncDatabase;      // Token savings metrics
+  metricsDb: AsyncDatabase;    // RED metrics dashboard
+  // ... sync backup DBs for specific use cases
+  auditDbSync: Database.Database;
+  tokenDbSync: Database.Database;
+}
+```
+
+**Benefits:**
+- ✅ Non-blocking database operations
+- ✅ Maintains better-sqlite3 performance (synchronous in worker)
+- ✅ Clean async/await API for application code
+- ✅ Prepared statement caching in worker thread
+- ✅ Correlation ID tracking for request/response matching
+
+**Lifecycle:**
+- `new AsyncDatabase(dbPath)`: Spawns worker thread, opens database
+- Operations via async methods: Non-blocking, returns Promises
+- `closeAsync()`: Graceful worker shutdown
+
+---
+
 ### config/config.ts (Configuration)
 
 Stores config in `~/.unitai/config.json`:
@@ -384,9 +460,12 @@ Not persisted - lost when workflow ends.
 | Component | Storage | Lifecycle | Managed By |
 |-----------|---------|-----------|------------|
 | `dependencies` | Memory (singleton) | Server lifetime | DI Container |
-| `activityDb` | SQLite `data/activity.sqlite` | Persisted | DI Container ✅ |
-| `auditDb` | SQLite `data/audit.sqlite` | Persisted | DI Container ✅ |
-| `tokenDb` | SQLite `data/token-metrics.sqlite` | Persisted | DI Container ✅ |
+| `activityDb` | AsyncDatabase (SQLite `data/activity.sqlite`) | Persisted | DI Container ✅ |
+| `auditDb` | AsyncDatabase (SQLite `data/audit.sqlite`) | Persisted | DI Container ✅ |
+| `tokenDb` | AsyncDatabase (SQLite `data/token-metrics.sqlite`) | Persisted | DI Container ✅ |
+| `metricsDb` | AsyncDatabase (SQLite `data/metrics.sqlite`) | Persisted | DI Container ✅ |
+| `auditDbSync` | Database (sync backup) | Persisted | DI Container ✅ |
+| `tokenDbSync` | Database (sync backup) | Persisted | DI Container ✅ |
 | `auditTrail` | Lazy singleton (uses `auditDb`) | Server lifetime | Factory function |
 | `tokenMetrics` | Lazy singleton (uses `tokenDb`) | Server lifetime | Factory function |
 | `backendStats` | Memory (Map) | Lost on restart | Self-managed |
@@ -394,7 +473,7 @@ Not persisted - lost when workflow ends.
 | `toolRegistry` | Memory (array) | Populated at startup | Self-managed |
 | `config.json` | File `~/.unitai/` | Persisted | File system |
 
-**Note:** All SQLite databases are now centrally managed through the DI container, ensuring proper lifecycle management and testability.
+**Note:** All SQLite databases use AsyncDatabase (worker thread wrapper) except sync backup DBs which use better-sqlite3 directly for specific use cases requiring synchronous access. Databases are centrally managed through the DI container, ensuring proper lifecycle management and testability.
 
 ---
 

@@ -89,11 +89,11 @@ export async function getGitCommitInfo(commitRef: string = "HEAD"): Promise<GitC
   }
 
   try {
-    // Informazioni base del commit
+    // Base commit information
     const showOutput = await runGitCommand(["show", "--format=%H|%an|%ad|%s", "--date=iso", commitRef]);
     const [hash, author, date, message] = showOutput.split("\n")[0].split("|");
 
-    // Diff del commit
+    // Commit diff
     const diffOutput = await runGitCommand(["show", "--format=", commitRef]);
     const diff = diffOutput;
 
@@ -212,7 +212,7 @@ export async function getRecentCommitsWithDiffs(count: number = 10): Promise<Git
       .map(line => line.trim().split(" ")[0])
       .filter(hash => !!hash);
 
-    // Per ogni hash, ottieni le informazioni complete
+    // For each hash, get the complete information
     const commits: GitCommitInfo[] = [];
     for (const hash of hashes) {
       const commitInfo = await getGitCommitInfo(hash);
@@ -234,7 +234,7 @@ export function getDateRangeFromCommits(commits: GitCommitInfo[]): { oldest: str
     return null;
   }
 
-  // I commit sono già ordinati dal più recente al più vecchio
+  // Commits are already sorted from newest to oldest
   const newest = commits[0].date;
   const oldest = commits[commits.length - 1].date;
 

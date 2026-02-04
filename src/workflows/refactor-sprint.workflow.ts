@@ -5,8 +5,8 @@ import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
 
 const refactorSprintSchema = z.object({
-  targetFiles: z.array(z.string()).min(1, "Indicare almeno un file"),
-  scope: z.string().min(1, "Descrivere lo scopo del refactor"),
+  targetFiles: z.array(z.string()).min(1, "Specify at least one file"),
+  scope: z.string().min(1, "Describe the refactor scope"),
   depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
   autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
   attachments: z.array(z.string()).optional()
@@ -20,43 +20,43 @@ export async function executeRefactorSprint(
 ): Promise<string> {
   const { targetFiles, scope, depth, attachments = [] } = params;
 
-  onProgress?.(`⚙️ Refactor sprint avviato (${depth}) su ${targetFiles.length} file`);
+  onProgress?.(`⚙️ Refactor sprint started (${depth}) on ${targetFiles.length} files`);
 
   let cursorPlan = "";
   try {
     cursorPlan = await executeAIClient({
       backend: BACKENDS.CURSOR,
-      prompt: `Stai pianificando un refactor (${depth}). Scopo: ${scope}.
+      prompt: `You are planning a refactor (${depth}). Scope: ${scope}.
 
-File interessati:
+Target files:
 ${targetFiles.join("\n")}
 
-Genera:
-- Piano in step numerati
-- Patch suggerite (anche descrittive)
-- Test consigliati`,
+Generate:
+- Numbered step plan
+- Suggested patches (can be descriptive)
+- Recommended tests`,
       attachments: attachments.length ? attachments : targetFiles.slice(0, 5),
       outputFormat: "text"
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    cursorPlan = `Impossibile ottenere il piano da Cursor Agent: ${errorMsg}`;
+    cursorPlan = `Unable to get plan from Cursor Agent: ${errorMsg}`;
   }
 
   let geminiReview = "";
   try {
     geminiReview = await executeAIClient({
       backend: BACKENDS.GEMINI,
-      prompt: `Valuta il seguente piano di refactor per ${scope} e segnala rischi architetturali.
+      prompt: `Evaluate the following refactor plan for ${scope} and report architectural risks.
 
-File target:
+Target files:
 ${targetFiles.join(", ")}
 
-Piano:
+Plan:
 ${cursorPlan}`
     });
   } catch (error) {
-    geminiReview = `Impossibile ottenere validazione da Gemini: ${error instanceof Error ? error.message : String(error)}`;
+    geminiReview = `Unable to get validation from Gemini: ${error instanceof Error ? error.message : String(error)}`;
   }
 
   let droidChecklist = "";
@@ -79,7 +79,7 @@ Requested checklist:
       outputFormat: "text"
     });
   } catch (error) {
-    droidChecklist = `Impossibile generare checklist da Droid: ${error instanceof Error ? error.message : String(error)}`;
+    droidChecklist = `Unable to generate checklist from Droid: ${error instanceof Error ? error.message : String(error)}`;
   }
 
   const content = `
@@ -110,7 +110,7 @@ ${droidChecklist}
 
 export const refactorSprintWorkflow: WorkflowDefinition = {
   name: "refactor-sprint",
-  description: "Coordina Cursor, Gemini e Droid per pianificare un refactor multi-step",
+  description: "Coordinates Cursor, Gemini, and Droid to plan a multi-step refactor",
   schema: refactorSprintSchema,
   execute: executeRefactorSprint
 };
