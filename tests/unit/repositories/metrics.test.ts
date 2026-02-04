@@ -4,10 +4,18 @@
  * Observability: Tests RED metrics storage and retrieval
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { MetricsRepository } from '../../../src/repositories/metrics.js';
 import { AsyncDatabase } from '../../../src/infrastructure/async-db.js';
 import Database from 'better-sqlite3';
+
+// Mock AsyncDatabase to use synchronous better-sqlite3 under the hood
+// This avoids worker thread issues in Vitest
+vi.mock('../../../src/infrastructure/async-db.js', () => {
+  return {
+    AsyncDatabase: vi.fn()
+  };
+});
 
 interface RedMetricRow {
   id: string;
@@ -24,19 +32,38 @@ interface RedMetricRow {
 
 describe('MetricsRepository', () => {
   let db: Database.Database;
-  let asyncDb: AsyncDatabase;
+  let asyncDb: any;
   let repo: MetricsRepository;
 
   beforeEach(async () => {
     // Create fresh in-memory database
     db = new Database(':memory:');
-    asyncDb = new AsyncDatabase(':memory:');
-    repo = new MetricsRepository(asyncDb);
+
+    // Create mock object manually to ensure methods exist
+    asyncDb = {
+      execAsync: vi.fn(async (sql: string) => {
+        db.exec(sql);
+      }),
+      runAsync: vi.fn(async (sql: string, params: any[] = []) => {
+        db.prepare(sql).run(...params);
+      }),
+      allAsync: vi.fn(async (sql: string, params: any[] = []) => {
+        return db.prepare(sql).all(...params);
+      }),
+      getAsync: vi.fn(async (sql: string, params: any[] = []) => {
+        return db.prepare(sql).get(...params);
+      }),
+      closeAsync: vi.fn(async () => {
+        // No-op for mock, we close db in afterEach
+      })
+    };
+
+    // Instantiate repo with mocked asyncDb
+    repo = new MetricsRepository(asyncDb as unknown as AsyncDatabase);
     await repo.initializeSchema();
   });
 
-  afterEach(async () => {
-    await asyncDb.closeAsync();
+  afterEach(() => {
     db.close();
   });
 
@@ -53,7 +80,7 @@ describe('MetricsRepository', () => {
       expect(typeof id).toBe('string');
       expect(id.startsWith('red-')).toBe(true);
 
-      const rows = await asyncDb.allAsync('SELECT * FROM red_metrics');
+      const rows = db.prepare('SELECT * FROM red_metrics').all();
       expect(rows).toHaveLength(1);
     });
 
@@ -92,32 +119,32 @@ describe('MetricsRepository', () => {
       insert.run('3', now - 3000, 'workflow', 'comp-b', null, 500, 1, null, 'req-3', '{}');
     });
 
-    it('should filter by component', () => {
-      const results = repo.query({ component: 'comp-a' });
+    it('should filter by component', async () => {
+      const results = await repo.query({ component: 'comp-a' });
       expect(results).toHaveLength(2);
       expect(results.map(r => r.id).sort()).toEqual(['1', '2']);
     });
 
-    it('should filter by backend', () => {
-      const results = repo.query({ backend: 'gemini' });
+    it('should filter by backend', async () => {
+      const results = await repo.query({ backend: 'gemini' });
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe('1');
     });
 
-    it('should filter by success', () => {
-      const results = repo.query({ success: false });
+    it('should filter by success', async () => {
+      const results = await repo.query({ success: false });
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe('2');
     });
 
-    it('should filter by requestId', () => {
-      const results = repo.query({ requestId: 'req-3' });
+    it('should filter by requestId', async () => {
+      const results = await repo.query({ requestId: 'req-3' });
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe('3');
     });
 
-    it('should filter by multiple criteria (component AND success)', () => {
-      const results = repo.query({
+    it('should filter by multiple criteria (component AND success)', async () => {
+      const results = await repo.query({
         component: 'comp-a',
         success: false
       });
@@ -145,8 +172,8 @@ describe('MetricsRepository', () => {
       insert.run('5', now, 'request', 'api', null, 100, 0, 'Error', '{}');
     });
 
-    it('should calculate correct stats', () => {
-      const stats = repo.getREDStats({ component: 'api' });
+    it('should calculate correct stats', async () => {
+      const stats = await repo.getREDStats({ component: 'api' });
 
       expect(stats.totalRequests).toBe(5);
       expect(stats.errorRate).toBe(20); // 1 out of 5
@@ -155,8 +182,8 @@ describe('MetricsRepository', () => {
       expect(stats.p99).toBe(100);
     });
 
-    it('should return zeros for empty metrics', () => {
-      const stats = repo.getREDStats({ component: 'non-existent' });
+    it('should return zeros for empty metrics', async () => {
+      const stats = await repo.getREDStats({ component: 'non-existent' });
       expect(stats.totalRequests).toBe(0);
       expect(stats.errorRate).toBe(0);
       expect(stats.p50).toBe(0);
@@ -177,9 +204,9 @@ describe('MetricsRepository', () => {
       insert.run('4', now, 'request', 'api', null, 10, 1, null, '{}');
     });
 
-    it('should return correct error breakdown', () => {
-      const breakdown = repo.getErrorBreakdown({ component: 'api' });
-      
+    it('should return correct error breakdown', async () => {
+      const breakdown = await repo.getErrorBreakdown({ component: 'api' });
+
       expect(breakdown).toHaveLength(2);
       // Timeout: 2, AuthError: 1
       const timeout = breakdown.find(b => b.errorType === 'Timeout');

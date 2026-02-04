@@ -2,7 +2,7 @@
  * Unit tests for Permission Manager
  */
 
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import {
   AutonomyLevel,
   OperationType,
@@ -18,15 +18,32 @@ import {
 } from '../../src/utils/security/permissionManager.js';
 import { initializeDependencies, closeDependencies } from '../../src/dependencies.js';
 
+// Mock dependencies
+vi.mock('../../src/dependencies.js', () => ({
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+  getDependencies: vi.fn().mockReturnValue({
+      auditDb: {},
+      activityDb: {},
+  })
+}));
+
+// Mock audit trail
+vi.mock('../../src/services/audit-trail.js', () => ({
+  getAuditTrail: vi.fn().mockResolvedValue({
+    record: vi.fn().mockResolvedValue(undefined)
+  })
+}));
+
 describe('PermissionManager', () => {
   beforeEach(() => {
-    // Initialize dependencies to enable audit trail (FAIL-CLOSED policy requires it)
-    initializeDependencies();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
-    closeDependencies();
+    // Cleanup
   });
+
   describe('checkPermission', () => {
     it('should allow READ_FILE at READ_ONLY level', () => {
       const result = checkPermission(AutonomyLevel.READ_ONLY, OperationType.READ_FILE);
@@ -91,28 +108,20 @@ describe('PermissionManager', () => {
   });
 
   describe('assertPermission', () => {
-    it('should not throw when permission is granted', () => {
-      expect(() => {
-        assertPermission(AutonomyLevel.HIGH, OperationType.GIT_PUSH);
-      }).not.toThrow();
+    it('should not throw when permission is granted', async () => {
+      await expect(assertPermission(AutonomyLevel.HIGH, OperationType.GIT_PUSH)).resolves.not.toThrow();
     });
 
-    it('should throw when permission is denied', () => {
-      expect(() => {
-        assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH);
-      }).toThrow(/Permission denied/);
+    it('should throw when permission is denied', async () => {
+      await expect(assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH)).rejects.toThrow(/Permission denied/);
     });
 
-    it('should include context in error message', () => {
-      expect(() => {
-        assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH, 'pushing to remote');
-      }).toThrow(/pushing to remote/);
+    it('should include context in error message', async () => {
+      await expect(assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH, 'pushing to remote')).rejects.toThrow(/pushing to remote/);
     });
 
-    it('should suggest required level in error', () => {
-      expect(() => {
-        assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH);
-      }).toThrow(/Increase autonomy level to 'high'/);
+    it('should suggest required level in error', async () => {
+      await expect(assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH)).rejects.toThrow(/Increase autonomy level to 'high'/);
     });
   });
 
@@ -196,19 +205,19 @@ describe('PermissionManager', () => {
       expect(git.canPush()).toBe(true);
     });
 
-    it('should throw on assertCommit when denied', () => {
+    it('should throw on assertCommit when denied', async () => {
       const git = new GitOperations(AutonomyLevel.LOW);
-      expect(() => git.assertCommit()).toThrow(/Permission denied/);
+      await expect(git.assertCommit()).rejects.toThrow(/Permission denied/);
     });
 
-    it('should not throw on assertCommit when allowed', () => {
+    it('should not throw on assertCommit when allowed', async () => {
       const git = new GitOperations(AutonomyLevel.MEDIUM);
-      expect(() => git.assertCommit()).not.toThrow();
+      await expect(git.assertCommit()).resolves.not.toThrow();
     });
 
-    it('should include context in assertPush error', () => {
+    it('should include context in assertPush error', async () => {
       const git = new GitOperations(AutonomyLevel.MEDIUM);
-      expect(() => git.assertPush('deploying to production')).toThrow(/deploying to production/);
+      await expect(git.assertPush('deploying to production')).rejects.toThrow(/deploying to production/);
     });
   });
 
@@ -228,14 +237,14 @@ describe('PermissionManager', () => {
       expect(file.canWrite()).toBe(true);
     });
 
-    it('should throw on assertWrite when denied', () => {
+    it('should throw on assertWrite when denied', async () => {
       const file = new FileOperations(AutonomyLevel.READ_ONLY);
-      expect(() => file.assertWrite()).toThrow(/Permission denied/);
+      await expect(file.assertWrite()).rejects.toThrow(/Permission denied/);
     });
 
-    it('should not throw on assertWrite when allowed', () => {
+    it('should not throw on assertWrite when allowed', async () => {
       const file = new FileOperations(AutonomyLevel.LOW);
-      expect(() => file.assertWrite()).not.toThrow();
+      await expect(file.assertWrite()).resolves.not.toThrow();
     });
   });
 
@@ -268,10 +277,10 @@ describe('PermissionManager', () => {
       expect(result.allowed).toBe(true);
     });
 
-    it('should assert permissions correctly', () => {
+    it('should assert permissions correctly', async () => {
       const pm = new PermissionManager(AutonomyLevel.MEDIUM);
-      expect(() => pm.assert(OperationType.GIT_COMMIT)).not.toThrow();
-      expect(() => pm.assert(OperationType.GIT_PUSH)).toThrow();
+      await expect(pm.assert(OperationType.GIT_COMMIT)).resolves.not.toThrow();
+      await expect(pm.assert(OperationType.GIT_PUSH)).rejects.toThrow();
     });
 
     it('should return correct allowed operations', () => {

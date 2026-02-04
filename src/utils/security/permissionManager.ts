@@ -239,15 +239,15 @@ export class GitOperations {
   /**
    * Asserts Git commit permission or throws
    */
-  assertCommit(context?: string, workflowName?: string, workflowId?: string): void {
-    assertPermission(this.autonomyLevel, OperationType.GIT_COMMIT, context, workflowName, workflowId);
+  async assertCommit(context?: string, workflowName?: string, workflowId?: string): Promise<void> {
+    await assertPermission(this.autonomyLevel, OperationType.GIT_COMMIT, context, workflowName, workflowId);
   }
 
   /**
    * Asserts Git push permission or throws
    */
-  assertPush(context?: string, workflowName?: string, workflowId?: string): void {
-    assertPermission(this.autonomyLevel, OperationType.GIT_PUSH, context, workflowName, workflowId);
+  async assertPush(context?: string, workflowName?: string, workflowId?: string): Promise<void> {
+    await assertPermission(this.autonomyLevel, OperationType.GIT_PUSH, context, workflowName, workflowId);
   }
 }
 
@@ -274,8 +274,8 @@ export class FileOperations {
   /**
    * Asserts file write permission or throws
    */
-  assertWrite(context?: string, workflowName?: string, workflowId?: string): void {
-    assertPermission(this.autonomyLevel, OperationType.WRITE_FILE, context, workflowName, workflowId);
+  async assertWrite(context?: string, workflowName?: string, workflowId?: string): Promise<void> {
+    await assertPermission(this.autonomyLevel, OperationType.WRITE_FILE, context, workflowName, workflowId);
   }
 }
 
@@ -308,8 +308,8 @@ export class PermissionManager {
   /**
    * Asserts an operation is allowed or throws
    */
-  assert(operation: OperationType, context?: string, workflowName?: string, workflowId?: string): void {
-    assertPermission(this.autonomyLevel, operation, context, workflowName, workflowId);
+  async assert(operation: OperationType, context?: string, workflowName?: string, workflowId?: string): Promise<void> {
+    await assertPermission(this.autonomyLevel, operation, context, workflowName, workflowId);
   }
 
   /**
