@@ -116,8 +116,8 @@ export function mockGitHelper(overrides: Partial<Record<string, any>> = {}): voi
   // Store the overrides in a local variable to ensure proper closure
   const overridesRef = { ...overrides };
 
-  vi.doMock('../../src/utils/gitHelper.js', async () => {
-    const actual = await vi.importActual('../../src/utils/gitHelper.js');
+  vi.doMock('../../src/utils/cli/gitHelper.js', async () => {
+    const actual = await vi.importActual('../../src/utils/cli/gitHelper.js');
     return {
       ...actual,
       getRecentCommitsWithDiffs: vi.fn().mockResolvedValue(overridesRef.getRecentCommitsWithDiffs || []),

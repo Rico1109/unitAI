@@ -12,7 +12,7 @@ import {
   resetAuditTrail,
 } from '../../src/services/audit-trail';
 import { createTestDependencies } from '../utils/testDependencies.js';
-import type { AsyncDatabase } from '../../src/lib/async-db.js';
+import type { AsyncDatabase } from '../../src/infrastructure/async-db.js';
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({

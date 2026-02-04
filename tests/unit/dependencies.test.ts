@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type Database from 'better-sqlite3';
-import { AsyncDatabase } from '../../src/lib/async-db.js';
+import { AsyncDatabase } from '../../src/infrastructure/async-db.js';
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({
@@ -20,14 +20,14 @@ vi.mock('../../src/utils/logger.js', () => ({
 }));
 
 // Mock CircuitBreaker
-vi.mock('../../src/utils/reliability/circuitBreaker.js', () => ({
+vi.mock('../../src/utils/reliability/index.js', () => ({
   CircuitBreaker: vi.fn().mockImplementation(() => ({
     shutdown: vi.fn(),
   })),
 }));
 
 // Mock AsyncDatabase
-vi.mock('../../src/lib/async-db.js', () => ({
+vi.mock('../../src/infrastructure/async-db.js', () => ({
   AsyncDatabase: vi.fn().mockImplementation(() => ({
     init: vi.fn().mockResolvedValue(undefined),
     execAsync: vi.fn().mockResolvedValue(undefined),
@@ -212,7 +212,7 @@ describe('dependencies', () => {
   describe('Circuit Breaker Initialization', () => {
     it('should initialize circuit breaker with audit database', async () => {
       // Arrange
-      const { CircuitBreaker } = await import('../../src/utils/reliability/circuitBreaker.js');
+      const { CircuitBreaker } = await import('../../src/utils/reliability/index.js');
 
       // Act
       await dependencies.initializeDependencies();

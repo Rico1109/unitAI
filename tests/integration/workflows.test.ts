@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AutonomyLevel } from '../../src/utils/permissionManager.js';
+import { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 import { createMockProgressCallback } from '../utils/testHelpers.js';
 import { mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
 import { mockAIExecutor } from '../utils/mockAI.js';

@@ -40,7 +40,7 @@ vi.mock('../../src/services/ai-executor.js', async () => {
 });
 
 // Import modules
-import { AutonomyLevel } from '../../src/utils/permissionManager.js';
+import { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 import { createMockProgressCallback } from '../utils/testHelpers.js';
 import { mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
 

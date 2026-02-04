@@ -78,7 +78,7 @@ export async function runParallelAnalysis(
 
   const results = await Promise.all(promises);
 
-  // Sintesi dei risultati
+  // Synthesis of results
   const synthesis = synthesizeResults(results);
 
   return {
@@ -88,15 +88,15 @@ export async function runParallelAnalysis(
 }
 
 /**
- * Sintetizza i risultati di analisi multiple
+ * Synthesizes results from multiple analyses
  */
 export function synthesizeResults(results: AIAnalysisResult[]): string {
   const successful = results.filter(r => r.success);
   const failed = results.filter(r => !r.success);
 
-  let synthesis = "# Analisi Combinata\n\n";
+  let synthesis = "# Combined Analysis\n\n";
 
-  // Aggiungi risultati riusciti
+  // Add successful results
   if (successful.length > 0) {
     synthesis += "## Analysis Results\n\n";
 
@@ -106,9 +106,9 @@ export function synthesizeResults(results: AIAnalysisResult[]): string {
     });
   }
 
-  // Aggiungi errori se presenti
+  // Add errors if present
   if (failed.length > 0) {
-    synthesis += "## Errori Rilevati\n\n";
+    synthesis += "## Detected Errors\n\n";
 
     failed.forEach(result => {
       synthesis += `### ${result.backend}\n\n`;
@@ -120,7 +120,7 @@ export function synthesizeResults(results: AIAnalysisResult[]): string {
 }
 
 /**
- * Costruisce un prompt per l'analisi del codice in base al focus
+ * Builds a code review prompt based on focus
  */
 export function buildCodeReviewPrompt(
   files: string[],
@@ -131,27 +131,27 @@ export function buildCodeReviewPrompt(
   switch (focus) {
     case "architecture":
       focusInstructions = `
-Concentrati sull'architettura del codice:
-- Struttura e organizzazione del progetto
-- Pattern di design utilizzati
+Focus on code architecture:
+- Project structure and organization
+- Design patterns used
 - Separation of responsibilities
-- Accoppiamento e coesione
-- Scalabilità e manutenibilità
+- Coupling and cohesion
+- Scalability and maintainability
 `;
       break;
     case "security":
       focusInstructions = `
-Concentrati sulla sicurezza del codice:
-- Vulnerabilità comuni (SQL injection, XSS, CSRF)
-- Gestione dell'autenticazione e autorizzazione
+Focus on code security:
+- Common vulnerabilities (SQL injection, XSS, CSRF)
+- Authentication and authorization management
 - Input validation
-- Gestione dei dati sensibili
-- Configurazioni di sicurezza
+- Sensitive data management
+- Security configurations
 `;
       break;
     case "performance":
       focusInstructions = `
-Concentrati sulle prestazioni del codice:
+Focus on code performance:
 - Algorithm efficiency
 - Memory usage
 - Computational complexity
@@ -172,33 +172,33 @@ Focus on code quality:
     case "all":
     default:
       focusInstructions = `
-Analisi completa del codice includendo:
-- Architettura e design
-- Sicurezza
-- Prestazioni
-- Qualità e manutenibilità
+Complete code analysis including:
+- Architecture and design
+- Security
+- Performance
+- Quality and maintainability
 - Best practices
 `;
       break;
   }
 
   return `
-Analizza i seguenti file: ${files.join(", ")}
+Analyze the following files: ${files.join(", ")}
 
 ${focusInstructions}
 
-Fornisci un'analisi dettagliata con:
-1. Punti di forza identificati
-2. Problemi o aree di miglioramento
-3. Raccomandazioni specifiche
-4. Priorità dei problemi (se applicabile)
+Provide a detailed analysis with:
+1. Identified strengths
+2. Issues or areas for improvement
+3. Specific recommendations
+4. Issue priority (if applicable)
 
-Sii specifico e fornisci esempi concreti quando possibile.
+Be specific and provide concrete examples when possible.
 `;
 }
 
 /**
- * Costruisce un prompt per la caccia ai bug
+ * Builds a prompt for bug hunting
  */
 export function buildBugHuntPrompt(
   symptoms: string,
@@ -207,13 +207,13 @@ export function buildBugHuntPrompt(
   let filesSection = "";
   if (suspectedFiles && suspectedFiles.length > 0) {
     filesSection = `
-File sospetti da analizzare:
+Suspected files to analyze:
 ${suspectedFiles.map(f => `- ${f}`).join("\n")}
 `;
   }
 
   return `
-Sintomi del problema: ${symptoms}
+Problem symptoms: ${symptoms}
 
 ${filesSection}
 
@@ -234,7 +234,7 @@ Pay attention to:
 }
 
 /**
- * Formatta l'output per la visualizzazione
+ * Formats output for display
  */
 export function formatWorkflowOutput(
   title: string,
@@ -244,7 +244,7 @@ export function formatWorkflowOutput(
   let output = `# ${title}\n\n`;
 
   if (metadata) {
-    output += "## Metadati\n\n";
+    output += "## Metadata\n\n";
     Object.entries(metadata).forEach(([key, value]) => {
       output += `- **${key}**: ${value}\n`;
     });
@@ -257,7 +257,7 @@ export function formatWorkflowOutput(
 }
 
 /**
- * Estrae il nome del file da un path completo
+ * Extracts file name from full path
  */
 export function extractFileName(filePath: string): string {
   return filePath.split("/").pop() || filePath;
@@ -272,13 +272,13 @@ export function isFileType(filePath: string, extensions: string[]): boolean {
 }
 
 /**
- * Crea un PermissionManager dai parametri del workflow
+ * Creates a PermissionManager from workflow parameters
  *
- * Estrae l'autonomyLevel dai parametri (se presente) e crea un PermissionManager
- * con il livello appropriato. Se non specificato, usa il livello di default (READ_ONLY).
+ * Extracts autonomyLevel from parameters (if present) and creates a PermissionManager
+ * with the appropriate level. If not specified, uses the default level (READ_ONLY).
  *
- * @param params - Parametri del workflow che estendono BaseWorkflowParams
- * @returns PermissionManager configurato con il livello di autonomia appropriato
+ * @param params - Workflow parameters extending BaseWorkflowParams
+ * @returns PermissionManager configured with the appropriate autonomy level
  *
  * @example
  * ```typescript
@@ -290,7 +290,7 @@ export function isFileType(filePath: string, extensions: string[]): boolean {
  *     // Execute commit
  *   }
  *
- *   // Oppure assert che lancia errore se non permesso
+ *   // Or assert that throws error if not allowed
  *   permissions.git.assertPush("pushing to remote");
  * }
  * ```
@@ -307,14 +307,14 @@ export function createWorkflowPermissionManager(
 // ============================================================================
 
 /**
- * Crea un AgentConfig dai parametri del workflow
+ * Creates an AgentConfig from workflow parameters
  *
- * Converte i parametri di un workflow in una configurazione Agent-compatible,
- * gestendo autonomy level e progress callback.
+ * Converts workflow parameters to an Agent-compatible configuration,
+ * handling autonomy level and progress callback.
  *
- * @param params - Parametri del workflow che estendono BaseWorkflowParams
- * @param onProgress - Callback opzionale per report di progresso
- * @returns AgentConfig pronto per l'uso con gli agent
+ * @param params - Workflow parameters extending BaseWorkflowParams
+ * @param onProgress - Optional callback for progress reporting
+ * @returns AgentConfig ready for use with agents
  *
  * @example
  * ```typescript
@@ -345,12 +345,12 @@ export function createAgentConfig(
 }
 
 /**
- * Formatta i risultati di un agent per la visualizzazione
+ * Formats agent results for display
  *
- * Converte l'output strutturato di un agent in un formato leggibile
+ * Converts structured agent output to a readable format
  * for the user, including metadata and error handling.
  *
- * @param result - Risultato dell'esecuzione di un agent
+ * @param result - Result of an agent execution
  * @param agentName - Nome dell'agent (per il titolo)
  * @returns Stringa formattata pronta per la visualizzazione
  *

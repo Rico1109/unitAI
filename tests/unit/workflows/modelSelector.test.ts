@@ -12,7 +12,7 @@ import {
   type TaskCharacteristics
 } from '../../../src/workflows/model-selector.js';
 import { BACKENDS } from '../../../src/services/ai-executor.js';
-import { CircuitBreaker } from '../../../src/utils/reliability/circuitBreaker.js';
+import { CircuitBreaker } from '../../../src/utils/reliability/index.js';
 import { initializeDependencies, closeDependencies } from '../../../src/dependencies.js';
 
 describe('Model Selector', () => {

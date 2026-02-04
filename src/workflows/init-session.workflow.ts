@@ -8,29 +8,29 @@ import { BACKENDS, AI_MODELS } from "../constants.js";
 import type { WorkflowDefinition, ProgressCallback, GitCommitInfo } from "../domain/workflows/types.js";
 
 /**
- * Schema Zod per il workflow init-session
+ * Zod Schema for init-session workflow
  */
 const initSessionSchema = z.object({
   autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
     .optional()
-    .describe("Livello di autonomia per le operazioni del workflow (default: read-only)"),
+    .describe("Autonomy level for workflow operations (default: read-only)"),
   commitCount: z.number()
     .int()
     .min(1)
     .max(50)
     .optional()
-    .describe("Numero massimo di commit recenti da analizzare (default: 10)")
+    .describe("Maximum number of recent commits to analyze (default: 10)")
 });
 
 /**
- * Estrae keywords significative dai messaggi di commit
+ * Extracts significant keywords from commit messages
  */
 function extractKeywordsFromCommits(commits: GitCommitInfo[]): string[] {
   const keywords = new Set<string>();
   const stopWords = ['add', 'fix', 'update', 'refactor', 'improve', 'remove', 'delete', 'change', 'modify', 'create', 'implement', 'the', 'and', 'or', 'for', 'with', 'from', 'to', 'in', 'on', 'at'];
 
   commits.forEach(commit => {
-    // Estrai parole dal messaggio di commit
+    // Extract words from commit message
     const words = commit.message
       .toLowerCase()
       .replace(/[^\w\s-]/g, ' ')
@@ -39,7 +39,7 @@ function extractKeywordsFromCommits(commits: GitCommitInfo[]): string[] {
 
     words.forEach(word => keywords.add(word));
 
-    // Estrai anche dai nomi dei file modificati
+    // Extract also from modified file names
     commit.files.forEach(file => {
       const baseName = path.basename(file, path.extname(file));
       const fileWords = baseName
@@ -54,7 +54,7 @@ function extractKeywordsFromCommits(commits: GitCommitInfo[]): string[] {
 }
 
 /**
- * Estrae il titolo da un file markdown (prima riga non vuota o primo heading)
+ * Extracts title from markdown file (first non-empty line or first heading)
  */
 function extractTitleFromContent(content: string): string {
   const lines = content.split('\n');
@@ -63,12 +63,12 @@ function extractTitleFromContent(content: string): string {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // Se è un heading markdown, rimuovi il marcatore
+    // If it is a markdown heading, remove the marker
     if (trimmed.startsWith('#')) {
       return trimmed.replace(/^#+\s*/, '').substring(0, 80);
     }
 
-    // Altrimenti usa la prima riga non vuota
+    // Otherwise use the first non-empty line
     return trimmed.substring(0, 80);
   }
 
@@ -104,7 +104,7 @@ function findMarkdownFiles(dir: string, fileList: string[] = []): string[] {
 
 /**
  * Searches for relevant documentation in .serena/memories and docs/
- * basandosi sui commit recenti
+ * based on recent commits
  */
 function searchRelatedDocumentation(commits: GitCommitInfo[]): string[] {
   const results: string[] = [];
@@ -136,7 +136,7 @@ function searchRelatedDocumentation(commits: GitCommitInfo[]): string[] {
       continue;
     }
 
-    // Cerca corrispondenze di keywords nel content
+    // Searches for keyword matches in content
     const matches = keywords.filter(kw =>
       content.toLowerCase().includes(kw.toLowerCase())
     );
@@ -150,7 +150,7 @@ function searchRelatedDocumentation(commits: GitCommitInfo[]): string[] {
     }
   }
 
-  // Ordina per numero di matches (decrescente)
+  // Sort by number of matches (descending)
   return results.sort((a, b) => {
     const matchesA = (a.match(/matches:/)?.[0] || '').split(',').length;
     const matchesB = (b.match(/matches:/)?.[0] || '').split(',').length;
@@ -159,7 +159,7 @@ function searchRelatedDocumentation(commits: GitCommitInfo[]): string[] {
 }
 
 /**
- * Costruisce il prompt per l'analisi AI dei commit
+ * Constructs the prompt for AI commit analysis
  */
 function buildCommitAnalysisPrompt(commits: GitCommitInfo[]): string {
   let prompt = `Analyze the following ${commits.length} recent commits and provide a concise summary of the work done.
@@ -219,40 +219,40 @@ export async function executeInitSession(
   metadata.isGitRepository = isRepo;
 
   if (isRepo) {
-    onProgress?.("Recupero informazioni repository Git...");
+    onProgress?.("Retrieving Git repository information...");
 
     try {
-      // Informazioni base del repository
+      // Basic repository information
       const repoInfo = await getGitRepoInfo();
       sections.push(`
-## Informazioni Repository
+## Repository Information
 
-- **Branch corrente**: ${repoInfo.currentBranch}
-- **File staged**: ${repoInfo.stagedFiles.length}
-- **File modificati**: ${repoInfo.modifiedFiles.length}
+- **Current branch**: ${repoInfo.currentBranch}
+- **Staged files**: ${repoInfo.stagedFiles.length}
+- **Modified files**: ${repoInfo.modifiedFiles.length}
 `);
 
-      // Ottieni gli ultimi 10 commits con diffs completi
+      // Get last 10 commits with full diffs
       const commitsToAnalyze = commitCount ?? 10;
-      onProgress?.(`Recupero ultimi ${commitsToAnalyze} commits con diffs...`);
+      onProgress?.(`Retrieving last ${commitsToAnalyze} commits with diffs...`);
       const recentCommits = await getRecentCommitsWithDiffs(commitsToAnalyze);
       metadata.commitsAnalyzed = recentCommits.length;
 
-      // Commit recenti (sommario)
+      // Recent commits (summary)
       sections.push(`
-## Commit Recenti (ultimi 10)
+## Recent Commits (last 10)
 
 ${recentCommits.map((commit, i) => `${i + 1}. [${commit.hash.substring(0, 8)}] ${commit.message} - ${commit.author}`).join("\n")}
 `);
 
-      // Analisi AI con fallback tra più backend
+      // AI analysis with fallback between multiple backends
       const analysisPrompt = buildCommitAnalysisPrompt(recentCommits);
       const analysisBackends = [BACKENDS.GEMINI, BACKENDS.QWEN];
       let aiAnalysis = "";
       let lastAnalysisError: string | undefined;
 
       for (const backend of analysisBackends) {
-        onProgress?.(`Analisi AI dei commit con ${backend}...`);
+        onProgress?.(`AI commit analysis with ${backend}...`);
         try {
           aiAnalysis = await executeAIClient({
             backend,
@@ -264,7 +264,7 @@ ${recentCommits.map((commit, i) => `${i + 1}. [${commit.hash.substring(0, 8)}] $
           break;
         } catch (error) {
           lastAnalysisError = error instanceof Error ? error.message : String(error);
-          onProgress?.(`Analisi con ${backend} fallita: ${lastAnalysisError}`);
+          onProgress?.(`Analysis with ${backend} failed: ${lastAnalysisError}`);
         }
       }
 
@@ -283,8 +283,8 @@ ${aiAnalysis}
         metadata.aiAnalysisCompleted = false;
       }
 
-      // Cerca documentation e memorie rilevanti basandosi sui commit
-      onProgress?.("Ricerca documentazione correlata...");
+      // Search relevant documentation and memories based on commits
+      onProgress?.("Searching related documentation...");
       const relatedDocs = searchRelatedDocumentation(recentCommits);
 
       if (relatedDocs.length > 0) {
@@ -310,22 +310,22 @@ ${dateRange ? `📅 Commit date range: ${dateRange.oldest} to ${dateRange.newest
 `);
       }
 
-      // Status dettagliato
-      onProgress?.("Recupero stato repository...");
+      // Detailed status
+      onProgress?.("Retrieving repository status...");
       const status = await getDetailedGitStatus();
       sections.push(`
-## Stato Repository
+## Repository Status
 
 \`\`\`
 ${status}
 \`\`\`
 `);
 
-      // Informazioni sui branch
-      onProgress?.("Recupero informazioni branch...");
+      // Branch information
+      onProgress?.("Retrieving branch information...");
       const branches = await getGitBranches();
       sections.push(`
-## Branch
+## Branches
 
 \`\`\`
 ${branches}
@@ -335,16 +335,16 @@ ${branches}
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       sections.push(`
-## Errore nel recupero informazioni Git
+## Error retrieving Git information
 
 ${errorMsg}
 `);
     }
   } else {
     sections.push(`
-## Repository Git
+## Git Repository
 
-La directory corrente non è un repository Git.
+Current directory is not a Git repository.
 `);
   }
 
@@ -355,24 +355,24 @@ La directory corrente non è un repository Git.
     metadata.cliAvailability = cliAvailability;
 
     sections.push(`
-## Disponibilità CLI
+## CLI Availability
 
-- **Gemini**: ${cliAvailability.gemini ? "✅ Disponibile" : "❌ Non disponibile"}
-- **Qwen**: ${cliAvailability.qwen ? "✅ Disponibile" : "❌ Non disponibile"}
-- **Droid**: ${cliAvailability.droid ? "✅ Disponibile" : "❌ Non disponibile"}
+- **Gemini**: ${cliAvailability.gemini ? "✅ Available" : "❌ Not available"}
+- **Qwen**: ${cliAvailability.qwen ? "✅ Available" : "❌ Not available"}
+- **Droid**: ${cliAvailability.droid ? "✅ Available" : "❌ Not available"}
 `);
 
-    // Avvisi se qualche CLI non è disponibile
+    // Warnings if any CLI is unavailable
     const unavailable = Object.entries(cliAvailability)
       .filter(([_, available]) => !available)
       .map(([name]) => name);
 
     if (unavailable.length > 0) {
       sections.push(`
-### ⚠️ Avviso
+### ⚠️ Warning
 
-Le seguenti CLI non sono disponibili: ${unavailable.join(", ")}
-Alcuni workflow potrebbero non funzionare correttamente.
+The following CLIs are unavailable: ${unavailable.join(", ")}
+Some workflows may not work correctly.
 `);
     }
   } catch (error) {
@@ -384,17 +384,17 @@ ${errorMsg}
 `);
   }
 
-  // Informazioni sulla sessione
+  // Session information
   const now = new Date();
   metadata.sessionStartTime = now.toISOString();
   metadata.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   sections.push(`
-## Informazioni Sessione
+## Session Information
 
-- **Data e ora**: ${now.toLocaleString()}
+- **Date and time**: ${now.toLocaleString()}
 - **Timezone**: ${metadata.timezone}
-- **Directory di lavoro**: ${process.cwd()}
+- **Working directory**: ${process.cwd()}
 `);
 
   onProgress?.("Session initialized successfully");
@@ -403,7 +403,7 @@ ${errorMsg}
 }
 
 /**
- * Definizione del workflow init-session
+ * Definition of init-session workflow
  */
 export const initSessionWorkflow: WorkflowDefinition = {
   name: 'init-session',

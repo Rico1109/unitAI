@@ -3,7 +3,7 @@
  */
 
 import { vi } from 'vitest';
-import type { AutonomyLevel } from '../../src/utils/permissionManager.js';
+import type { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 
 /**
  * Wait for a condition to be true

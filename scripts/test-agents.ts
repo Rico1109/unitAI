@@ -12,7 +12,7 @@
  */
 
 import { AgentFactory, AgentType } from "../src/agents/index.js";
-import { AutonomyLevel } from "../src/utils/permissionManager.js";
+import { AutonomyLevel } from "../src/utils/security/permissionManager.js";
 import type { AgentConfig } from "../src/agents/types.js";
 
 // ANSI color codes for output

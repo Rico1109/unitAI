@@ -12,24 +12,24 @@ import { selectParallelBackends, createTaskCharacteristics } from "./model-selec
 import { getDependencies } from '../dependencies.js';
 
 /**
- * Schema Zod per il workflow parallel-review
+ * Zod Schema for parallel-review workflow
  */
 const parallelReviewSchema = z.object({
-  files: z.array(z.string()).describe("File da analizzare"),
+  files: z.array(z.string()).describe("Files to analyze"),
   focus: z.enum(["architecture", "security", "performance", "quality", "all"])
-    .optional().default("all").describe("Area di focus dell'analisi"),
+    .optional().default("all").describe("Analysis focus area"),
   autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)"),
+    .optional().describe("Autonomy level for workflow operations (default: read-only)"),
   strategy: z.enum(["standard", "double-check"])
     .optional()
     .default("standard")
-    .describe("Strategia di revisione (double-check aggiunge Cursor + Droid)"),
+    .describe("Review strategy (double-check adds Cursor + Droid)"),
   backendOverrides: z.array(z.string())
     .optional()
-    .describe("Override esplicito dei backend da utilizzare"),
+    .describe("Explicit override of backends to use"),
   attachments: z.array(z.string())
     .optional()
-    .describe("File da allegare alle analisi (passati a Cursor/Droid)")
+    .describe("Files to attach to analysis (passed to Cursor/Droid)")
 });
 
 /**
@@ -51,41 +51,41 @@ export async function executeParallelReview(
     autonomyLevel: params.autonomyLevel
   });
 
-  onProgress?.(`Avvio revisione parallela di ${files.length} file con focus: ${focus}`);
+  onProgress?.(`Starting parallel review of ${files.length} files with focus: ${focus}`);
 
-  // Validazione dei file
+  // File validation
   if (files.length === 0) {
     logger.error('validation-failed', new Error('No files specified'));
-    throw new Error("È necessario specificare almeno un file da analizzare");
+    throw new Error("Must specify at least one file to analyze");
   }
 
   logger.step('validation', 'File validation passed', { filesCount: files.length });
 
-  // Preparazione dei prompt per ogni backend
+  // Preparing prompts for each backend
   const promptBuilder = (backend: string): string => {
     const basePrompt = buildCodeReviewPrompt(files, focus as ReviewFocus);
 
-    // Personalizzazione per backend specifici
+    // Customization for specific backends
     switch (backend) {
       case BACKENDS.GEMINI:
         return `${basePrompt}
 
-Come Gemini, fornisci un'analisi approfondita con particolare attenzione a:
+As Gemini, provide an in-depth analysis with particular attention to:
 - Architettura e design patterns
 - Long-term impact of changes
-- Considerazioni sulla scalabilità
-- Best practices di ingegneria del software
+- Scalability considerations
+- Software engineering best practices
 `;
 
 
       case BACKENDS.CURSOR:
         return `${basePrompt}
 
-Come Cursor Agent, genera un piano di refactoring dettagliato:
-- Evidenzia rischi tecnici a medio termine
-- Suggerisci patch chirurgiche con contesto minimo
-- Prioritizza interventi in base all'impatto
-- Proponi test da aggiungere
+As Cursor Agent, generate a detailed refactoring plan:
+- Highlight medium-term technical risks
+- Suggest surgical patches with minimal context
+- Prioritize interventions based on impact
+- Propose tests to add
 `;
       case BACKENDS.DROID:
         return `${basePrompt}
@@ -100,16 +100,16 @@ As Factory Droid, act as an autonomous verifier:
       case BACKENDS.ROVODEV:
         return `${basePrompt}
 
-Come Rovo Dev, agisci come implementatore pratico:
-- Fornisci snippet di codice pronti all'uso
-- Identifica dipendenze mancanti
-- Suggerisci miglioramenti immediati
+As Rovo Dev, act as a practical implementer:
+- Provide ready-to-use code snippets
+- Identify missing dependencies
+- Suggest immediate improvements
 `;
 
       case BACKENDS.QWEN:
         return `${basePrompt}
 
-Come Qwen, fornisci un'analisi logica e strutturata:
+As Qwen, provide a logical and structured analysis:
 - Verify code consistency
 - Identify unhandled edge cases
 - Suggest algorithmic optimizations
@@ -120,7 +120,7 @@ Come Qwen, fornisci un'analisi logica e strutturata:
     }
   };
 
-  // Esecuzione dell'analisi parallela
+  // Executing parallel analysis
   let backendsToUse: string[] = [];
 
   if (backendOverrides && backendOverrides.length > 0) {
@@ -141,7 +141,7 @@ Come Qwen, fornisci un'analisi logica e strutturata:
     backends: backendsToUse
   });
 
-  onProgress?.(`Avvio analisi con i backend: ${backendsToUse.join(", ")}`);
+  onProgress?.(`Starting analysis with backends: ${backendsToUse.join(\", \")}`);
 
   const analysisResult = await logger.timing('parallel-analysis', async () => {
     return await runParallelAnalysis(
@@ -179,11 +179,11 @@ Come Qwen, fornisci un'analisi logica e strutturata:
     );
   });
 
-  // Analisi dei risultati
+  // Analyzing results
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
 
-  // Preparazione dell'output
+  // Preparing output
   let outputContent = "";
   const metadata: Record<string, any> = {
     filesAnalyzed: files,
@@ -196,52 +196,52 @@ Come Qwen, fornisci un'analisi logica e strutturata:
     attachments
   };
 
-  // Se abbiamo risultati, usiamo la sintesi già preparata
+  // If we have results, use the prepared synthesis
   if (analysisResult.synthesis) {
     outputContent = analysisResult.synthesis;
   } else {
-    outputContent = "# Analisi Parallela del Codice\n\n";
-    outputContent += "Nessun risultato disponibile dall'analisi.\n";
+    outputContent = "# Parallel Code Analysis\n\n";
+    outputContent += "No results available from analysis.\n";
   }
 
-  // Aggiunta di una sezione di riepilogo
+  // Adding summary section
   outputContent += `
-## Riepilogo Analisi
+## Analysis Summary
 
-- **File analizzati**: ${files.join(", ")}
+- **Files analyzed**: ${files.join(", ")}
 - **Focus**: ${focus}
-- **Backend utilizzati**: ${successful.map(r => r.backend).join(", ") || "Nessuno"}
-- **Esito**: ${successful.length > 0 ? "✅ Completata" : "❌ Fallita"}
+- **Backends used**: ${successful.map(r => r.backend).join(", ") || "None"}
+- **Outcome**: ${successful.length > 0 ? "✅ Completed" : "❌ Failed"}
 `;
 
-  // Aggiunta di raccomandazioni combinate se disponibili
+  // Adding combined recommendations if available
   if (successful.length > 0) {
     outputContent += `
-## Raccomandazioni Combinate
+## Combined Recommendations
 
-Basandosi sull'analisi parallela, ecco le raccomandazioni principali:
+Based on parallel analysis, here are the key recommendations:
 
-1. **Priorità Alta**: Presta attenzione ai problemi di sicurezza e performance identificati
-2. **Priorità Media**: Considera i suggerimenti di refactoring per migliorare la manutenibilità
-3. **Priorità Bassa**: Valuta le raccomandazioni architetturali per il lungo termine
+1. **High Priority**: Pay attention to identified security and performance issues
+2. **Medium Priority**: Consider refactoring suggestions to improve maintainability
+3. **Low Priority**: Evaluate architectural recommendations for the long term
 
-Per dettagli specifici, consulta le analisi individuali sopra.
+For specific details, consult the individual analyses above.
 `;
   }
 
-  // Avvisi se alcuni backend sono falliti
+  // Warnings if some backends failed
   if (failed.length > 0) {
     outputContent += `
-## ⚠️ Avvisi
+## ⚠️ Warnings
 
-I seguenti backend non hanno completato l'analisi:
+The following backends did not complete the analysis:
 ${failed.map(f => `- **${f.backend}**: ${f.error}`).join("\n")}
 
-L'analisi potrebbe essere incompleta. Si consiglia di risolvere i problemi e riprovare.
+The analysis may be incomplete. It is recommended to resolve the issues and try again.
 `;
   }
 
-  onProgress?.(`Revisione parallela completata: ${successful.length}/${analysisResult.results.length} analisi riuscite`);
+  onProgress?.(`Parallel review completed: ${successful.length}/${analysisResult.results.length} successful analyses`);
 
   logger.step('complete', 'Parallel review completed successfully', {
     successfulAnalyses: successful.length,
@@ -249,11 +249,11 @@ L'analisi potrebbe essere incompleta. Si consiglia di risolvere i problemi e rip
     totalBackends: analysisResult.results.length
   });
 
-  return formatWorkflowOutput("Revisione Parallela del Codice (Parallel Review)", outputContent, metadata);
+  return formatWorkflowOutput("Parallel Code Review", outputContent, metadata);
 }
 
 /**
- * Definizione del workflow parallel-review
+ * Definition of parallel-review workflow
  */
 export const parallelReviewWorkflow: WorkflowDefinition = {
   name: 'parallel-review',

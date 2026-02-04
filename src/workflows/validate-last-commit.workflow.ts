@@ -33,44 +33,44 @@ export async function executeValidateLastCommit(
 
   // Check if we are in a Git repository
   if (!await isGitRepository()) {
-    throw new Error("Directory corrente non è un repository Git");
+    throw new Error("Current directory is not a Git repository");
   }
 
-  // Recupero informazioni del commit
-  onProgress?.("Recupero informazioni commit...");
+  // Retrieve commit information
+  onProgress?.("Retrieving commit information...");
   let commitInfo;
   try {
     commitInfo = await getGitCommitInfo(commit_ref);
   } catch (error) {
-    throw new Error(`Impossibile recuperare informazioni per il commit ${commit_ref}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Unable to retrieve information for commit ${commit_ref}: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  // Preparazione dei prompt per ogni backend
+  // Preparing prompts for each backend
   const promptBuilder = (backend: string): string => {
     const basePrompt = `
-Analizza il seguente commit Git per identificare problemi, breaking changes e best practices:
+Analyze the following Git commit to identify issues, breaking changes, and best practices:
 
-**Informazioni Commit:**
+**Commit Information:**
 - Hash: ${commitInfo.hash}
-- Autore: ${commitInfo.author}
-- Data: ${commitInfo.date}
-- Messaggio: ${commitInfo.message}
+- Author: ${commitInfo.author}
+- Date: ${commitInfo.date}
+- Message: ${commitInfo.message}
 
-**File Modificati:**
+**Modified Files:**
 ${commitInfo.files.map(f => `- ${f}`).join("\n")}
 
 **Diff:**
 \`\`\`diff
-${commitInfo.diff.substring(0, 3000)}${commitInfo.diff.length > 3000 ? "\n... (diff troncato per lunghezza)" : ""}
+${commitInfo.diff.substring(0, 3000)}${commitInfo.diff.length > 3000 ? "\n... (diff truncated due to length)" : ""}
 \`\`\`
 
-Fornisci un'analisi dettagliata includendo:
-1. Breaking changes identificati
-2. Problemi di sicurezza o performance
+Provide a detailed analysis including:
+1. Identified breaking changes
+2. Security or performance issues
 3. Best practices violations
-4. Problemi di qualità del codice
-5. Raccomandazioni specifiche
-6. Verdetto complessivo (APPROVATO/RIFIUTATO/NECESSARIA REVISIONE)
+4. Code quality issues
+5. Specific recommendations
+6. Overall verdict (APPROVED/REJECTED/REVISION NEEDED)
 `;
 
     // Personalizzazione per backend specifici
@@ -78,7 +78,7 @@ Fornisci un'analisi dettagliata includendo:
       case BACKENDS.GEMINI:
         return `${basePrompt}
 
-Come Gemini, fornisci un'analisi architetturale con attenzione a:
+As Gemini, provide an architectural analysis focusing on:
 - Impact of changes on existing architecture
 - Scalabilità e manutenibilità a lungo termine
 - Consistenza con i pattern di design del progetto
@@ -88,7 +88,7 @@ Come Gemini, fornisci un'analisi architetturale con attenzione a:
       case BACKENDS.CURSOR:
         return `${basePrompt}
 
-Come Cursor Agent, fornisci un'analisi tecnica con focus su:
+As Cursor Agent, provide a technical analysis focusing on:
 - Correttezza del codice e potenziali bug
 - Algorithm efficiency and complexity
 - Error handling and edge cases
@@ -107,19 +107,19 @@ As Factory Droid, verify the practical implementation:
       case BACKENDS.ROVODEV:
         return `${basePrompt}
 
-Come Rovo Dev, analizza l'impatto operativo:
-- Dipendenze introdotte
-- Complessità di deployment
-- Rischi di regressione
+As Rovo Dev, analyze the operational impact:
+- Dependencies introduced
+- Deployment complexity
+- Regression risks
 `;
 
       case BACKENDS.QWEN:
         return `${basePrompt}
 
-Come Qwen, fornisci un'analisi logica:
-- Coerenza con i requisiti
-- Edge cases mancanti
-- Ottimizzazioni possibili
+As Qwen, provide a logical analysis:
+- Consistency with requirements
+- Missing edge cases
+- Possible optimizations
 `;
 
       default:
@@ -128,7 +128,7 @@ Come Qwen, fornisci un'analisi logica:
   };
 
   // Esecuzione dell'analisi parallela
-  onProgress?.("Avvio analisi parallela...");
+  onProgress?.("Starting parallel analysis...");
 
   const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('review');
@@ -141,11 +141,11 @@ Come Qwen, fornisci un'analisi logica:
     onProgress
   );
 
-  // Analisi dei risultati
+  // Analyzing results
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
 
-  // Preparazione dell'output
+  // Preparing output
   let outputContent = "";
   const metadata: Record<string, any> = {
     commitRef: commit_ref,
@@ -160,34 +160,34 @@ Come Qwen, fornisci un'analisi logica:
     timestamp: new Date().toISOString()
   };
 
-  // Informazioni del commit
+  // Commit information
   outputContent += `
-## Informazioni Commit
+## Commit Information
 
 - **Hash**: ${commitInfo.hash}
 - **Autore**: ${commitInfo.author}
 - **Data**: ${commitInfo.date}
 - **Messaggio**: ${commitInfo.message}
-- **File modificati**: ${commitInfo.files.length}
+- **Modified files**: ${commitInfo.files.length}
 
-### File Modificati
+### Modified Files
 ${commitInfo.files.map(f => `- ${f}`).join("\n")}
 `;
 
-  // Se abbiamo risultati, usiamo la sintesi già preparata
+  // If we have results, use the prepared synthesis
   if (analysisResult.synthesis) {
     outputContent += analysisResult.synthesis;
   } else {
-    outputContent += "\n## Analisi del Commit\n\n";
-    outputContent += "Nessun risultato disponibile dall'analisi.\n";
+    outputContent += "\n## Commit Analysis\n\n";
+    outputContent += "No results available from analysis.\n";
   }
 
-  // Verdetto combinato
+  // Combined Verdict
   if (successful.length > 0) {
     outputContent += `
-## Verdetto Combinato
+## Combined Verdict
 
-Basandosi sull'analisi parallela (${successful.map(r => r.backend).join(" + ")}):
+Based on parallel analysis (${successful.map(r => r.backend).join(" + ")}):
 
 `;
 

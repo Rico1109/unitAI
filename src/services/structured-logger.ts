@@ -40,13 +40,13 @@ export interface LogEntry {
   timestamp: string;              // ISO 8601
   level: LogLevel;
   category: LogCategory;
-  component: string;              // Nome workflow o modulo
-  operation: string;              // Nome operazione specifica
+  component: string;              // Workflow or module name
+  operation: string;              // Specific operation name
   message: string;
   metadata?: Record<string, unknown>;
-  duration?: number;              // Millisecondi (per timing)
-  workflowId?: string;            // Per correlare log stesso workflow
-  parentSpanId?: string;          // Per distributed tracing (future)
+  duration?: number;              // Milliseconds (for timing)
+  workflowId?: string;            // To correlate logs for same workflow
+  parentSpanId?: string;          // For distributed tracing (future)
 }
 
 /**
@@ -228,7 +228,7 @@ export class StructuredLogger {
   }
 
   /**
-   * Log generico - scrive su file appropriati
+   * Generic log - writes to appropriate files
    */
   log(entry: Omit<LogEntry, 'timestamp'>): void {
     // Check minimum level
@@ -393,14 +393,14 @@ export class StructuredLogger {
   }
 
   /**
-   * Crea workflow-scoped logger
+   * Create workflow-scoped logger
    */
   forWorkflow(workflowId: string, workflowName: string): WorkflowLogger {
     return new WorkflowLogger(this, workflowId, workflowName);
   }
 
   /**
-   * Query logs per debug post-mortem
+   * Query logs for post-mortem debug
    */
   queryLogs(filters: {
     category?: LogCategory;
@@ -480,7 +480,7 @@ export class StructuredLogger {
   }
 
   /**
-   * Export logs per external analysis
+   * Export logs for external analysis
    */
   exportLogs(category: LogCategory, format: 'json' | 'csv'): string {
     const entries = this.queryLogs({ category });
@@ -508,7 +508,7 @@ export class StructuredLogger {
   }
 
   /**
-   * Cleanup logs vecchi
+   * Cleanup old logs
    */
   cleanup(daysToKeep: number): void {
     const cutoffDate = new Date();
@@ -527,7 +527,7 @@ export class StructuredLogger {
   }
 
   /**
-   * Timer per operazioni
+   * Operation timer
    */
   startTimer(workflowId: string, operation: string): () => void {
     const startTime = Date.now();

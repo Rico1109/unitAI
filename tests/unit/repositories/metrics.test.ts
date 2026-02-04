@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MetricsRepository } from '../../../src/repositories/metrics.js';
-import { AsyncDatabase } from '../../../src/lib/async-db.js';
+import { AsyncDatabase } from '../../../src/infrastructure/async-db.js';
 import Database from 'better-sqlite3';
 
 interface RedMetricRow {

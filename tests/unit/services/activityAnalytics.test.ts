@@ -9,7 +9,7 @@ import { AuditTrail } from '../../../src/services/audit-trail.js';
 import { TokenSavingsMetrics } from '../../../src/services/token-estimator.js';
 import { createTestDependencies } from '../../utils/testDependencies.js';
 import type Database from 'better-sqlite3';
-import type { AsyncDatabase } from '../../../src/lib/async-db.js';
+import type { AsyncDatabase } from '../../../src/infrastructure/async-db.js';
 
 describe('ActivityAnalytics', () => {
   let analytics: ActivityAnalytics;
