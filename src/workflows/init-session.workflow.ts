@@ -5,6 +5,8 @@ import { getGitRepoInfo, getGitDiff, getDetailedGitStatus, getGitBranches, check
 import { formatWorkflowOutput } from "./utils.js";
 import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS, AI_MODELS } from "../constants.js";
+import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
+import { getDependencies } from '../dependencies.js';
 import type { WorkflowDefinition, ProgressCallback, GitCommitInfo } from "../domain/workflows/types.js";
 
 /**
@@ -247,7 +249,11 @@ ${recentCommits.map((commit, i) => `${i + 1}. [${commit.hash.substring(0, 8)}] $
 
       // AI analysis with fallback between multiple backends
       const analysisPrompt = buildCommitAnalysisPrompt(recentCommits);
-      const analysisBackends = [BACKENDS.GEMINI, BACKENDS.QWEN];
+      
+      const { circuitBreaker } = getDependencies();
+      const task = createTaskCharacteristics('init-session', { requiresArchitecturalThinking: true, complexity: 'medium' });
+      const analysisBackends = await selectParallelBackends(task, circuitBreaker, 2);
+      
       let aiAnalysis = "";
       let lastAnalysisError: string | undefined;
 

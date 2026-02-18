@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { executeAIClient, BACKENDS } from "../services/ai-executor.js";
+import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
+import { getDependencies } from '../dependencies.js';
 import { formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
 import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "../domain/workflows/types.js";
@@ -81,7 +83,15 @@ ${content}
   }
 
   const history: { step: string; content: string; agent: string }[] = [];
-  const backendToUse = modelOverride || BACKENDS.GEMINI; // Default to powerful model
+  
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('overthinker', { requiresCreativity: true, complexity: 'high', requiresArchitecturalThinking: true });
+  
+  let selectedBackend = modelOverride;
+  if (!selectedBackend) {
+     selectedBackend = await selectOptimalBackend(task, circuitBreaker, [BACKENDS.GEMINI]);
+  }
+  const backendToUse = selectedBackend;
 
   // ============================================================================ 
   // PHASE 1: PROMPT REFINER

@@ -3,6 +3,8 @@ import { BACKENDS } from "../constants.js";
 import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { executeAIClient } from "../services/ai-executor.js";
+import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
+import { getDependencies } from '../dependencies.js';
 import { getRoleBackend } from "../config/config.js";
 
 const triangulatedReviewSchema = z.object({
@@ -26,9 +28,18 @@ export async function executeTriangulatedReview(
   onProgress?.(`🧭 Triangulated review started on ${files.length} files (goal: ${goal})`);
 
   // Determine configured backends for roles
-  const architectBackend = getRoleBackend('architect');   // Was Gemini
-  const testerBackend = getRoleBackend('tester');         // Was Cursor
-  const implementerBackend = getRoleBackend('implementer'); // Was Droid
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('triangulated-review', { complexity: 'high' });
+
+  const architectBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('architect')]);
+  const testerBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('tester')]);
+  const implementerBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('implementer')]);
+
+  // Check for backend convergence (reduced diversity)
+  const uniqueBackends = new Set([architectBackend, testerBackend, implementerBackend]);
+  if (uniqueBackends.size < 3) {
+     onProgress?.(`⚠️ Warning: Multiple roles converged to same backend(s) due to availability/configuration. Diversity reduced. (${[architectBackend, testerBackend, implementerBackend].join(', ')})`);
+  }
 
   const promptBuilder = (backend: string): string => {
     const basePrompt = buildCodeReviewPrompt(files, goal === "bugfix" ? "security" : "quality");
