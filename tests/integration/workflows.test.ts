@@ -155,11 +155,11 @@ describe('Workflow Integration Tests', () => {
 
   describe('triangulatedReviewWorkflow', () => {
     it('should execute triangulated review successfully', async () => {
-      // Mock AI responses for 3-way analysis
+      // Mock AI responses for 3-way analysis (architect=gemini, tester=qwen, implementer=droid)
       mockAIExecutor({
         'ask-gemini': 'Gemini analysis: Architecture is solid, consider adding comprehensive error handling',
-        'ask-cursor': 'Cursor review: Concrete refactoring suggestions - extract common logic into utils module',
-        'droid': 'Droid verification: Operational checklist ready. Steps: 1. Extract utils 2. Add tests 3. Update docs'
+        'ask-qwen': 'Qwen review: Concrete refactoring suggestions - extract common logic into utils module',
+        'ask-droid': 'Droid verification: Operational checklist ready. Steps: 1. Extract utils 2. Add tests 3. Update docs'
       });
 
       const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
@@ -172,17 +172,16 @@ describe('Workflow Integration Tests', () => {
       }, callback);
 
       expect(result).toContain('Triangulated Review');
-      expect(result).toContain('Gemini');
-      expect(result).toContain('Cursor');
-      expect(result).toContain('Droid');
+      expect(result).toContain('Analysis Summary (Architect & Tester)');
+      expect(result).toContain('Autonomous Verification (Implementer)');
       expect(messages.length).toBeGreaterThan(0);
     });
 
     it('should handle bugfix goal', async () => {
       mockAIExecutor({
         'ask-gemini': 'Security analysis: No critical vulnerabilities found',
-        'ask-cursor': 'Bug analysis: Fix validation logic in parseInput()',
-        'droid': 'Verification: Test coverage needed for edge cases'
+        'ask-qwen': 'Bug analysis: Fix validation logic in parseInput()',
+        'ask-droid': 'Verification: Test coverage needed for edge cases'
       });
 
       const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
@@ -200,8 +199,8 @@ describe('Workflow Integration Tests', () => {
     it('should use 3-way verification approach', async () => {
       mockAIExecutor({
         'ask-gemini': 'Architecture analysis',
-        'ask-cursor': 'Concrete suggestions',
-        'droid': 'Operational checklist'
+        'ask-qwen': 'Concrete suggestions',
+        'ask-droid': 'Operational checklist'
       });
 
       const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
@@ -212,9 +211,9 @@ describe('Workflow Integration Tests', () => {
         goal: 'refactor'
       });
 
-      // Should use all 3 backends
-      expect(result).toContain('Analysis Summary (Gemini + Cursor)');
-      expect(result).toContain('Autonomous Verification (Droid)');
+      // Should use all 3 role-based backends
+      expect(result).toContain('Analysis Summary (Architect & Tester)');
+      expect(result).toContain('Autonomous Verification (Implementer)');
     });
   });
 

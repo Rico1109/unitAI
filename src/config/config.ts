@@ -55,9 +55,9 @@ export const DEFAULT_CONFIG: UnitAIConfig = {
         detected: []
     },
     roles: {
-        architect: 'gemini',
-        implementer: 'droid',
-        tester: 'qwen'
+        architect: BACKENDS.GEMINI,
+        implementer: BACKENDS.DROID,
+        tester: BACKENDS.QWEN
     },
     createdAt: new Date().toISOString(),
     lastModified: new Date().toISOString()

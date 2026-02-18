@@ -14,6 +14,7 @@ import { selectParallelBackends, createTaskCharacteristics } from './model-selec
 import { logAudit } from '../services/audit-trail.js';
 import { getDependencies } from '../dependencies.js';
 import { AutonomyLevel } from '../utils/security/permissionManager.js';
+import { validateFilePath } from '../utils/security/pathValidator.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -76,7 +77,8 @@ function hasIssue(analysis: string): boolean {
  */
 async function findRelatedFiles(filePath: string): Promise<string[]> {
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const safePath = validateFilePath(filePath);
+    const content = readFileSync(safePath, 'utf-8');
     const relatedFiles: string[] = [];
 
     // Extract import statements
@@ -161,7 +163,14 @@ List only file paths, one per line, in order of likelihood.`
 
   const fileContents = filesToAnalyze
     .filter(f => existsSync(f))
-    .map(f => ({ path: f, content: readFileSync(f, 'utf-8') }));
+    .flatMap(f => {
+      try {
+        const safePath = validateFilePath(f);
+        return [{ path: f, content: readFileSync(safePath, 'utf-8') }];
+      } catch {
+        return [];
+      }
+    });
 
   // Dynamic Backend Selection
   const { circuitBreaker } = getDependencies();

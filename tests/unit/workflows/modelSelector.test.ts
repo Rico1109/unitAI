@@ -72,7 +72,7 @@ describe('Model Selector', () => {
       expect(backend).toBe(BACKENDS.GEMINI);
     });
 
-    it('should select Qwen for code generation + high complexity', async () => {
+    it('should select Droid for code generation + high complexity (implementer role)', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 40000,
@@ -83,7 +83,7 @@ describe('Model Selector', () => {
       };
 
       const backend = await selectOptimalBackend(task, mockCB);
-      expect(backend).toBe(BACKENDS.QWEN);
+      expect(backend).toBe(BACKENDS.DROID);
     });
 
     it('should select by domain: security -> Qwen', async () => {

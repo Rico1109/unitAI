@@ -355,6 +355,15 @@ export function createTaskCharacteristics(
       requiresSpeed: true,
       requiresCreativity: false,
       domain: 'general'
+    },
+    'auto-remediation': {
+      complexity: 'medium',
+      tokenBudget: 30000,
+      requiresArchitecturalThinking: false,
+      requiresCodeGeneration: true,
+      requiresSpeed: false,
+      requiresCreativity: false,
+      domain: 'general'
     }
   };
 
