@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "view-metrics": "tsc && node dist/scripts/view-token-metrics.js",
     "monitor-agents": "tsx scripts/monitor-agent-performance.ts",
+    "verify-routing": "tsx scripts/verify-routing.mts",
     "activity-dashboard": "tsc && node dist/cli/activityDashboard.js"
   },
   "keywords": [
