@@ -2,13 +2,16 @@ import { z } from "zod";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { executeAIClient } from "../services/ai-executor.js";
-import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/config.js";
+import { getDependencies } from '../dependencies.js';
+import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
+import { AutonomyLevel } from '../utils/security/permissionManager.js';
 
 const refactorSprintSchema = z.object({
   targetFiles: z.array(z.string()).min(1, "Specify at least one file"),
   scope: z.string().min(1, "Describe the refactor scope"),
   depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
+  autonomyLevel: z.nativeEnum(AutonomyLevel).optional(),
   attachments: z.array(z.string()).optional()
 });
 
@@ -20,12 +23,20 @@ export async function executeRefactorSprint(
 ): Promise<string> {
   const { targetFiles, scope, depth, attachments = [] } = params;
 
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('refactor-sprint');
+  const selectedBackends = await selectParallelBackends(task, circuitBreaker, 3);
+
+  const implementerBackend = selectedBackends[0] ?? getRoleBackend('implementer');
+  const architectBackend   = selectedBackends[1] ?? getRoleBackend('architect');
+  const testerBackend      = selectedBackends[2] ?? getRoleBackend('tester');
+
   onProgress?.(`⚙️ Refactor sprint started (${depth}) on ${targetFiles.length} files`);
 
-  let cursorPlan = "";
+  let implementerPlan = "";
   try {
-    cursorPlan = await executeAIClient({
-      backend: BACKENDS.CURSOR,
+    implementerPlan = await executeAIClient({
+      backend: implementerBackend,
       prompt: `You are planning a refactor (${depth}). Scope: ${scope}.
 
 Target files:
@@ -40,36 +51,36 @@ Generate:
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    cursorPlan = `Unable to get plan from Cursor Agent: ${errorMsg}`;
+    implementerPlan = `Unable to get plan from implementer: ${errorMsg}`;
   }
 
-  let geminiReview = "";
+  let architectReview = "";
   try {
-    geminiReview = await executeAIClient({
-      backend: BACKENDS.GEMINI,
+    architectReview = await executeAIClient({
+      backend: architectBackend,
       prompt: `Evaluate the following refactor plan for ${scope} and report architectural risks.
 
 Target files:
 ${targetFiles.join(", ")}
 
 Plan:
-${cursorPlan}`
+${implementerPlan}`
     });
   } catch (error) {
-    geminiReview = `Unable to get validation from Gemini: ${error instanceof Error ? error.message : String(error)}`;
+    architectReview = `Unable to get validation from architect: ${error instanceof Error ? error.message : String(error)}`;
   }
 
-  let droidChecklist = "";
+  let testerChecklist = "";
   try {
-    droidChecklist = await executeAIClient({
-      backend: BACKENDS.DROID,
+    testerChecklist = await executeAIClient({
+      backend: testerBackend,
       prompt: `Transform this refactoring plan into an operational checklist ready for execution.
 
 Scope: ${scope}
 Depth: ${depth}
 
 Reference plan:
-${cursorPlan}
+${implementerPlan}
 
 Requested checklist:
 - Detailed steps
@@ -79,22 +90,22 @@ Requested checklist:
       outputFormat: "text"
     });
   } catch (error) {
-    droidChecklist = `Unable to generate checklist from Droid: ${error instanceof Error ? error.message : String(error)}`;
+    testerChecklist = `Unable to generate checklist from tester: ${error instanceof Error ? error.message : String(error)}`;
   }
 
   const content = `
-## Cursor Agent Plan
-${cursorPlan}
+## Implementer Plan
+${implementerPlan}
 
 ---
 
-## Gemini Architectural Review
-${geminiReview}
+## Architect Review
+${architectReview}
 
 ---
 
-## Droid Operational Checklist
-${droidChecklist}
+## Tester Checklist
+${testerChecklist}
 `;
 
   return formatWorkflowOutput(

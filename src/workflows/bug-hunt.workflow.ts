@@ -7,11 +7,13 @@
 
 import { z } from 'zod';
 import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
-import { executeAIClient, BACKENDS } from '../services/ai-executor.js';
+import { executeAIClient } from '../services/ai-executor.js';
+import { getRoleBackend } from '../config/config.js';
 import { formatWorkflowOutput } from './utils.js';
 import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
 import { logAudit } from '../services/audit-trail.js';
 import { getDependencies } from '../dependencies.js';
+import { AutonomyLevel } from '../utils/security/permissionManager.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -21,8 +23,8 @@ import { join } from 'path';
 export const bugHuntSchema = z.object({
   symptoms: z.string().describe('Descrizione dei sintomi del problema'),
   suspected_files: z.array(z.string()).optional().describe('File sospetti da analizzare'),
-  autonomyLevel: z.enum(['LOW', 'MEDIUM', 'HIGH', 'AUTONOMOUS'])
-    .default('MEDIUM'),
+  autonomyLevel: z.nativeEnum(AutonomyLevel)
+    .default(AutonomyLevel.MEDIUM),
   attachments: z.array(z.string())
     .optional()
     .describe('File aggiuntivi da allegare alle analisi (es. log)'),
@@ -116,18 +118,23 @@ export async function executeBugHunt(
 
   await logAudit({
     operation: 'bug-hunt-start',
-    autonomyLevel: params.autonomyLevel || 'MEDIUM',
+    autonomyLevel: params.autonomyLevel || AutonomyLevel.MEDIUM,
     details: `Hunting bug with symptoms: ${symptoms}`
   });
 
   let filesToAnalyze = suspected_files || [];
+
+  // Role-based backend selection (resolved once per workflow run)
+  const architectBackend   = getRoleBackend('architect');
+  const implementerBackend = getRoleBackend('implementer');
+  const testerBackend      = getRoleBackend('tester');
 
   // Step 1: Find files if not provided
   if (filesToAnalyze.length === 0) {
     onProgress?.('🔍 Searching codebase for relevant files...');
 
     const searchResults = await executeAIClient({
-      backend: BACKENDS.GEMINI,
+      backend: architectBackend,
       prompt: `Given these bug symptoms, list the most likely files in the codebase that could be causing the issue.
 
 Symptoms: ${symptoms}
@@ -161,24 +168,22 @@ List only file paths, one per line, in order of likelihood.`
   const task = createTaskCharacteristics('bug-hunt');
   const selectedBackends = backendOverrides && backendOverrides.length > 0
     ? backendOverrides
-    : await selectParallelBackends(task, circuitBreaker, 3); // Try to get up to 3 backends
+    : await selectParallelBackends(task, circuitBreaker, 3);
 
-  const runGemini = selectedBackends.includes(BACKENDS.GEMINI);
-  const runCursor = selectedBackends.includes(BACKENDS.CURSOR);
-  const runDroid = selectedBackends.includes(BACKENDS.DROID);
-  const runRovodev = selectedBackends.includes(BACKENDS.ROVODEV);
-  const runQwen = selectedBackends.includes(BACKENDS.QWEN);
+  const runArchitect   = selectedBackends.includes(architectBackend);
+  const runImplementer = selectedBackends.includes(implementerBackend);
+  const runTester      = selectedBackends.includes(testerBackend);
 
-  let geminiAnalysis = '';
-  let qwenAnalysis = '';
+  let architectAnalysis = '';
+  let testerAnalysis = '';
 
   const analysisTasks: Promise<void>[] = [];
 
-  // Primary Analysis (Gemini or Qwen)
-  if (runGemini) {
+  // Primary Analysis (architect or tester as fallback)
+  if (runArchitect) {
     analysisTasks.push(
       executeAIClient({
-        backend: BACKENDS.GEMINI,
+        backend: architectBackend,
         prompt: `Analyze these files for the reported bug.
 Symptoms: ${symptoms}
 Files:
@@ -189,17 +194,16 @@ Provide:
 3. Why this causes the symptoms
 4. Potential side effects`
       }).then(result => {
-        geminiAnalysis = result;
+        architectAnalysis = result;
       }).catch(error => {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        geminiAnalysis = `Unable to complete analysis with Gemini: ${errorMsg}`;
+        architectAnalysis = `Unable to complete analysis with architect: ${errorMsg}`;
       })
     );
-  } else if (runQwen) {
-    // Fallback/Alternative to Gemini
+  } else if (runTester) {
     analysisTasks.push(
       executeAIClient({
-        backend: BACKENDS.QWEN,
+        backend: testerBackend,
         prompt: `Analyze these files for the reported bug.
 Symptoms: ${symptoms}
 Files:
@@ -207,10 +211,10 @@ ${fileContents.map(f => `\n--- ${f.path} ---\n${f.content}`).join('\n')}
 Provide root cause analysis and potential side effects.`,
         outputFormat: 'text'
       }).then(result => {
-        qwenAnalysis = result;
+        testerAnalysis = result;
       }).catch(error => {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        qwenAnalysis = `Unable to complete analysis with Qwen: ${errorMsg}`;
+        testerAnalysis = `Unable to complete analysis with tester: ${errorMsg}`;
       })
     );
   }
@@ -220,10 +224,11 @@ Provide root cause analysis and potential side effects.`,
   let hypothesis = '';
   let hypothesisBackend = '';
 
-  if (runQwen) {
-    hypothesisBackend = BACKENDS.QWEN;
-  } else if (runCursor) {
-    hypothesisBackend = BACKENDS.CURSOR;
+  // Hypothesis: tester is fast and logical, implementer as fallback
+  if (runTester) {
+    hypothesisBackend = testerBackend;
+  } else if (runImplementer) {
+    hypothesisBackend = implementerBackend;
   }
 
   if (hypothesisBackend) {
@@ -245,17 +250,16 @@ Generate:
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      hypothesis = `Unable to execute ${hypothesisBackend}: ${errorMsg}`;
+      hypothesis = `Unable to execute hypothesis generation: ${errorMsg}`;
     }
   }
 
   let remediationPlan = '';
-  // Use Droid OR Rovodev for remediation
-  if (runDroid) {
-    onProgress?.('🤖 Preparing remediation plan with Droid...');
+  if (runImplementer) {
+    onProgress?.('🤖 Preparing remediation plan with implementer...');
     try {
       remediationPlan = await executeAIClient({
-        backend: BACKENDS.DROID,
+        backend: implementerBackend,
         prompt: `Create an operational plan to resolve the described bugs.
 Symptoms: ${symptoms}
 Files:
@@ -270,28 +274,13 @@ Required output:
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      remediationPlan = `Unable to generate fix plan with Droid: ${errorMsg}`;
-    }
-  } else if (runRovodev) {
-    onProgress?.('🤖 Preparing remediation plan with Rovodev...');
-    try {
-      remediationPlan = await executeAIClient({
-        backend: BACKENDS.ROVODEV,
-        prompt: `Create an operational plan to resolve the described bugs.
-  Symptoms: ${symptoms}
-  Files:
-  ${filesToAnalyze.join("\n")}`,
-        autoApprove: true // Yolo mode for planning
-      });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      remediationPlan = `Unable to generate fix plan with Rovodev: ${errorMsg}`;
+      remediationPlan = `Unable to generate fix plan with implementer: ${errorMsg}`;
     }
   }
 
   // Step 3: Check if we need to analyze related files
   const problematicFiles = fileContents.filter(f =>
-    hasIssue(geminiAnalysis)
+    hasIssue(architectAnalysis)
   );
 
   let relatedFilesAnalysis = '';
@@ -310,7 +299,6 @@ Required output:
 
     if (uniqueRelated.length > 0) {
       onProgress?.(`📎 Analyzing ${uniqueRelated.length} related files...`);
-
       relatedFilesAnalysis = `\n\n### Related Files Impact\n${uniqueRelated.join(', ')}`;
     }
   }
@@ -329,22 +317,14 @@ ${filesToAnalyze.join('\n')}
 
 ---
 
-## Root Cause Analysis (Gemini/Qwen)
-${geminiAnalysis || qwenAnalysis}
+## Root Cause Analysis
+${architectAnalysis || testerAnalysis}
 
 ---
 
-${hypothesis ? `---
+${hypothesis ? `---\n\n## Hypothesis Exploration\n${hypothesis}\n` : ''}
 
-## Hypothesis Exploration (Cursor Agent / Qwen)
-${hypothesis}
-` : ''}
-
-${remediationPlan ? `---
-
-## Autonomous Fix Plan (Droid/Rovodev)
-${remediationPlan}
-` : ''}
+${remediationPlan ? `---\n\n## Autonomous Fix Plan\n${remediationPlan}\n` : ''}
 
 ${relatedFilesAnalysis}
 

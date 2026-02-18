@@ -2,7 +2,8 @@ import { z } from "zod";
 import { AgentFactory } from "../agents/index.js";
 import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./utils.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
-import { executeAIClient, BACKENDS } from "../services/ai-executor.js";
+import { executeAIClient } from "../services/ai-executor.js";
+import { getRoleBackend } from "../config/config.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
 import type {
@@ -80,6 +81,8 @@ export async function executeFeatureDesign(
   // Create agent config from workflow params
   const agentConfig = createAgentConfig(params, onProgress);
 
+  const { circuitBreaker } = getDependencies();
+
   let finalOutput = "";
   const metadata: Record<string, any> = {
     featureDescription,
@@ -100,7 +103,6 @@ export async function executeFeatureDesign(
     // Dynamic Backend Selection for Architecture
     const archTask = createTaskCharacteristics('architecture');
     archTask.requiresArchitecturalThinking = true;
-    const { circuitBreaker } = getDependencies();
     const archBackend = await selectOptimalBackend(archTask, circuitBreaker);
 
     const architect = AgentFactory.createArchitect();
@@ -146,7 +148,6 @@ export async function executeFeatureDesign(
     onProgress?.("💻 Phase 2: Code Implementation");
 
     // Dynamic Backend Selection for Implementation
-    const { circuitBreaker } = getDependencies();
     const implTask = createTaskCharacteristics('implementation');
     implTask.requiresCodeGeneration = true;
     const implBackend = await selectOptimalBackend(implTask, circuitBreaker);
@@ -180,26 +181,19 @@ export async function executeFeatureDesign(
       onProgress?.("✅ Implementation phase completed successfully");
     }
     if (!implementerResult.success) {
-      onProgress?.("🛠️ Cursor Agent fallback for implementation suggestions...");
+      onProgress?.("🛠️ Implementer fallback for implementation suggestions...");
       try {
-        const cursorPlan = await executeAIClient({
-          backend: BACKENDS.CURSOR,
-          prompt: `Feature: ${featureDescription}
-
-Target files: ${targetFiles.join(", ")}
-
-Context (if available):
-${context || "N/A"}
-
-Generate concrete implementation suggestions (patch outline, risks, recommended tests).`,
+        const fallbackPlan = await executeAIClient({
+          backend: getRoleBackend('implementer'),
+          prompt: `Feature: ${featureDescription}\n\nTarget files: ${targetFiles.join(", ")}\n\nContext (if available):\n${context || "N/A"}\n\nGenerate concrete implementation suggestions (patch outline, risks, recommended tests).`,
           attachments: attachments.length ? attachments : targetFiles.slice(0, 3),
           outputFormat: "text",
           autoApprove: false
         });
-        finalOutput += `\n## Cursor Agent Fallback Suggestions\n\n${cursorPlan}\n\n---\n\n`;
+        finalOutput += `\n## Implementer Fallback Suggestions\n\n${fallbackPlan}\n\n---\n\n`;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        finalOutput += `\n## Cursor Agent Fallback Suggestions\n\nUnable to generate suggestions: ${errorMsg}\n\n---\n\n`;
+        finalOutput += `\n## Implementer Fallback Suggestions\n\nUnable to generate suggestions: ${errorMsg}\n\n---\n\n`;
       }
     }
 
@@ -217,7 +211,6 @@ Generate concrete implementation suggestions (patch outline, risks, recommended 
     onProgress?.("🧪 Phase 3: Test Generation");
 
     // Dynamic Backend Selection for Testing
-    const { circuitBreaker } = getDependencies();
     const testTask = createTaskCharacteristics('testing');
     testTask.requiresSpeed = true; // Testing usually benefits from speed
     const testBackend = await selectOptimalBackend(testTask, circuitBreaker);
@@ -293,59 +286,31 @@ Generate concrete implementation suggestions (patch outline, risks, recommended 
     onProgress?.("🔎 Additional validation with selected backends...");
     const validationOutputs: string[] = [];
 
-    for (const backendName of validationBackends) {
-      let label = "";
+    const archRole = getRoleBackend('architect');
+    const implRole = getRoleBackend('implementer');
+    const roleValidationBackends = [...new Set([archRole, implRole])];
+    const roleLabels: Record<string, string> = {
+      [archRole]: 'Architect Validation',
+      [implRole]: 'Implementer Validation'
+    };
+
+    for (const backend of roleValidationBackends) {
+      const label = roleLabels[backend] ?? `${backend} Validation`;
       let output = "";
       try {
-        switch (backendName) {
-          case "ask-gemini":
-            label = "Gemini Validation";
-            output = await executeAIClient({
-              backend: BACKENDS.GEMINI,
-              prompt: `Validate the following feature plan and highlight risks.
-
-Feature: ${featureDescription}
-Target files: ${targetFiles.join(", ")}
-
-Plan:
-${finalOutput}`
-            });
-            break;
-          case "cursor-agent":
-            label = "Cursor Agent Validation";
-            output = await executeAIClient({
-              backend: BACKENDS.CURSOR,
-              prompt: `Review this feature plan and suggest improvements or missing steps.
-
-Feature: ${featureDescription}
-Plan:
-${finalOutput}`,
-              attachments,
-              outputFormat: "text"
-            });
-            break;
-          case "droid":
-            label = "Droid Validation";
-            output = await executeAIClient({
-              backend: BACKENDS.DROID,
-              prompt: `Validate the following feature implementation plan. Highlight operational risks and propose mitigation.
-
-Feature: ${featureDescription}
-
-Plan:
-${finalOutput}`,
-              auto: "low",
-              attachments,
-              outputFormat: "text"
-            });
-            break;
-          default:
-            continue;
-        }
+        const isArchitect = backend === archRole;
+        output = await executeAIClient({
+          backend,
+          prompt: isArchitect
+            ? `Validate the following feature plan and highlight architectural risks.\n\nFeature: ${featureDescription}\nTarget files: ${targetFiles.join(", ")}\n\nPlan:\n${finalOutput}`
+            : `Review this feature plan and suggest improvements or missing implementation steps.\n\nFeature: ${featureDescription}\nPlan:\n${finalOutput}`,
+          attachments,
+          outputFormat: "text"
+        });
         validationOutputs.push(`### ${label}\n${output}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        validationOutputs.push(`### ${label || backendName}\nUnable to complete validation: ${errorMsg}`);
+        validationOutputs.push(`### ${label}\nUnable to complete validation: ${errorMsg}`);
       }
     }
 

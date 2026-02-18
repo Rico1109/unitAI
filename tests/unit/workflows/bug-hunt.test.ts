@@ -12,6 +12,28 @@ vi.mock('../../../src/services/ai-executor.js');
 vi.mock('../../../src/services/audit-trail.js');
 vi.mock('fs');
 
+// Mock config to return consistent backend names regardless of config file state
+vi.mock('../../../src/config/config.js', () => ({
+  getRoleBackend: vi.fn().mockImplementation((role: string) => {
+    const roles: Record<string, string> = {
+      architect: 'ask-gemini',
+      implementer: 'ask-qwen',
+      tester: 'droid'
+    };
+    return roles[role] ?? 'ask-gemini';
+  }),
+  isBackendEnabled: vi.fn().mockReturnValue(true),
+  loadConfig: vi.fn().mockReturnValue(null),
+  getFallbackPriority: vi.fn().mockReturnValue(['ask-gemini', 'ask-qwen', 'droid']),
+}));
+
+// Mock model-selector to return predictable backends
+vi.mock('../../../src/workflows/model-selector.js', () => ({
+  selectParallelBackends: vi.fn().mockResolvedValue(['ask-gemini', 'ask-qwen', 'droid']),
+  selectOptimalBackend: vi.fn().mockResolvedValue('ask-gemini'),
+  createTaskCharacteristics: vi.fn().mockReturnValue({}),
+}));
+
 // Mock dependencies to avoid initialization errors
 vi.mock('../../../src/dependencies.js', () => ({
   initializeDependencies: vi.fn(),

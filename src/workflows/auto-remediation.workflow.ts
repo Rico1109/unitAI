@@ -2,12 +2,15 @@ import { z } from "zod";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { executeAIClient } from "../services/ai-executor.js";
-import { BACKENDS } from "../constants.js";
+import { getRoleBackend } from "../config/config.js";
+import { getDependencies } from '../dependencies.js';
+import { selectOptimalBackend, createTaskCharacteristics } from './model-selector.js';
+import { AutonomyLevel } from '../utils/security/permissionManager.js';
 
 const autoRemediationSchema = z.object({
   symptoms: z.string().min(1, "Describe the problem symptoms"),
   maxActions: z.number().int().min(1).max(10).optional().default(5),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
+  autonomyLevel: z.nativeEnum(AutonomyLevel).optional(),
   attachments: z.array(z.string()).optional()
 });
 
@@ -19,12 +22,16 @@ export async function executeAutoRemediation(
 ): Promise<string> {
   const { symptoms, maxActions, attachments = [] } = params;
 
-  onProgress?.("🛠️ Generating auto-remediation plan with Droid...");
+  onProgress?.("🛠️ Generating auto-remediation plan...");
+
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('auto-remediation');
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   let plan = "";
   try {
     plan = await executeAIClient({
-      backend: BACKENDS.DROID,
+      backend,
       prompt: `Symptoms: ${symptoms}
 
 Generate an operational plan in maximum ${maxActions} steps.
