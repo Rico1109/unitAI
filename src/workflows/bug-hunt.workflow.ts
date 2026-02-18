@@ -15,6 +15,7 @@ import { logAudit } from '../services/audit-trail.js';
 import { getDependencies } from '../dependencies.js';
 import { AutonomyLevel } from '../utils/security/permissionManager.js';
 import { validateFilePath } from '../utils/security/pathValidator.js';
+import { sanitizeUserInput } from '../utils/security/inputSanitizer.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -116,7 +117,8 @@ export async function executeBugHunt(
   params: BugHuntParams,
   onProgress?: ProgressCallback
 ): Promise<string> {
-  const { symptoms, suspected_files, attachments = [], backendOverrides } = params;
+  const { symptoms: rawSymptoms, suspected_files, attachments = [], backendOverrides } = params;
+  const symptoms = sanitizeUserInput(rawSymptoms);
 
   await logAudit({
     operation: 'bug-hunt-start',

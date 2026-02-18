@@ -8,3 +8,4 @@
 export * from './permissionManager.js';
 export * from './promptSanitizer.js';
 export * from './pathValidator.js';
+export * from './inputSanitizer.js';

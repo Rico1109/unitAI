@@ -31,6 +31,7 @@ import {
     filterAvailableBackends,
     loadConfig,
     createConfig,
+    invalidateConfigCache,
     UnitAIConfig,
 } from '../../src/config/config.js';
 import { BACKENDS } from '../../src/constants.js';
@@ -38,6 +39,7 @@ import { BACKENDS } from '../../src/constants.js';
 describe('config.ts', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        invalidateConfigCache();
     });
 
     afterEach(() => {
@@ -327,6 +329,57 @@ describe('config.ts', () => {
                 preferAvailable: true,
                 retryWithFallback: false,
             });
+        });
+    });
+
+    describe('loadConfig cache', () => {
+        it('reads the filesystem only once across two consecutive calls', () => {
+            const mockConfig: UnitAIConfig = {
+                version: '1.0',
+                backends: { enabled: [], detected: [] },
+                roles: { architect: 'gemini', implementer: 'droid', tester: 'qwen' },
+                createdAt: '2026-01-01T00:00:00.000Z',
+                lastModified: '2026-01-01T00:00:00.000Z',
+            };
+
+            vi.mocked(fs.existsSync).mockReturnValue(true);
+            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfig));
+
+            loadConfig();
+            loadConfig();
+
+            expect(fs.readFileSync).toHaveBeenCalledTimes(1);
+        });
+
+        it('re-reads the filesystem after invalidateConfigCache()', () => {
+            const mockConfig: UnitAIConfig = {
+                version: '1.0',
+                backends: { enabled: [], detected: [] },
+                roles: { architect: 'gemini', implementer: 'droid', tester: 'qwen' },
+                createdAt: '2026-01-01T00:00:00.000Z',
+                lastModified: '2026-01-01T00:00:00.000Z',
+            };
+
+            vi.mocked(fs.existsSync).mockReturnValue(true);
+            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfig));
+
+            loadConfig();
+            invalidateConfigCache();
+            loadConfig();
+
+            expect(fs.readFileSync).toHaveBeenCalledTimes(2);
+        });
+
+        it('does not cache when config file does not exist', () => {
+            vi.mocked(fs.existsSync).mockReturnValue(false);
+
+            const first = loadConfig();
+            const second = loadConfig();
+
+            expect(first).toBeNull();
+            expect(second).toBeNull();
+            // existsSync called twice (once per loadConfig — no caching on null result)
+            expect(fs.existsSync).toHaveBeenCalledTimes(2);
         });
     });
 });

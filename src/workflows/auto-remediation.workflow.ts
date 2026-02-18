@@ -6,6 +6,7 @@ import { getRoleBackend } from "../config/config.js";
 import { getDependencies } from '../dependencies.js';
 import { selectOptimalBackend, createTaskCharacteristics } from './model-selector.js';
 import { AutonomyLevel } from '../utils/security/permissionManager.js';
+import { sanitizeUserInput } from '../utils/security/inputSanitizer.js';
 
 const autoRemediationSchema = z.object({
   symptoms: z.string().min(1, "Describe the problem symptoms"),
@@ -20,7 +21,8 @@ export async function executeAutoRemediation(
   params: AutoRemediationParams,
   onProgress?: ProgressCallback
 ): Promise<string> {
-  const { symptoms, maxActions, attachments = [] } = params;
+  const { symptoms: rawSymptoms, maxActions, attachments = [] } = params;
+  const symptoms = sanitizeUserInput(rawSymptoms);
 
   onProgress?.("🛠️ Generating auto-remediation plan...");
 

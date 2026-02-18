@@ -6,6 +6,7 @@ import { executeAIClient } from "../services/ai-executor.js";
 import { getRoleBackend } from "../config/config.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
+import { sanitizeUserInput } from '../utils/security/inputSanitizer.js';
 import type {
   WorkflowDefinition,
   ProgressCallback
@@ -66,7 +67,7 @@ export async function executeFeatureDesign(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const {
-    featureDescription,
+    featureDescription: rawFeatureDescription,
     targetFiles,
     context,
     architecturalFocus,
@@ -75,6 +76,7 @@ export async function executeFeatureDesign(
     validationBackends = [],
     attachments = []
   } = params;
+  const featureDescription = sanitizeUserInput(rawFeatureDescription);
 
   onProgress?.(`🎯 Starting feature design workflow for: ${featureDescription}`);
 

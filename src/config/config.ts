@@ -63,6 +63,18 @@ export const DEFAULT_CONFIG: UnitAIConfig = {
     lastModified: new Date().toISOString()
 };
 
+// ---------------------------------------------------------------------------
+// Module-level read cache (avoids repeated disk hits on hot paths)
+// ---------------------------------------------------------------------------
+let _configCache: UnitAIConfig | null = null;
+let _cacheExpiry = 0;
+const CACHE_TTL_MS = 30_000;
+
+export function invalidateConfigCache(): void {
+    _configCache = null;
+    _cacheExpiry = 0;
+}
+
 /**
  * Check if config file exists
  */
@@ -81,6 +93,8 @@ export function getConfigPath(): string {
  * Load configuration from disk
  */
 export function loadConfig(): UnitAIConfig | null {
+    if (_configCache && Date.now() < _cacheExpiry) return _configCache;
+
     try {
         if (!configExists()) {
             return null;
@@ -95,7 +109,9 @@ export function loadConfig(): UnitAIConfig | null {
             return null;
         }
 
-        return config;
+        _configCache = config;
+        _cacheExpiry = Date.now() + CACHE_TTL_MS;
+        return _configCache;
     } catch (error) {
         console.error('Failed to load config:', error);
         return null;
@@ -116,6 +132,7 @@ export function saveConfig(config: UnitAIConfig): boolean {
         config.lastModified = new Date().toISOString();
 
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+        invalidateConfigCache();
         return true;
     } catch (error) {
         console.error('Failed to save config:', error);
