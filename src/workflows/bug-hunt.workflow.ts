@@ -1,6 +1,6 @@
 /**
  * Bug Hunt Workflow
- * 
+ *
  * Searches for and analyzes bugs based on symptoms.
  * Uses AI to discover relevant files and perform parallel analysis.
  */
@@ -9,7 +9,8 @@ import { z } from 'zod';
 import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
 import { executeAIClient } from '../services/ai-executor.js';
 import { getRoleBackend } from '../config/config.js';
-import { formatWorkflowOutput } from './utils.js';
+import { formatWorkflowOutput, formatScorecard, appendRunLog } from './utils.js';
+import type { RunLogEntry } from './utils.js';
 import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
 import { logAudit } from '../services/audit-trail.js';
 import { getDependencies } from '../dependencies.js';
@@ -119,6 +120,8 @@ export async function executeBugHunt(
 ): Promise<string> {
   const { symptoms: rawSymptoms, suspected_files, attachments = [], backendOverrides } = params;
   const symptoms = sanitizeUserInput(rawSymptoms);
+  const workflowStart = Date.now();
+  const scorePhases: RunLogEntry['phases'] = [];
 
   await logAudit({
     operation: 'bug-hunt-start',
@@ -191,6 +194,7 @@ List only file paths, one per line, in order of likelihood.`
   const analysisTasks: Promise<void>[] = [];
 
   // Primary Analysis (architect or tester as fallback)
+  const analysisStart = Date.now();
   if (runArchitect) {
     analysisTasks.push(
       executeAIClient({
@@ -231,6 +235,17 @@ Provide root cause analysis and potential side effects.`,
   }
 
   await Promise.all(analysisTasks);
+  const analysisMs = Date.now() - analysisStart;
+  const analysisBackend = runArchitect ? architectBackend : (runTester ? testerBackend : 'none');
+  const analysisSuccess = runArchitect
+    ? !architectAnalysis.startsWith('Unable to complete')
+    : !testerAnalysis.startsWith('Unable to complete');
+  scorePhases.push({
+    name: 'root-cause-analysis',
+    backend: analysisBackend,
+    durationMs: analysisMs,
+    success: analysisSuccess
+  });
 
   let hypothesis = '';
   let hypothesisBackend = '';
@@ -244,6 +259,8 @@ Provide root cause analysis and potential side effects.`,
 
   if (hypothesisBackend) {
     onProgress?.(`🧠 Generating hypotheses with ${hypothesisBackend}...`);
+    const hypothesisStart = Date.now();
+    let hypothesisSuccess = true;
     try {
       hypothesis = await executeAIClient({
         backend: hypothesisBackend,
@@ -260,14 +277,23 @@ Generate:
         outputFormat: "text"
       });
     } catch (error) {
+      hypothesisSuccess = false;
       const errorMsg = error instanceof Error ? error.message : String(error);
       hypothesis = `Unable to execute hypothesis generation: ${errorMsg}`;
     }
+    scorePhases.push({
+      name: 'hypothesis',
+      backend: hypothesisBackend,
+      durationMs: Date.now() - hypothesisStart,
+      success: hypothesisSuccess
+    });
   }
 
   let remediationPlan = '';
   if (runImplementer) {
     onProgress?.('🤖 Preparing remediation plan with implementer...');
+    const remediationStart = Date.now();
+    let remediationSuccess = true;
     try {
       remediationPlan = await executeAIClient({
         backend: implementerBackend,
@@ -284,9 +310,16 @@ Required output:
         outputFormat: "text"
       });
     } catch (error) {
+      remediationSuccess = false;
       const errorMsg = error instanceof Error ? error.message : String(error);
       remediationPlan = `Unable to generate fix plan with implementer: ${errorMsg}`;
     }
+    scorePhases.push({
+      name: 'remediation-plan',
+      backend: implementerBackend,
+      durationMs: Date.now() - remediationStart,
+      success: remediationSuccess
+    });
   }
 
   // Step 3: Check if we need to analyze related files
@@ -317,6 +350,10 @@ Required output:
   // Step 4: Synthesize comprehensive report
   onProgress?.('📝 Generating comprehensive bug report...');
 
+  const totalMs = Date.now() - workflowStart;
+  const overallSuccess = scorePhases.every(p => p.success);
+  const scorecard = formatScorecard(scorePhases, totalMs);
+
   const report = `
 # Bug Hunt Report
 
@@ -345,12 +382,22 @@ ${relatedFilesAnalysis}
 - **Files Analyzed**: ${filesToAnalyze.length}
 - **Problematic Files**: ${problematicFiles.length}
 - **Related Files**: ${relatedFilesAnalysis ? 'Yes' : 'No'}
+
+${scorecard}
 `;
 
   await logAudit({
     operation: 'bug-hunt-complete',
     autonomyLevel: params.autonomyLevel || 'MEDIUM',
     details: `Analyzed ${filesToAnalyze.length} files`
+  });
+
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'bug-hunt',
+    phases: scorePhases,
+    totalDurationMs: totalMs,
+    success: overallSuccess
   });
 
   return formatWorkflowOutput('Bug Hunt', report);

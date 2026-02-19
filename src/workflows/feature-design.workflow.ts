@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AgentFactory } from "../agents/index.js";
-import { createAgentConfig, formatAgentResults, formatWorkflowOutput } from "./utils.js";
+import { createAgentConfig, formatAgentResults, formatWorkflowOutput, formatScorecard, appendRunLog } from "./utils.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
 import { executeAIClient } from "../services/ai-executor.js";
 import { getRoleBackend } from "../config/config.js";
@@ -77,6 +77,7 @@ export async function executeFeatureDesign(
     attachments = []
   } = params;
   const featureDescription = sanitizeUserInput(rawFeatureDescription);
+  const workflowStart = Date.now();
 
   onProgress?.(`🎯 Starting feature design workflow for: ${featureDescription}`);
 
@@ -322,6 +323,26 @@ export async function executeFeatureDesign(
   }
 
   onProgress?.(`✨ Feature design workflow completed: ${successfulPhases}/${totalPhases} phases successful`);
+
+  // ============================================================================
+  // SCORECARD + RUN LOG
+  // ============================================================================
+
+  const totalMs = Date.now() - workflowStart;
+  const scorecardPhases = metadata.phases.map((p: any) => ({
+    name: p.phase as string,
+    backend: (p.backend as string) ?? 'unknown',
+    durationMs: (p.executionTime as number) ?? 0,
+    success: p.success as boolean
+  }));
+  finalOutput += '\n\n' + formatScorecard(scorecardPhases, totalMs);
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'feature-design',
+    phases: scorecardPhases,
+    totalDurationMs: totalMs,
+    success: overallSuccess
+  });
 
   return formatWorkflowOutput(
     `Feature Design: ${featureDescription}`,

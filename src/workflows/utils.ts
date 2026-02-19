@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
 import {
@@ -404,4 +407,71 @@ export function formatAgentResults<T>(
   }
 
   return output;
+}
+
+// ============================================================================
+// Observability: Run Log + Scorecard
+// ============================================================================
+
+export interface RunLogEntry {
+  ts: string;
+  workflow: string;
+  phases: Array<{
+    name: string;
+    backend: string;
+    durationMs: number;
+    success: boolean;
+    error?: string;
+  }>;
+  totalDurationMs: number;
+  success: boolean;
+}
+
+export function appendRunLog(entry: RunLogEntry): void {
+  const logPath = path.join(os.homedir(), '.unitai', 'run-log.jsonl');
+  const dir = path.dirname(logPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  // Append the new entry
+  fs.appendFileSync(logPath, JSON.stringify(entry) + '\n', 'utf8');
+
+  // Cap at 500 lines by trimming from top
+  try {
+    const content = fs.readFileSync(logPath, 'utf8');
+    const lines = content.split('\n').filter(l => l.trim());
+    if (lines.length > 500) {
+      const trimmed = lines.slice(lines.length - 500).join('\n') + '\n';
+      fs.writeFileSync(logPath, trimmed, 'utf8');
+    }
+  } catch {
+    // ignore trim errors
+  }
+}
+
+export function formatScorecard(
+  phases: Array<{ name: string; backend: string; durationMs: number; success: boolean }>,
+  totalMs: number
+): string {
+  const rows = phases.map(p => {
+    const dur = p.durationMs < 1000
+      ? `${p.durationMs}ms`
+      : `${Math.round(p.durationMs / 1000)}s`;
+    const status = p.success ? '✅' : '❌';
+    return `| ${p.name} | ${p.backend} | ${dur} | ${status} |`;
+  });
+
+  const totalDur = totalMs < 1000
+    ? `${totalMs}ms`
+    : `${Math.round(totalMs / 1000)}s`;
+  const allSuccess = phases.every(p => p.success);
+  rows.push(`| **Total** | | ${totalDur} | ${allSuccess ? '✅' : '❌'} |`);
+
+  return [
+    '## Run Scorecard',
+    '| Phase | Backend | Duration | Status |',
+    '|---|---|---|---|',
+    ...rows,
+  ].join('\n');
 }

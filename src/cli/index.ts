@@ -24,6 +24,10 @@ async function main() {
             await runHealthCheck();
             break;
 
+        case 'log':
+            await import('./log.js').then(m => m.runLogCommand(args.slice(1)));
+            break;
+
         case '--help':
         case '-h':
             console.log(`
@@ -33,6 +37,7 @@ Usage:
   unitai           Start the MCP server
   unitai setup     Run the setup wizard
   unitai health    Quick health check
+  unitai log       Inspect recent workflow runs (--last N)
 
 Options:
   --help, -h      Show this help message
