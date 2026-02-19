@@ -1,6 +1,8 @@
 import { z } from "zod";
 import * as fs from "fs";
+import os from "os";
 import * as path from "path";
+import { execSync } from "child_process";
 import { getGitRepoInfo, getGitDiff, getDetailedGitStatus, getGitBranches, checkCLIAvailability, isGitRepository, getRecentCommitsWithDiffs, getDateRangeFromCommits } from "../utils/cli/gitHelper.js";
 import { formatWorkflowOutput } from "./utils.js";
 import { executeAIClient } from "../services/ai-executor.js";
@@ -21,7 +23,10 @@ const initSessionSchema = z.object({
     .min(1)
     .max(50)
     .optional()
-    .describe("Maximum number of recent commits to analyze (default: 10)")
+    .describe("Maximum number of recent commits to analyze (default: 10)"),
+  fresh: z.boolean()
+    .optional()
+    .describe("Force a fresh run, bypassing the 30-minute session cache")
 });
 
 /**
@@ -204,14 +209,57 @@ Please provide a synthesized analysis of these commits.`;
 }
 
 /**
+ * Cache schema for init-session output
+ */
+interface SessionCache {
+  key: string;      // "branch:sha"
+  ts: string;       // ISO8601 when cached
+  ttlMs: number;    // 1800000 (30 minutes)
+  output: string;   // full formatted output
+}
+
+/**
  * Executes the session initialization workflow
  */
 export async function executeInitSession(
   params: z.infer<typeof initSessionSchema>,
   onProgress?: ProgressCallback
 ): Promise<string> {
-  const { autonomyLevel, commitCount } = initSessionSchema.parse(params);
+  const { autonomyLevel, commitCount, fresh } = initSessionSchema.parse(params);
+
+  // --- 30-minute session cache ---
+  const cachePath = path.join(os.homedir(), ".unitai", "session-cache.json");
+  let cacheKey: string | undefined;
+
+  // Always attempt to compute the cache key (git HEAD + branch)
+  try {
+    const sha = execSync("git rev-parse HEAD", { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    const branch = execSync("git branch --show-current", { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    cacheKey = `${branch}:${sha}`;
+  } catch {
+    // git command failed - silently skip cache entirely
+  }
+
+  // Check cache only when not forcing a fresh run
+  if (!fresh && cacheKey !== undefined) {
+    try {
+      const rawCache = fs.readFileSync(cachePath, "utf8");
+      const cache: SessionCache = JSON.parse(rawCache);
+      if (
+        cache.key === cacheKey &&
+        Date.now() - Date.parse(cache.ts) < cache.ttlMs
+      ) {
+        const ageMin = Math.floor((Date.now() - Date.parse(cache.ts)) / 60000);
+        return `> Cached session (${ageMin} min ago) - HEAD unchanged. Re-run \`init-session\` with \`--fresh\` to force refresh.\n\n${cache.output}`;
+      }
+    } catch {
+      // cache missing or corrupt - silently skip, proceed with full run
+    }
+  }
+  // --- end cache read ---
+
   onProgress?.("Starting session initialization... (Starting session initialization...)");
+
 
   const sections: string[] = [];
   const metadata: Record<string, any> = {};
@@ -405,7 +453,32 @@ ${errorMsg}
 
   onProgress?.("Session initialized successfully");
 
-  return formatWorkflowOutput("Session Initialization Report (Session Initialization Report)", sections.join("\n"), metadata);
+
+  onProgress?.("Session initialized successfully");
+
+  const result = formatWorkflowOutput("Session Initialization Report (Session Initialization Report)", sections.join("\n"), metadata);
+
+  // --- write session cache ---
+  if (cacheKey !== undefined) {
+    try {
+      const cacheDir = path.dirname(cachePath);
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+      const cacheData: SessionCache = {
+        key: cacheKey,
+        ts: new Date().toISOString(),
+        ttlMs: 1800000,
+        output: result,
+      };
+      fs.writeFileSync(cachePath, JSON.stringify(cacheData), "utf8");
+    } catch {
+      // cache write failure is non-fatal
+    }
+  }
+  // --- end cache write ---
+
+  return result;
 }
 
 /**
