@@ -8,7 +8,9 @@
 import { getRoleBackend, loadConfig, invalidateConfigCache } from '../src/config/config.js';
 import { selectOptimalBackend, createTaskCharacteristics } from '../src/workflows/model-selector.js';
 
-const cb = { isAvailable: async () => true, onSuccess: () => {}, onFailure: () => {} };
+const cb = {
+  get: (_backend: string) => ({ isAvailable: () => true, onSuccess: () => {}, onFailure: () => {} })
+};
 
 async function main() {
   invalidateConfigCache();

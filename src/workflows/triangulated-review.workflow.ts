@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
-import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
+import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput, formatScorecard, appendRunLog } from "./utils.js";
+import type { RunLogEntry } from "./utils.js";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
 import { executeAIClient } from "../services/ai-executor.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
@@ -24,6 +25,8 @@ export async function executeTriangulatedReview(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { files, goal } = params;
+  const workflowStart = Date.now();
+  const scorePhases: RunLogEntry['phases'] = [];
 
   onProgress?.(`🧭 Triangulated review started on ${files.length} files (goal: ${goal})`);
 
@@ -59,6 +62,7 @@ Generate concrete refactoring suggestions with priorities and residual risks.`;
     }
   };
 
+  const analysisStart = Date.now();
   const analysisResult = await runParallelAnalysis(
     [architectBackend, testerBackend],
     promptBuilder,
@@ -68,7 +72,13 @@ Generate concrete refactoring suggestions with priorities and residual risks.`;
       : { trustedSource: true }  // All internal workflows are trusted
   );
 
+  const analysisMs = Date.now() - analysisStart;
+  for (const r of analysisResult.results) {
+    scorePhases.push({ name: 'analysis', backend: r.backend, durationMs: analysisMs, success: r.success, error: r.error });
+  }
+
   let verificationResult = "";
+  const verifyStart = Date.now();
   try {
     verificationResult = await executeAIClient({
       backend: implementerBackend,
@@ -88,6 +98,12 @@ Return:
     const errorMsg = error instanceof Error ? error.message : String(error);
     verificationResult = `Unable to execute verification (${implementerBackend}): ${errorMsg}`;
   }
+  scorePhases.push({
+    name: 'verification',
+    backend: implementerBackend,
+    durationMs: Date.now() - verifyStart,
+    success: !verificationResult.startsWith('Unable to execute')
+  });
 
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
@@ -108,9 +124,19 @@ ${verificationResult}
 - Failures: ${failed.map(r => `${r.backend} (${r.error})`).join(", ") || "None"}
 `;
 
+  const totalMs = Date.now() - workflowStart;
+  const scorecardText = formatScorecard(scorePhases, totalMs);
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'triangulated-review',
+    phases: scorePhases,
+    totalDurationMs: totalMs,
+    success: successful.length > 0
+  });
+
   return formatWorkflowOutput(
     "Triangulated Review",
-    content,
+    content + '\n\n' + scorecardText,
     {
       files,
       goal,

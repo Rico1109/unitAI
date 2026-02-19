@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
-import { formatWorkflowOutput } from "./utils.js";
+import { formatWorkflowOutput, formatScorecard, appendRunLog } from "./utils.js";
+import type { RunLogEntry } from "./utils.js";
 import { executeAIClient } from "../services/ai-executor.js";
 import { getRoleBackend } from "../config/config.js";
 import { getDependencies } from '../dependencies.js';
@@ -22,6 +23,8 @@ export async function executeRefactorSprint(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { targetFiles, scope, depth, attachments = [] } = params;
+  const workflowStart = Date.now();
+  const scorePhases: RunLogEntry['phases'] = [];
 
   const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('refactor-sprint');
@@ -34,6 +37,7 @@ export async function executeRefactorSprint(
   onProgress?.(`⚙️ Refactor sprint started (${depth}) on ${targetFiles.length} files`);
 
   let implementerPlan = "";
+  const implStart = Date.now();
   try {
     implementerPlan = await executeAIClient({
       backend: implementerBackend,
@@ -53,8 +57,10 @@ Generate:
     const errorMsg = error instanceof Error ? error.message : String(error);
     implementerPlan = `Unable to get plan from implementer: ${errorMsg}`;
   }
+  scorePhases.push({ name: 'plan', backend: implementerBackend, durationMs: Date.now() - implStart, success: !implementerPlan.startsWith('Unable') });
 
   let architectReview = "";
+  const archStart = Date.now();
   try {
     architectReview = await executeAIClient({
       backend: architectBackend,
@@ -69,8 +75,10 @@ ${implementerPlan}`
   } catch (error) {
     architectReview = `Unable to get validation from architect: ${error instanceof Error ? error.message : String(error)}`;
   }
+  scorePhases.push({ name: 'review', backend: architectBackend, durationMs: Date.now() - archStart, success: !architectReview.startsWith('Unable') });
 
   let testerChecklist = "";
+  const testerStart = Date.now();
   try {
     testerChecklist = await executeAIClient({
       backend: testerBackend,
@@ -92,6 +100,7 @@ Requested checklist:
   } catch (error) {
     testerChecklist = `Unable to generate checklist from tester: ${error instanceof Error ? error.message : String(error)}`;
   }
+  scorePhases.push({ name: 'checklist', backend: testerBackend, durationMs: Date.now() - testerStart, success: !testerChecklist.startsWith('Unable') });
 
   const content = `
 ## Implementer Plan
@@ -108,9 +117,18 @@ ${architectReview}
 ${testerChecklist}
 `;
 
+  const totalMs = Date.now() - workflowStart;
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'refactor-sprint',
+    phases: scorePhases,
+    totalDurationMs: totalMs,
+    success: scorePhases.every(p => p.success)
+  });
+
   return formatWorkflowOutput(
     "Refactor Sprint",
-    content,
+    content + '\n\n' + formatScorecard(scorePhases, totalMs),
     {
       targetFiles,
       scope,
