@@ -12,7 +12,22 @@ import {
   type TaskCharacteristics
 } from '../../../src/workflows/model-selector.js';
 import { BACKENDS } from '../../../src/services/ai-executor.js';
-import { CircuitBreaker } from '../../../src/utils/reliability/index.js';
+import { CircuitBreakerRegistry } from '../../../src/utils/reliability/index.js';
+
+// Mock config to ensure consistent role→backend mapping regardless of local config
+vi.mock('../../../src/config/config.js', () => ({
+  getRoleBackend: vi.fn().mockImplementation((role: string) => {
+    const defaults: Record<string, string> = {
+      architect: 'ask-gemini',
+      implementer: 'ask-droid',
+      tester: 'ask-qwen'
+    };
+    return defaults[role] ?? 'ask-gemini';
+  }),
+  isBackendEnabled: vi.fn().mockReturnValue(true),
+  loadConfig: vi.fn().mockReturnValue(null),
+  getFallbackPriority: vi.fn().mockReturnValue(['ask-gemini', 'ask-qwen', 'ask-droid']),
+}));
 
 // Mock dependencies to avoid real DB initialization
 vi.mock('../../../src/dependencies.js', () => {
@@ -36,11 +51,11 @@ vi.mock('../../../src/dependencies.js', () => {
 });
 
 describe('Model Selector', () => {
-  let mockCB: CircuitBreaker;
+  let mockCB: CircuitBreakerRegistry;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCB = new CircuitBreaker(3, 1000);
+    mockCB = new CircuitBreakerRegistry();
   });
 
   describe('selectOptimalBackend', () => {

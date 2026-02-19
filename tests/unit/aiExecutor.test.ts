@@ -12,9 +12,11 @@ const mocks = vi.hoisted(() => ({
     debug: vi.fn(),
   },
   circuitBreaker: {
-    isAvailable: vi.fn().mockReturnValue(true),
-    onSuccess: vi.fn(),
-    onFailure: vi.fn(),
+    get: vi.fn().mockReturnValue({
+      isAvailable: vi.fn().mockReturnValue(true),
+      onSuccess: vi.fn(),
+      onFailure: vi.fn(),
+    }),
   },
   metricsDb: {},
   recordMetric: vi.fn(),
@@ -63,7 +65,12 @@ import {
 describe('AIExecutor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.circuitBreaker.isAvailable.mockReturnValue(true);
+    // Re-setup circuit breaker mock after clearAllMocks resets return values
+    mocks.circuitBreaker.get.mockReturnValue({
+      isAvailable: vi.fn().mockReturnValue(true),
+      onSuccess: vi.fn(),
+      onFailure: vi.fn(),
+    });
     mocks.executeCommand.mockResolvedValue('Mock Response');
   });
 

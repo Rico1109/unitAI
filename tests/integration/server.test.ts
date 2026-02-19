@@ -174,7 +174,8 @@ describe('server', () => {
         'test-tool',
         { key: 'value' },
         expect.any(Function),
-        expect.stringMatching(/^mcp-/)
+        expect.stringMatching(/^mcp-/),
+        expect.stringMatching(/^corr-/)
       );
       expect(result).toEqual({
         content: [

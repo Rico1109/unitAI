@@ -16,9 +16,13 @@ vi.mock('../../src/dependencies.js', () => ({
     auditDb: new Database(':memory:'),
     tokenDb: new Database(':memory:'),
     circuitBreaker: {
-      isAvailable: vi.fn(() => true),
-      onSuccess: vi.fn(),
-      onFailure: vi.fn(),
+      get: vi.fn(() => ({
+        isAvailable: vi.fn(() => true),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      })),
+      getAllStats: vi.fn(() => ({})),
+      resetAll: vi.fn(),
     },
   })),
   initializeDependencies: vi.fn(),
@@ -60,7 +64,8 @@ describe('Workflow Integration Tests', () => {
 
       const result = await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 2
+        commitCount: 2,
+        fresh: true // bypass session cache so mocked AI and progress callbacks are exercised
       }, callback);
 
       expect(result).toContain('Session Initialization');
@@ -276,7 +281,8 @@ describe('Workflow Integration Tests', () => {
       const { executeValidateLastCommit } = await import('../../src/workflows/validate-last-commit.workflow.js');
 
       const result = await executeValidateLastCommit({
-        autonomyLevel: AutonomyLevel.READ_ONLY
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        commit_ref: 'HEAD'
       });
 
       expect(result).toContain('Breaking change');
@@ -293,7 +299,8 @@ describe('Workflow Integration Tests', () => {
 
       const result = await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 1
+        commitCount: 1,
+        fresh: true // bypass session cache so git mock is exercised
       });
 
       expect(result).toContain('not a Git repository');
@@ -321,7 +328,8 @@ describe('Workflow Integration Tests', () => {
       // Should succeed with fallback
       const result = await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 1
+        commitCount: 1,
+        fresh: true // bypass session cache so AI mock is exercised
       });
 
       expect(result).toBeDefined();
@@ -371,7 +379,8 @@ describe('Workflow Integration Tests', () => {
 
       await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 1
+        commitCount: 1,
+        fresh: true // bypass session cache so progress callbacks are invoked
       }, callback);
 
       // Should have multiple progress messages

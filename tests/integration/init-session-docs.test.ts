@@ -39,6 +39,24 @@ vi.mock('../../src/services/ai-executor.js', async () => {
     };
 });
 
+// Mock dependencies to provide circuit breaker registry
+vi.mock('../../src/dependencies.js', () => ({
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+  getDependencies: vi.fn().mockReturnValue({
+    activityDb: {}, auditDb: {}, tokenDb: {}, metricsDb: {},
+    circuitBreaker: {
+      get: vi.fn().mockReturnValue({
+        isAvailable: vi.fn().mockReturnValue(true),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      }),
+      getAllStats: vi.fn().mockReturnValue({}),
+      resetAll: vi.fn(),
+    },
+  }),
+}));
+
 // Import modules
 import { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 import { createMockProgressCallback } from '../utils/testHelpers.js';
@@ -112,7 +130,8 @@ describe('Init Session Workflow - Documentation Search', () => {
         console.log('Executing workflow...');
         const result = await executeInitSession({
             autonomyLevel: AutonomyLevel.READ_ONLY,
-            commitCount: 1
+            commitCount: 1,
+            fresh: true // bypass session cache so mocked fs/AI are exercised
         }, callback as any);
         console.log('Workflow result:', result);
 

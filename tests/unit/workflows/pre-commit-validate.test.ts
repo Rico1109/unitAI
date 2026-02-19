@@ -17,17 +17,17 @@ vi.mock('../../../src/dependencies.js', () => ({
   initializeDependencies: vi.fn(),
   closeDependencies: vi.fn(),
   getDependencies: vi.fn().mockReturnValue({
-    activityDb: {},
-    auditDb: {},
-    tokenDb: {},
+    activityDb: {}, auditDb: {}, tokenDb: {}, metricsDb: {},
     circuitBreaker: {
-      isAvailable: vi.fn().mockResolvedValue(true),
-      execute: vi.fn((fn) => fn()),
-      getState: vi.fn().mockReturnValue('CLOSED'),
-      reset: vi.fn(),
-      shutdown: vi.fn()
-    }
-  })
+      get: vi.fn().mockReturnValue({
+        isAvailable: vi.fn().mockReturnValue(true),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      }),
+      getAllStats: vi.fn().mockReturnValue({}),
+      resetAll: vi.fn(),
+    },
+  }),
 }));
 
 describe('pre-commit-validate workflow', () => {

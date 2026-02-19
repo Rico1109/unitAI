@@ -18,9 +18,13 @@ const mocks = vi.hoisted(() => ({
     debug: vi.fn(),
   },
   circuitBreaker: {
-    isAvailable: vi.fn(),
-    onSuccess: vi.fn(),
-    onFailure: vi.fn(),
+    get: vi.fn().mockReturnValue({
+      isAvailable: vi.fn().mockReturnValue(true),
+      onSuccess: vi.fn(),
+      onFailure: vi.fn(),
+    }),
+    getAllStats: vi.fn().mockReturnValue({}),
+    resetAll: vi.fn(),
   },
   metricsDb: {},
   recordMetric: vi.fn(),
@@ -72,7 +76,11 @@ import { executeAIClient, AIExecutionOptions } from '../../src/services/ai-execu
 describe('Fallback with Attachments Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.circuitBreaker.isAvailable.mockResolvedValue(true);
+    mocks.circuitBreaker.get.mockReturnValue({
+      isAvailable: vi.fn().mockReturnValue(true),
+      onSuccess: vi.fn(),
+      onFailure: vi.fn(),
+    });
     mocks.executeCommand.mockResolvedValue('Success');
   });
 
@@ -239,9 +247,11 @@ describe('Fallback with Attachments Integration', () => {
   describe('Circuit breaker triggered fallback with attachments', () => {
     it('should transform attachments when circuit breaker blocks initial backend', async () => {
       // Circuit breaker blocks Cursor, immediately falls back to Droid
-      mocks.circuitBreaker.isAvailable
-        .mockResolvedValueOnce(false) // Cursor blocked
-        .mockResolvedValue(true);     // Others available
+      mocks.circuitBreaker.get.mockImplementation((backend: string) => ({
+        isAvailable: vi.fn().mockReturnValue(backend !== BACKENDS.CURSOR),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      }));
 
       mocks.selectFallbackBackend.mockResolvedValue(BACKENDS.DROID);
       mocks.executeCommand.mockResolvedValue('Droid response');
@@ -271,10 +281,12 @@ describe('Fallback with Attachments Integration', () => {
       // First call succeeds check, fails execution
       // Circuit breaker then blocks the first fallback, goes to second
       let execCallCount = 0;
-      mocks.circuitBreaker.isAvailable
-        .mockResolvedValueOnce(true)   // Cursor available
-        .mockResolvedValueOnce(false)  // Droid blocked by circuit breaker
-        .mockResolvedValue(true);      // Qwen available
+      // Cursor available (but execution will fail), Droid blocked, Qwen available
+      mocks.circuitBreaker.get.mockImplementation((backend: string) => ({
+        isAvailable: vi.fn().mockReturnValue(backend !== BACKENDS.DROID),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      }));
 
       mocks.executeCommand
         .mockRejectedValueOnce(new Error('Cursor failed'))

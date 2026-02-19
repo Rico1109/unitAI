@@ -19,20 +19,24 @@ vi.mock('../../src/utils/logger.js', () => ({
   },
 }));
 
-// Mock CircuitBreaker
-const mockShutdown = vi.fn();
-const mockCircuitBreakerInstance = {
-  shutdown: mockShutdown,
-  isAvailable: vi.fn().mockResolvedValue(true),
-  execute: vi.fn((fn) => fn()),
-  getState: vi.fn().mockReturnValue('CLOSED'),
-  reset: vi.fn(),
+// Mock CircuitBreakerRegistry (the new per-backend registry)
+const mockGetAllStats = vi.fn().mockReturnValue({});
+const mockRegistryInstance = {
+  get: vi.fn().mockReturnValue({
+    isAvailable: vi.fn().mockReturnValue(true),
+    onSuccess: vi.fn(),
+    onFailure: vi.fn(),
+  }),
+  getAllStats: mockGetAllStats,
+  resetAll: vi.fn(),
 };
-const MockCircuitBreaker = vi.fn().mockImplementation(() => mockCircuitBreakerInstance);
+const MockCircuitBreakerRegistry = vi.fn().mockImplementation(() => mockRegistryInstance);
+// Keep MockCircuitBreaker for unused import compatibility
+const MockCircuitBreaker = vi.fn();
 
 vi.mock('../../src/utils/reliability/errorRecovery.js', () => ({
   CircuitBreaker: MockCircuitBreaker,
-  CircuitBreakerRegistry: vi.fn(),
+  CircuitBreakerRegistry: MockCircuitBreakerRegistry,
 }));
 
 // Mock AsyncDatabase
@@ -86,8 +90,8 @@ describe('dependencies', () => {
     vi.clearAllMocks();
     mockDatabase.mockReturnValue(mockDbInstance);
     mockFs.existsSync.mockReturnValue(true);
-    mockShutdown.mockClear();
-    MockCircuitBreaker.mockClear();
+    mockGetAllStats.mockClear();
+    MockCircuitBreakerRegistry.mockClear();
 
     // Reset module to clear singleton
     vi.resetModules();
@@ -217,18 +221,13 @@ describe('dependencies', () => {
   // Suite 4: Circuit Breaker Initialization
   // =================================================================
   describe('Circuit Breaker Initialization', () => {
-    it('should initialize circuit breaker with audit database', async () => {
+    it('should initialize circuit breaker registry', async () => {
       // Act
       await dependencies.initializeDependencies();
 
-      // Assert: CircuitBreaker now uses config object
-      expect(MockCircuitBreaker).toHaveBeenCalledWith(
-        expect.objectContaining({
-          failureThreshold: 3,
-          timeout: 5 * 60 * 1000,
-          name: 'global'
-        })
-      );
+      // Assert: CircuitBreakerRegistry is instantiated (no args — each backend gets its own CB lazily)
+      expect(MockCircuitBreakerRegistry).toHaveBeenCalledTimes(1);
+      expect(MockCircuitBreakerRegistry).toHaveBeenCalledWith();
     });
   });
 
@@ -236,15 +235,15 @@ describe('dependencies', () => {
   // Suite 5: Cleanup
   // =================================================================
   describe('Cleanup', () => {
-    it('should call shutdown on circuit breaker', async () => {
+    it('should clean up circuit breaker state during close', async () => {
       // Arrange
       await dependencies.initializeDependencies();
 
       // Act
       await dependencies.closeDependencies();
 
-      // Assert
-      expect(mockShutdown).toHaveBeenCalled();
+      // Assert: getAllStats is called to iterate and clean up breakers
+      expect(mockGetAllStats).toHaveBeenCalled();
     });
 
     it('should close databases', async () => {
@@ -264,11 +263,12 @@ describe('dependencies', () => {
       });
     });
 
-    it('should handle circuit breaker shutdown errors gracefully', async () => {
+    it('should handle circuit breaker cleanup errors gracefully', async () => {
       // Arrange
-      const deps = await dependencies.initializeDependencies();
-      deps.circuitBreaker.shutdown = vi.fn(() => {
-        throw new Error('Shutdown error');
+      await dependencies.initializeDependencies();
+      // Simulate getAllStats throwing during cleanup
+      mockGetAllStats.mockImplementationOnce(() => {
+        throw new Error('Cleanup error');
       });
 
       // Act & Assert: Should not throw
