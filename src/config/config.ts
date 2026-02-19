@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { BACKENDS } from '../constants.js';
+import { BACKENDS, normalizeBackendName } from '../constants.js';
 import type { CircuitBreaker } from '../utils/reliability/errorRecovery.js';
 
 export interface UnitAIConfig {
@@ -176,7 +176,7 @@ export function createConfig(options: {
 export function getRoleBackend(role: 'architect' | 'implementer' | 'tester'): string {
     const config = loadConfig();
     if (config && config.roles[role]) {
-        return config.roles[role];
+        return normalizeBackendName(config.roles[role]);
     }
     return DEFAULT_CONFIG.roles[role];
 }
@@ -190,7 +190,8 @@ export function isBackendEnabled(backend: string): boolean {
         // No config = all backends enabled by default
         return true;
     }
-    return config.backends.enabled.includes(backend);
+    const canonical = normalizeBackendName(backend);
+    return config.backends.enabled.map(normalizeBackendName).includes(canonical);
 }
 
 /**
@@ -234,7 +235,7 @@ export function getDefaultFallbackOrder(): string[] {
 export function getFallbackPriority(): string[] {
     const config = loadConfig();
     if (config?.fallbackPriority && config.fallbackPriority.length > 0) {
-        return config.fallbackPriority;
+        return config.fallbackPriority.map(normalizeBackendName);
     }
     return getDefaultFallbackOrder();
 }

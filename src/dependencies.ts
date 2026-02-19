@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { AsyncDatabase } from './infrastructure/async-db.js';
 import { logger } from './utils/logger.js';
-import { CircuitBreaker } from './utils/reliability/errorRecovery.js';
+import { CircuitBreakerRegistry } from './utils/reliability/errorRecovery.js';
 import { ActivityRepository } from './repositories/activity.js';
 import { MetricsRepository } from './repositories/metrics.js';
 
@@ -17,7 +17,7 @@ export interface AppDependencies {
     auditDb: AsyncDatabase;
     tokenDb: AsyncDatabase;
     metricsDb: AsyncDatabase;
-    circuitBreaker: CircuitBreaker;
+    circuitBreaker: CircuitBreakerRegistry;
     // Add other shared DBs or services here as we migrate them
 }
 
@@ -76,14 +76,11 @@ export async function initializeDependencies(): Promise<AppDependencies> {
     const metricsRepo = new MetricsRepository(metricsDb);
     await metricsRepo.initializeSchema();
 
-    // Initialize Circuit Breaker (in-memory implementation)
-    logger.debug("Initializing Circuit Breaker");
-    const circuitBreaker = new CircuitBreaker({
-        name: 'global',
-        failureThreshold: 3,
-        successThreshold: 1,
-        timeout: 5 * 60 * 1000
-    });
+    // Initialize per-backend Circuit Breaker Registry (in-memory)
+    // Each backend gets its own independent circuit breaker so one failure
+    // does not cascade and block all other backends.
+    logger.debug("Initializing Circuit Breaker Registry");
+    const circuitBreaker = new CircuitBreakerRegistry();
 
     dependencies = {
         activityDb,
@@ -115,7 +112,10 @@ export async function closeDependencies(): Promise<void> {
 
         // Persist circuit breaker state before closing
         try {
-            dependencies.circuitBreaker.shutdown();
+            // Shutdown all per-backend circuit breakers (no-op for in-memory)
+        for (const breaker of Object.values(dependencies.circuitBreaker.getAllStats())) {
+            void breaker; // breakers are stateless in-memory, nothing to flush
+        }
         } catch (error) {
             logger.error("Error persisting circuit breaker state during shutdown", error);
         }

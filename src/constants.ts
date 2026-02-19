@@ -112,6 +112,34 @@ export const BACKENDS = {
   QWEN: "ask-qwen"
 } as const;
 
+/**
+ * Maps short backend names (as stored in config/wizard) to canonical `ask-*` names
+ * used by the BackendRegistry and execution layer.
+ *
+ * Config layer stores short names (human-friendly, matches CLI command names).
+ * Execution layer requires canonical names (matches BackendRegistry keys).
+ * This is the single normalization point between the two layers.
+ */
+export const BACKEND_SHORT_TO_CANONICAL: Record<string, string> = {
+  gemini: BACKENDS.GEMINI,
+  cursor: BACKENDS.CURSOR,
+  droid: BACKENDS.DROID,
+  rovodev: BACKENDS.ROVODEV,
+  qwen: BACKENDS.QWEN,
+};
+
+/**
+ * Normalizes a backend name to its canonical `ask-*` form.
+ * Accepts both short names ("gemini") and canonical names ("ask-gemini").
+ * Returns the canonical name in both cases.
+ */
+export function normalizeBackendName(name: string): string {
+  // Already canonical
+  if ((Object.values(BACKENDS) as string[]).includes(name)) return name;
+  // Map short → canonical, or pass through if unknown
+  return BACKEND_SHORT_TO_CANONICAL[name] ?? name;
+}
+
 // Export BACKENDS values for easier importing
 export { BACKENDS as default };
 

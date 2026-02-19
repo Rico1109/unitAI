@@ -94,14 +94,14 @@ const backendStats = new BackendStats();
 /**
  * Select optimal backend based on task characteristics
  */
-import type { CircuitBreaker } from '../utils/reliability/errorRecovery.js';
+import type { CircuitBreakerRegistry } from '../utils/reliability/errorRecovery.js';
 
 /**
  * Select optimal backend based on task characteristics
  */
 export async function selectOptimalBackend(
   task: TaskCharacteristics,
-  circuitBreaker: CircuitBreaker,
+  circuitBreaker: CircuitBreakerRegistry,
   allowedBackends?: string[]
 ): Promise<string> {
   const candidates = allowedBackends || Object.values(BACKENDS);
@@ -111,7 +111,7 @@ export async function selectOptimalBackend(
 
   // 2. Filter out unavailable backends (Circuit Breaker)
   const availabilityChecks = await Promise.all(
-    enabledCandidates.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
+    enabledCandidates.map(async (b) => ({ backend: b, available: circuitBreaker.get(b).isAvailable() }))
   );
   const availableCandidates = availabilityChecks
     .filter((check) => check.available)
@@ -161,7 +161,7 @@ export async function selectOptimalBackend(
  */
 export async function selectParallelBackends(
   task: TaskCharacteristics,
-  circuitBreaker: CircuitBreaker,
+  circuitBreaker: CircuitBreakerRegistry,
   count: number = 2
 ): Promise<string[]> {
   const selections: string[] = [];
@@ -171,7 +171,7 @@ export async function selectParallelBackends(
   const enabled = priority.filter(b => isBackendEnabled(b));
 
   const availabilityChecks = await Promise.all(
-    enabled.map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
+    enabled.map(async (b) => ({ backend: b, available: circuitBreaker.get(b).isAvailable() }))
   );
   const available = availabilityChecks
     .filter((check) => check.available)
@@ -245,7 +245,7 @@ export function getBackendStats(): BackendMetrics[] {
  */
 export async function selectFallbackBackend(
   failedBackend: string,
-  circuitBreaker: CircuitBreaker,
+  circuitBreaker: CircuitBreakerRegistry,
   triedBackends: string[] = []
 ): Promise<string> {
   // Priority order for fallbacks (wizard-configured or defaults)
@@ -255,7 +255,7 @@ export async function selectFallbackBackend(
   const availabilityChecks = await Promise.all(
     fallbackOrder
       .filter((b) => b !== failedBackend && !triedBackends.includes(b))
-      .map(async (b) => ({ backend: b, available: await circuitBreaker.isAvailable(b) }))
+      .map(async (b) => ({ backend: b, available: circuitBreaker.get(b).isAvailable() }))
   );
   const available = availabilityChecks
     .filter((check) => check.available)

@@ -126,7 +126,7 @@ export async function executeAIClient(
   config.triedBackends.push(backend);
 
   // Circuit Breaker Check - try fallback if blocked
-  if (!(await circuitBreaker.isAvailable(backend))) {
+  if (!circuitBreaker.get(backend).isAvailable()) {
     logger.warn(`Backend ${backend} is currently unavailable (Circuit Open).`);
 
     if (config.currentRetry < config.maxRetries) {
@@ -153,7 +153,7 @@ export async function executeAIClient(
     const result = await executor.execute(rest);
 
     // Report success to Circuit Breaker
-    circuitBreaker.onSuccess(backend);
+    circuitBreaker.get(backend).onSuccess();
     success = true;
 
     // Log successful fallback if this wasn't the first try
@@ -165,7 +165,7 @@ export async function executeAIClient(
 
   } catch (error) {
     // Report failure to Circuit Breaker
-    circuitBreaker.onFailure(backend);
+    circuitBreaker.get(backend).onFailure(backend);
     success = false;
     errorType = error instanceof Error ? error.name : 'UnknownError';
 
