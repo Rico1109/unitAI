@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { executeAIClient, BACKENDS } from "../services/ai-executor.js";
+import { getRoleBackend } from "../config/config.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
 import { formatWorkflowOutput } from "./utils.js";
@@ -89,7 +90,7 @@ ${content}
   
   let selectedBackend = modelOverride;
   if (!selectedBackend) {
-     selectedBackend = await selectOptimalBackend(task, circuitBreaker, [BACKENDS.GEMINI]);
+     selectedBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('architect')]);
   }
   const backendToUse = selectedBackend;
 

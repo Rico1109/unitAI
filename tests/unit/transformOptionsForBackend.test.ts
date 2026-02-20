@@ -338,7 +338,9 @@ describe('transformOptionsForBackend', () => {
 
       expect(result.outputFormat).toBe('json');
       expect(result.sandbox).toBe(true);
-      expect(result.autoApprove).toBe(true);
+      // Droid uses 'auto' field, autoApprove should be removed and converted to auto
+      expect(result.auto).toBe('high'); // autoApprove: true converts to auto: "high"
+      expect(result.autoApprove).toBeUndefined(); // autoApprove removed for Droid
       expect(result.requestId).toBe('req-123');
     });
   });

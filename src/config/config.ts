@@ -187,8 +187,9 @@ export function getRoleBackend(role: 'architect' | 'implementer' | 'tester'): st
 export function isBackendEnabled(backend: string): boolean {
     const config = loadConfig();
     if (!config) {
-        // No config = all backends enabled by default
-        return true;
+        const canonical = normalizeBackendName(backend);
+        const defaultEnabled = Object.values(DEFAULT_CONFIG.roles).map(normalizeBackendName);
+        return defaultEnabled.includes(canonical);
     }
     const canonical = normalizeBackendName(backend);
     return config.backends.enabled.map(normalizeBackendName).includes(canonical);

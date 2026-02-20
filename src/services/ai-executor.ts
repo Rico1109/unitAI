@@ -1,4 +1,4 @@
-import { BACKENDS } from "../constants.js";
+import { BACKENDS, normalizeBackendName } from "../constants.js";
 
 // Re-export BACKENDS for convenience
 export { BACKENDS };
@@ -57,6 +57,30 @@ export function transformOptionsForBackend(
   const capabilities = executor.getCapabilities();
   const { attachments = [], prompt, ...rest } = options;
 
+  // Transform autonomy params based on backend type
+  const normalizedBackend = normalizeBackendName(targetBackend);
+  let result = rest;
+  if (normalizedBackend === normalizeBackendName(BACKENDS.DROID)) {
+    // Droid uses 'auto' field, remove 'autoApprove'
+    const { autoApprove: _aa, auto, ...droidRest } = rest;
+    const transformedAuto = (_aa ?? false) ? "high" : (auto ?? "low");
+    result = { ...droidRest, auto: transformedAuto };
+  } else if (
+    normalizedBackend === normalizeBackendName(BACKENDS.CURSOR) ||
+    normalizedBackend === normalizeBackendName(BACKENDS.ROVODEV) ||
+    normalizedBackend === normalizeBackendName(BACKENDS.QWEN)
+  ) {
+    // Cursor/RovoDev/Qwen use 'autoApprove' field, remove 'auto'
+    const { auto, autoApprove, ...cursorRest } = rest;
+    // Only transform autoApprove if auto is present, otherwise preserve existing autoApprove
+    const transformedAutoApprove = auto !== undefined ? (auto === "high") : (autoApprove ?? false);
+    result = { ...cursorRest, autoApprove: transformedAutoApprove };
+  } else if (normalizedBackend === normalizeBackendName(BACKENDS.GEMINI)) {
+    // Gemini doesn't support autonomy params, remove both
+    const { auto: _a, autoApprove: _aa, ...geminiRest } = rest;
+    result = { ...geminiRest };
+  }
+
   // If target backend doesn't support files via CLI flag but has attachments,
   // we need to handle them based on fileMode
   if (attachments.length > 0) {
@@ -68,7 +92,7 @@ export function transformOptionsForBackend(
       const transformedPrompt = `[Files to analyze: ${fileList}]\n\n${prompt}`;
       logger.debug(`Transformed attachments to embedded prompt for backend ${targetBackend}`);
       return {
-        ...rest,
+        ...result,
         prompt: transformedPrompt,
         attachments: [], // Clear attachments since they're now in prompt
         backend: targetBackend
@@ -81,7 +105,7 @@ export function transformOptionsForBackend(
       const transformedPrompt = `[Files to analyze: ${fileList}]\n\n${prompt}`;
       logger.warn(`Backend ${targetBackend} doesn't support files, embedding in prompt as fallback`);
       return {
-        ...rest,
+        ...result,
         prompt: transformedPrompt,
         attachments: [], // Clear attachments
         backend: targetBackend
@@ -90,7 +114,7 @@ export function transformOptionsForBackend(
     // fileMode === 'cli-flag': pass attachments as-is (backend handles via --file)
   }
 
-  return { ...options, backend: targetBackend };
+  return { ...result, attachments, prompt, backend: targetBackend };
 }
 
 /**
@@ -105,6 +129,9 @@ export async function executeAIClient(
   const { backend, ...rest } = options;
   const { circuitBreaker, metricsDb } = getDependencies();
   const registry = BackendRegistry.getInstance();
+
+  const transformedOpts = transformOptionsForBackend(options, backend);
+  const { backend: _b, ...transformedRest } = transformedOpts;
 
   // Import MetricsRepository dynamically to avoid circular deps
   const { MetricsRepository } = await import('../repositories/metrics.js');
@@ -150,7 +177,7 @@ export async function executeAIClient(
       throw new Error(`Unsupported backend: ${backend}`);
     }
 
-    const result = await executor.execute(rest);
+    const result = await executor.execute(transformedRest);
 
     // Report success to Circuit Breaker
     circuitBreaker.get(backend).onSuccess();
