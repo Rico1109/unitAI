@@ -21,7 +21,7 @@ export async function runAIAnalysis(
   onProgress?: ProgressCallback
 ): Promise<AIAnalysisResult> {
   try {
-    onProgress?.(`Avvio analisi con ${backend}...`);
+    onProgress?.(`Starting analysis with ${backend}...`);
 
     const {
       onProgress: optionProgress,
@@ -62,7 +62,7 @@ export async function runParallelAnalysis(
   onProgress?: ProgressCallback,
   optionsBuilder?: (backend: string) => Partial<Omit<AIExecutionOptions, "backend" | "prompt">>
 ): Promise<ParallelAnalysisResult> {
-  onProgress?.(`Avvio analisi parallela con ${backends.length} backend...`);
+  onProgress?.(`Starting parallel analysis with ${backends.length} backends...`);
 
   const promises = backends.map(backend =>
     runAIAnalysis(
@@ -109,7 +109,7 @@ export function synthesizeResults(results: AIAnalysisResult[]): string {
 
     failed.forEach(result => {
       synthesis += `### ${result.backend}\n\n`;
-      synthesis += `**Errore:** ${result.error}\n\n`;
+      synthesis += `**Error:** ${result.error}\n\n`;
     });
   }
 

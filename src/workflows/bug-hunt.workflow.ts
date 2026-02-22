@@ -24,8 +24,8 @@ import { join } from 'path';
  * Schema dei parametri per bug-hunt
  */
 export const bugHuntSchema = z.object({
-  symptoms: z.string().describe('Descrizione dei sintomi del problema'),
-  suspected_files: z.array(z.string()).optional().describe('File sospetti da analizzare'),
+  symptoms: z.string().describe('Description of the problem symptoms'),
+  suspected_files: z.array(z.string()).optional().describe('Suspected files to analyze'),
   autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
     .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string())

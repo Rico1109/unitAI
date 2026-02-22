@@ -84,25 +84,6 @@ export async function executeWorkflow(
 }
 
 /**
- * Zod schema for the workflow router
- */
-export const smartWorkflowsSchema = z.object({
-  workflow: z.enum([
-    "parallel-review",
-    "pre-commit-validate",
-    "init-session",
-    "validate-last-commit",
-    "feature-design",
-    "bug-hunt",
-    "triangulated-review",
-    "auto-remediation",
-    "refactor-sprint",
-    "overthinker"
-  ]).describe("Workflow to execute"),
-  params: z.record(z.any()).optional().describe("Workflow-specific parameters")
-});
-
-/**
  * Definitions of schemas for each workflow
  */
 export const workflowSchemas = {
@@ -186,6 +167,16 @@ export const workflowSchemas = {
       .describe("Specific model/backend to use for all steps (default: auto)")
   })
 };
+
+/**
+ * Zod schema for the smart-workflows router.
+ * Derived from workflowSchemas so it never drifts out of sync.
+ */
+const _workflowNames = Object.keys(workflowSchemas) as [string, ...string[]];
+export const smartWorkflowsSchema = z.object({
+  workflow: z.enum(_workflowNames).describe("Workflow to execute"),
+  params: z.record(z.any()).optional().describe("Workflow-specific parameters")
+});
 
 /**
  * Initializes the workflow registry
