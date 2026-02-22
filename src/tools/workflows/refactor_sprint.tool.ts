@@ -4,6 +4,8 @@ import { refactorSprintWorkflow } from "../../workflows/refactor-sprint.workflow
 export const workflowRefactorSprintTool: UnifiedTool = {
     name: "workflow_refactor_sprint",
     description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Refactor Sprint
 
 Coordinates a multi-agent team to plan and execute a complex refactor.

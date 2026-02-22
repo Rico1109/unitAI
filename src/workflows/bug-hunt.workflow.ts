@@ -27,7 +27,6 @@ export const bugHuntSchema = z.object({
   symptoms: z.string().describe('Descrizione dei sintomi del problema'),
   suspected_files: z.array(z.string()).optional().describe('File sospetti da analizzare'),
   autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
-    .default("auto")
     .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string())
     .optional()

@@ -414,9 +414,10 @@ describe('Workflow Integration Tests', () => {
 
       const { executeInitSession } = await import('../../src/workflows/init-session.workflow.js');
 
-      // Should work without autonomyLevel parameter
+      // autonomyLevel is now required; 'auto' resolves to READ_ONLY for init-session
       const result = await executeInitSession({
-        commitCount: 1
+        commitCount: 1,
+        autonomyLevel: 'auto'
       } as any);
 
       expect(result).toBeDefined();

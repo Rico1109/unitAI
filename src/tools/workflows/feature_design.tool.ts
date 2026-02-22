@@ -4,6 +4,8 @@ import { featureDesignWorkflow } from "../../workflows/feature-design.workflow.j
 export const workflowFeatureDesignTool: UnifiedTool = {
   name: "workflow_feature_design",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Feature Design
 
 Orchestrates a multi-agent team to design, implement, and test a feature.

@@ -4,6 +4,8 @@ import { validateLastCommitWorkflow } from "../../workflows/validate-last-commit
 export const workflowValidateLastCommitTool: UnifiedTool = {
   name: "workflow_validate_last_commit",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Validate Last Commit
 
 Analyze a specific git commit for quality, security, and breaking changes.

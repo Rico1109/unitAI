@@ -4,6 +4,8 @@ import { triangulatedReviewWorkflow } from "../../workflows/triangulated-review.
 export const workflowTriangulatedReviewTool: UnifiedTool = {
   name: "workflow_triangulated_review",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Triangulated Review
 
 Perform a 3-way cross-check on critical changes.

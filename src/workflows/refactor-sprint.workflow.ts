@@ -13,7 +13,6 @@ const refactorSprintSchema = z.object({
   scope: z.string().min(1, "Describe the refactor scope"),
   depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
   autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
-    .default("auto")
     .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string()).optional()
 });

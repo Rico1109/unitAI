@@ -4,6 +4,8 @@ import { preCommitValidateWorkflow } from "../../workflows/pre-commit-validate.w
 export const workflowPreCommitValidateTool: UnifiedTool = {
   name: "workflow_pre_commit_validate",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Pre-Commit Validation
 
 Validate staged changes before committing to git.

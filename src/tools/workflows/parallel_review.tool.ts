@@ -4,6 +4,8 @@ import { parallelReviewWorkflow } from "../../workflows/parallel-review.workflow
 export const workflowParallelReviewTool: UnifiedTool = {
   name: "workflow_parallel_review",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Parallel Code Review
 
 Run comprehensive code review using multiple AI backends in parallel.

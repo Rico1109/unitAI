@@ -4,6 +4,8 @@ import { initSessionWorkflow } from "../../workflows/init-session.workflow.js";
 export const workflowInitSessionTool: UnifiedTool = {
   name: "workflow_init_session",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Initialize Session
 
 Analyze the current state of the repository to prepare for a development session.

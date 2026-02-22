@@ -4,6 +4,8 @@ import { autoRemediationWorkflow } from "../../workflows/auto-remediation.workfl
 export const workflowAutoRemediationTool: UnifiedTool = {
     name: "workflow_auto_remediation",
     description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Auto Remediation
 
 Generates an autonomous remediation plan using Factory Droid.

@@ -4,6 +4,8 @@ import { bugHuntWorkflow } from "../../workflows/bug-hunt.workflow.js";
 export const workflowBugHuntTool: UnifiedTool = {
     name: "workflow_bug_hunt",
     description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Bug Hunt
 
 Orchestrates a multi-agent investigation to find and analyze bugs based on symptoms.
