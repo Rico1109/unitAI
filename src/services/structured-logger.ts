@@ -7,6 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { CONFIG } from '../config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -694,8 +695,8 @@ export class WorkflowLogger {
  * Singleton instance
  */
 export const structuredLogger = new StructuredLogger({
-  minLevel: process.env.LOG_LEVEL === 'debug' ? LogLevel.DEBUG : LogLevel.INFO,
-  enableConsole: process.env.LOG_TO_CONSOLE === 'true'
+  minLevel: ({ debug: LogLevel.DEBUG, info: LogLevel.INFO, warn: LogLevel.WARN, error: LogLevel.ERROR })[CONFIG.logging.level] ?? LogLevel.INFO,
+  enableConsole: CONFIG.logging.toConsole
 });
 
 /**

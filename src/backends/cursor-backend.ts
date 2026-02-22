@@ -5,6 +5,7 @@ import { sanitizePrompt, validatePromptNotEmpty } from "../utils/security/prompt
 import { validateFilePaths } from "../utils/security/pathValidator.js";
 import { logger } from "../utils/logger.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import { CONFIG } from "../config.js";
 
 export class CursorBackend implements IBackendExecutor {
   readonly name = BACKENDS.CURSOR;
@@ -37,8 +38,8 @@ export class CursorBackend implements IBackendExecutor {
     if (autoApprove) {
       // SAFEGUARD: Only allow autoApprove if strict conditions are met
       const isHighAutonomy = autonomyLevel === AutonomyLevel.HIGH;
-      const isExplicitlyAllowed = process.env.UNITAI_ALLOW_AUTO_APPROVE === "true";
-      const isNotProduction = process.env.NODE_ENV !== "production";
+      const isExplicitlyAllowed = CONFIG.security.allowAutoApprove;
+      const isNotProduction = !CONFIG.runtime.isProduction;
 
       if (isHighAutonomy && isExplicitlyAllowed && isNotProduction) {
         args.push(CLI.FLAGS.CURSOR.FORCE);

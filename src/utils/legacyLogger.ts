@@ -8,6 +8,7 @@
  */
 import { structuredLogger, LogCategory } from '../services/structured-logger.js';
 import { LOG_PREFIX } from '../constants.js';
+import { CONFIG } from '../config.js';
 
 /**
  * Detect component name from stack trace for better log categorization
@@ -66,7 +67,7 @@ export const logger = {
   },
 
   debug: (message: string, ...args: any[]) => {
-    if (process.env.DEBUG) {
+    if (CONFIG.logging.debug || CONFIG.logging.level === "debug") {
       // Preserve original console output
       console.error(`${LOG_PREFIX} [DEBUG] ${message}`, ...args);
 

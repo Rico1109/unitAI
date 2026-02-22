@@ -3,6 +3,7 @@ import { AI_MODELS, BACKENDS, ERROR_MESSAGES } from "../constants.js";
 import { executeAIClient } from "../services/ai-executor.js";
 import type { UnifiedTool, ToolExecutionContext } from "./registry.js";
 import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import { CONFIG } from "../config.js";
 
 // const droidModels = [AI_MODELS.DROID.PRIMARY] as const;
 
@@ -76,14 +77,14 @@ export const droidTool: UnifiedTool = {
       }
 
       // Check 2: NEVER allow in production environment
-      if (process.env.NODE_ENV === "production") {
+      if (CONFIG.runtime.isProduction) {
         throw new Error(
           "Permission bypass not allowed in production environment"
         );
       }
 
       // Check 3: Require explicit opt-in via environment variable
-      if (process.env.UNITAI_ALLOW_PERMISSION_BYPASS !== "true") {
+      if (!CONFIG.security.allowPermissionBypass) {
         throw new Error(
           "Permission bypass requires UNITAI_ALLOW_PERMISSION_BYPASS=true environment variable"
         );

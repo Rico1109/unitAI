@@ -9,11 +9,13 @@
 
 import { UnitAIServer } from "./server.js";
 import { logger } from "./utils/logger.js";
+import { validateConfig } from "./config.js";
 
 /**
  * Start the server
  */
 export async function startServer() {
+  validateConfig();
   logger.info("Starting Unified AI MCP Tool server...");
 
   const server = new UnitAIServer();

@@ -21,6 +21,11 @@ const mocks = vi.hoisted(() => ({
   metricsDb: {},
   recordMetric: vi.fn(),
   validateFilePaths: vi.fn(paths => paths.map(p => `/abs/${p}`)),
+  config: {
+    security: { allowAutoApprove: false, allowPermissionBypass: false },
+    runtime: { isProduction: false, isDevelopment: true, env: 'development' },
+    logging: { level: 'info', toConsole: false, debug: false },
+  },
 }));
 
 // Mock dependencies
@@ -48,6 +53,12 @@ vi.mock('../../src/utils/cli/commandExecutor.js', () => ({
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({
   logger: mocks.logger
+}));
+
+// Mock config module (CONFIG is a frozen const, must be mocked at module level)
+vi.mock('../../src/config.js', () => ({
+  CONFIG: mocks.config,
+  validateConfig: vi.fn(),
 }));
 
 // Mock pathValidator (to avoid FS access)
@@ -103,9 +114,9 @@ describe('AIExecutor', () => {
     });
 
     it('should include attachments, force and output format flags', async () => {
-      // Set up environment for auto-approve safeguards
-      process.env.NODE_ENV = 'development';
-      process.env.UNITAI_ALLOW_AUTO_APPROVE = 'true';
+      // Set up config for auto-approve safeguards
+      mocks.config.security.allowAutoApprove = true;
+      mocks.config.runtime.isProduction = false;
 
       await executeAIClient({
         backend: BACKENDS.CURSOR,
@@ -125,14 +136,14 @@ describe('AIExecutor', () => {
       expect(args).toContain('json');
 
       // Clean up
-      delete process.env.UNITAI_ALLOW_AUTO_APPROVE;
-      delete process.env.NODE_ENV;
+      mocks.config.security.allowAutoApprove = false;
+      mocks.config.runtime.isProduction = false;
     });
 
     it('should block auto-approve when safeguards are not met', async () => {
-      // Set up production environment (should block auto-approve)
-      process.env.NODE_ENV = 'production';
-      process.env.UNITAI_ALLOW_AUTO_APPROVE = 'true';
+      // Set up production config (should block auto-approve)
+      mocks.config.security.allowAutoApprove = true;
+      mocks.config.runtime.isProduction = true;
 
       await executeAIClient({
         backend: BACKENDS.CURSOR,
@@ -157,8 +168,8 @@ describe('AIExecutor', () => {
       );
 
       // Clean up
-      delete process.env.UNITAI_ALLOW_AUTO_APPROVE;
-      delete process.env.NODE_ENV;
+      mocks.config.security.allowAutoApprove = false;
+      mocks.config.runtime.isProduction = false;
     });
   });
 
