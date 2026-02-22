@@ -10,6 +10,7 @@ import type {
 } from "../domain/workflows/types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
+import { getRoleBackend } from '../config/config.js';
 
 /**
  * Zod Schema for parallel-review workflow
@@ -18,8 +19,9 @@ const parallelReviewSchema = z.object({
   files: z.array(z.string()).describe("Files to analyze"),
   focus: z.enum(["architecture", "security", "performance", "quality", "all"])
     .optional().default("all").describe("Analysis focus area"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-    .optional().describe("Autonomy level for workflow operations (default: read-only)"),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   strategy: z.enum(["standard", "double-check"])
     .optional()
     .default("standard")
@@ -40,6 +42,12 @@ export async function executeParallelReview(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { files, focus, strategy = "standard", backendOverrides, attachments = [] } = params;
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as import('../utils/security/permissionManager.js').AutonomyLevel) ?? 'read-only' as any;
+  // For double-check strategy, minimum effective level is MEDIUM; take the higher of the two
+  const levelOrder = ['read-only', 'low', 'medium', 'high'];
+  const strategyMin = strategy === 'double-check' ? 'medium' : 'read-only';
+  const effectiveLevel = levelOrder.indexOf(level) >= levelOrder.indexOf(strategyMin) ? level : strategyMin as any;
 
   // Setup structured logging
   const workflowId = generateWorkflowId();
@@ -65,59 +73,22 @@ export async function executeParallelReview(
   const promptBuilder = (backend: string): string => {
     const basePrompt = buildCodeReviewPrompt(files, focus as ReviewFocus);
 
-    // Customization for specific backends
-    switch (backend) {
-      case BACKENDS.GEMINI:
-        return `${basePrompt}
+    // Role-based prompt customization — respects config roles instead of hardcoded backend names
+    const architectBackend = getRoleBackend('architect');
+    const implementerBackend = getRoleBackend('implementer');
+    const testerBackend = getRoleBackend('tester');
 
-As Gemini, provide an in-depth analysis with particular attention to:
-- Architettura e design patterns
-- Long-term impact of changes
-- Scalability considerations
-- Software engineering best practices
-`;
-
-
-      case BACKENDS.CURSOR:
-        return `${basePrompt}
-
-As Cursor Agent, generate a detailed refactoring plan:
-- Highlight medium-term technical risks
-- Suggest surgical patches with minimal context
-- Prioritize interventions based on impact
-- Propose tests to add
-`;
-      case BACKENDS.DROID:
-        return `${basePrompt}
-
-As Factory Droid, act as an autonomous verifier:
-- Evaluate if previous suggestions are sufficient
-- Identify any operational gaps
-- Design a multi-step remediation plan
-- List final validation checklists
-`;
-
-      case BACKENDS.ROVODEV:
-        return `${basePrompt}
-
-As Rovo Dev, act as a practical implementer:
-- Provide ready-to-use code snippets
-- Identify missing dependencies
-- Suggest immediate improvements
-`;
-
-      case BACKENDS.QWEN:
-        return `${basePrompt}
-
-As Qwen, provide a logical and structured analysis:
-- Verify code consistency
-- Identify unhandled edge cases
-- Suggest algorithmic optimizations
-`;
-
-      default:
-        return basePrompt;
+    if (backend === architectBackend) {
+      return `${basePrompt}\n\nAs architect, provide an in-depth analysis with particular attention to:\n- Architettura e design patterns\n- Long-term impact of changes\n- Scalability considerations\n- Software engineering best practices\n`;
     }
+    if (backend === implementerBackend) {
+      return `${basePrompt}\n\nAs implementer, generate a detailed refactoring plan:\n- Highlight medium-term technical risks\n- Suggest surgical patches with minimal context\n- Prioritize interventions based on impact\n- Propose tests to add\n`;
+    }
+    if (backend === testerBackend) {
+      return `${basePrompt}\n\nAs tester, provide a logical and structured analysis:\n- Verify code consistency\n- Identify unhandled edge cases\n- Suggest algorithmic optimizations\n`;
+    }
+
+    return basePrompt;
   };
 
   // Executing parallel analysis
@@ -153,25 +124,25 @@ As Qwen, provide a logical and structured analysis:
           return {
             attachments,
             outputFormat: "text",
-            autoApprove: strategy === "double-check" // Maps to --force flag
+            autonomyLevel: effectiveLevel
           };
         }
         if (backend === BACKENDS.DROID) {
           return {
             attachments,
-            auto: strategy === "double-check" ? "medium" : "low",
+            autonomyLevel: effectiveLevel,
             outputFormat: "text"
           };
         }
         if (backend === BACKENDS.ROVODEV) {
           return {
-            autoApprove: strategy === "double-check" // Maps to --yolo
+            autonomyLevel: effectiveLevel
           };
         }
         if (backend === BACKENDS.QWEN) {
           return {
             outputFormat: "text",
-            autoApprove: strategy === "double-check" // Maps to -y
+            autonomyLevel: effectiveLevel
           };
         }
         return {};

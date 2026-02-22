@@ -54,7 +54,8 @@ async function estimateDiffTokens(stagedDiff: string): Promise<{ files: string[]
 
 async function generateAutonomousRemediationPlan(
   stagedDiff: string,
-  depth: string
+  depth: string,
+  autonomyLevel?: string
 ): Promise<string> {
   const prompt = `Act as Factory Droid (GLM-4.6) and generate an autonomous remediation plan for this git diff.
 
@@ -79,8 +80,7 @@ Produce a structured plan with:
   return executeAIClient({
     backend,
     prompt,
-    auto: backend === BACKENDS.DROID ? "low" : undefined,
-    autoApprove: backend === BACKENDS.ROVODEV ? true : undefined,
+    autonomyLevel: (autonomyLevel as any),
     outputFormat: "text"
   });
 }
@@ -92,8 +92,9 @@ export const preCommitValidateSchema = z.object({
   depth: z.enum(['quick', 'thorough', 'paranoid'])
     .default('thorough')
     .describe('Validation depth'),
-  autonomyLevel: z.enum(['LOW', 'MEDIUM', 'HIGH', 'AUTONOMOUS'])
-    .default('MEDIUM')
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 export type PreCommitValidateParams = z.infer<typeof preCommitValidateSchema>;
@@ -289,6 +290,9 @@ export async function executePreCommitValidate(
   params: PreCommitValidateParams,
   onProgress?: ProgressCallback
 ): Promise<string> {
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = params.autonomyLevel ?? 'read-only';
+
   onProgress?.('🔍 Reading staged changes...');
 
   const stagedDiff = await getStagedDiff();
@@ -329,7 +333,7 @@ export async function executePreCommitValidate(
   if (params.depth === 'paranoid') {
     onProgress?.('🤖 Generating remediation plan with Droid...');
     try {
-      const remediationPlan = await generateAutonomousRemediationPlan(stagedDiff, params.depth);
+      const remediationPlan = await generateAutonomousRemediationPlan(stagedDiff, params.depth, level);
       remediationSection = `
 ## Autonomous Remediation Plan (Droid/Rovodev)
 

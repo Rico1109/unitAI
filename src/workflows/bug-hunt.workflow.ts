@@ -14,7 +14,7 @@ import type { RunLogEntry } from './utils.js';
 import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
 import { logAudit } from '../services/audit-trail.js';
 import { getDependencies } from '../dependencies.js';
-import { AutonomyLevel } from '../utils/security/permissionManager.js';
+import { AutonomyLevel, OperationType, assertPermission } from '../utils/security/permissionManager.js';
 import { validateFilePath } from '../utils/security/pathValidator.js';
 import { sanitizeUserInput } from '../utils/security/inputSanitizer.js';
 import { existsSync, readFileSync } from 'fs';
@@ -26,8 +26,9 @@ import { join } from 'path';
 export const bugHuntSchema = z.object({
   symptoms: z.string().describe('Descrizione dei sintomi del problema'),
   suspected_files: z.array(z.string()).optional().describe('File sospetti da analizzare'),
-  autonomyLevel: z.nativeEnum(AutonomyLevel)
-    .default(AutonomyLevel.MEDIUM),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string())
     .optional()
     .describe('File aggiuntivi da allegare alle analisi (es. log)'),
@@ -123,9 +124,13 @@ export async function executeBugHunt(
   const workflowStart = Date.now();
   const scorePhases: RunLogEntry['phases'] = [];
 
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.MEDIUM;
+  assertPermission(level, OperationType.WRITE_FILE, 'this workflow may write files via AI agents');
+
   await logAudit({
     operation: 'bug-hunt-start',
-    autonomyLevel: params.autonomyLevel || AutonomyLevel.MEDIUM,
+    autonomyLevel: level,
     details: `Hunting bug with symptoms: ${symptoms}`
   });
 
@@ -305,7 +310,7 @@ Required output:
 - Remediation steps (max 5) with priorities
 - Automated checks for each step
 - Residual risks`,
-        auto: "medium",
+        autonomyLevel: level,
         attachments,
         outputFormat: "text"
       });
@@ -388,7 +393,7 @@ ${scorecard}
 
   await logAudit({
     operation: 'bug-hunt-complete',
-    autonomyLevel: params.autonomyLevel || 'MEDIUM',
+    autonomyLevel: level,
     details: `Analyzed ${filesToAnalyze.length} files`
   });
 

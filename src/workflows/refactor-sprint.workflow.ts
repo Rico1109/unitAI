@@ -6,13 +6,15 @@ import { executeAIClient } from "../services/ai-executor.js";
 import { getRoleBackend } from "../config/config.js";
 import { getDependencies } from '../dependencies.js';
 import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
-import { AutonomyLevel } from '../utils/security/permissionManager.js';
+import { AutonomyLevel, OperationType, assertPermission } from '../utils/security/permissionManager.js';
 
 const refactorSprintSchema = z.object({
   targetFiles: z.array(z.string()).min(1, "Specify at least one file"),
   scope: z.string().min(1, "Describe the refactor scope"),
   depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
-  autonomyLevel: z.nativeEnum(AutonomyLevel).optional(),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string()).optional()
 });
 
@@ -25,6 +27,10 @@ export async function executeRefactorSprint(
   const { targetFiles, scope, depth, attachments = [] } = params;
   const workflowStart = Date.now();
   const scorePhases: RunLogEntry['phases'] = [];
+
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.MEDIUM;
+  assertPermission(level, OperationType.WRITE_FILE, 'this workflow may write files via AI agents');
 
   const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('refactor-sprint');
@@ -94,7 +100,7 @@ Requested checklist:
 - Detailed steps
 - Suggested commands/tools
 - Completion criteria`,
-      auto: depth === "deep" ? "medium" : "low",
+      autonomyLevel: level,
       outputFormat: "text"
     });
   } catch (error) {

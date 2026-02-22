@@ -7,7 +7,6 @@
  * @module permissionManager
  */
 
-import { getAuditTrail } from '../../services/audit-trail.js';
 
 /**
  * Permission levels for autonomous operations
@@ -116,63 +115,6 @@ export function checkPermission(
   };
 }
 
-/**
- * Throws an error if permission check fails
- *
- * @param currentLevel - Current autonomy level
- * @param operation - Operation type to validate
- * @param context - Optional context for better error messages
- * @throws {Error} If permission check fails
- *
- * @example
- * ```typescript
- * try {
- *   assertPermission(AutonomyLevel.LOW, OperationType.GIT_PUSH, "pushing to remote");
- * } catch (error) {
- *   console.error("Permission denied:", error.message);
- * }
- * ```
- */
-export async function assertPermission(
-  currentLevel: AutonomyLevel,
-  operation: OperationType,
-  context?: string,
-  workflowName?: string,
-  workflowId?: string
-): Promise<void> {
-  const result = checkPermission(currentLevel, operation);
-  
-  // Record audit entry (FAIL-CLOSED: audit failure = operation failure)
-  try {
-    const auditTrail = await getAuditTrail();
-    auditTrail.record({
-      workflowName: workflowName || 'unknown',
-      workflowId,
-      autonomyLevel: currentLevel,
-      operation,
-      target: context || 'unknown',
-      approved: result.allowed,
-      executedBy: 'system',
-      outcome: 'pending',
-      metadata: {
-        requiredLevel: result.requiredLevel,
-        currentLevel: result.currentLevel
-      }
-    });
-  } catch (error) {
-    // SECURITY REQUIREMENT: If audit fails, the entire operation MUST fail
-    // "No record = No action"
-    throw new Error(`CRITICAL: Audit trail failure - operation aborted. ${error instanceof Error ? error.message : String(error)}`);
-  }
-  
-  if (!result.allowed) {
-    const contextMsg = context ? ` (${context})` : "";
-    throw new Error(
-      `Permission denied${contextMsg}: ${result.reason}. ` +
-      `Increase autonomy level to '${result.requiredLevel}' or higher.`
-    );
-  }
-}
 
 /**
  * Gets the default autonomy level for workflows
@@ -209,125 +151,62 @@ export function getAllowedOperations(level: AutonomyLevel): OperationType[] {
     .map(([operation, _]) => operation as OperationType);
 }
 
+
 /**
- * Permission-aware Git operation wrapper
+ * Maps workflow names to their minimum required autonomy level.
+ * Used when autonomyLevel is "auto" to resolve to the correct concrete level.
  */
-export class GitOperations {
-  constructor(private autonomyLevel: AutonomyLevel) {}
-
-  /**
-   * Checks if Git read operations are allowed
-   */
-  canRead(): boolean {
-    return checkPermission(this.autonomyLevel, OperationType.GIT_READ).allowed;
-  }
-
-  /**
-   * Checks if Git commit operations are allowed
-   */
-  canCommit(): boolean {
-    return checkPermission(this.autonomyLevel, OperationType.GIT_COMMIT).allowed;
-  }
-
-  /**
-   * Checks if Git push operations are allowed
-   */
-  canPush(): boolean {
-    return checkPermission(this.autonomyLevel, OperationType.GIT_PUSH).allowed;
-  }
-
-  /**
-   * Asserts Git commit permission or throws
-   */
-  async assertCommit(context?: string, workflowName?: string, workflowId?: string): Promise<void> {
-    await assertPermission(this.autonomyLevel, OperationType.GIT_COMMIT, context, workflowName, workflowId);
-  }
-
-  /**
-   * Asserts Git push permission or throws
-   */
-  async assertPush(context?: string, workflowName?: string, workflowId?: string): Promise<void> {
-    await assertPermission(this.autonomyLevel, OperationType.GIT_PUSH, context, workflowName, workflowId);
-  }
-}
+export const AUTO_LEVEL_MAP: Record<string, AutonomyLevel> = {
+  'parallel-review':      AutonomyLevel.READ_ONLY,
+  'validate-last-commit': AutonomyLevel.READ_ONLY,
+  'init-session':         AutonomyLevel.READ_ONLY,
+  'pre-commit-validate':  AutonomyLevel.READ_ONLY,
+  'triangulated-review':  AutonomyLevel.READ_ONLY,
+  'overthinker':          AutonomyLevel.LOW,
+  'bug-hunt':             AutonomyLevel.MEDIUM,
+  'feature-design':       AutonomyLevel.MEDIUM,
+  'auto-remediation':     AutonomyLevel.MEDIUM,
+  'refactor-sprint':      AutonomyLevel.MEDIUM,
+};
 
 /**
- * Permission-aware file operation wrapper
- */
-export class FileOperations {
-  constructor(private autonomyLevel: AutonomyLevel) {}
-
-  /**
-   * Checks if file read operations are allowed
-   */
-  canRead(): boolean {
-    return checkPermission(this.autonomyLevel, OperationType.READ_FILE).allowed;
-  }
-
-  /**
-   * Checks if file write operations are allowed
-   */
-  canWrite(): boolean {
-    return checkPermission(this.autonomyLevel, OperationType.WRITE_FILE).allowed;
-  }
-
-  /**
-   * Asserts file write permission or throws
-   */
-  async assertWrite(context?: string, workflowName?: string, workflowId?: string): Promise<void> {
-    await assertPermission(this.autonomyLevel, OperationType.WRITE_FILE, context, workflowName, workflowId);
-  }
-}
-
-/**
- * Creates a PermissionManager instance for a given autonomy level
- */
-export class PermissionManager {
-  public git: GitOperations;
-  public file: FileOperations;
-
-  constructor(private autonomyLevel: AutonomyLevel = AutonomyLevel.READ_ONLY) {
-    this.git = new GitOperations(autonomyLevel);
-    this.file = new FileOperations(autonomyLevel);
-  }
-
-  /**
-   * Gets current autonomy level
-   */
-  getLevel(): AutonomyLevel {
-    return this.autonomyLevel;
-  }
-
-  /**
-   * Checks if an operation is allowed
-   */
-  check(operation: OperationType): PermissionResult {
-    return checkPermission(this.autonomyLevel, operation);
-  }
-
-  /**
-   * Asserts an operation is allowed or throws
-   */
-  async assert(operation: OperationType, context?: string, workflowName?: string, workflowId?: string): Promise<void> {
-    await assertPermission(this.autonomyLevel, operation, context, workflowName, workflowId);
-  }
-
-  /**
-   * Gets all allowed operations at current level
-   */
-  getAllowedOperations(): OperationType[] {
-    return getAllowedOperations(this.autonomyLevel);
-  }
-}
-
-/**
- * Factory function to create PermissionManager instances
+ * Resolves "auto" to the minimum concrete AutonomyLevel for a given workflow.
  *
- * @param level - Autonomy level (defaults to READ_ONLY)
- * @returns PermissionManager instance
+ * @param level - The autonomy level (concrete or "auto")
+ * @param workflowName - Name of the workflow being executed
+ * @returns Concrete AutonomyLevel
  */
-export function createPermissionManager(
-  level?: AutonomyLevel
-): PermissionManager {
-  return new PermissionManager(level || getDefaultAutonomyLevel());
+export function resolveAutonomyLevel(
+  level: AutonomyLevel | 'auto',
+  workflowName: string
+): AutonomyLevel {
+  if (level !== 'auto') return level;
+  return AUTO_LEVEL_MAP[workflowName] ?? AutonomyLevel.MEDIUM;
 }
+
+/**
+ * Asserts that an operation is permitted at the given autonomy level.
+ * Throws an error with a helpful message if not allowed.
+ *
+ * @param level - The current autonomy level
+ * @param operation - The operation to check
+ * @param context - Optional human-readable context for the error message
+ * @throws Error if permission is denied
+ */
+export function assertPermission(
+  level: AutonomyLevel,
+  operation: OperationType,
+  context?: string
+): void {
+  const result = checkPermission(level, operation);
+  if (!result.allowed) {
+    throw new Error(
+      `Permission denied${context ? ` (${context})` : ''}: ${result.reason}. ` +
+      `Grant '${result.requiredLevel}' or higher autonomy level to proceed.`
+    );
+  }
+}
+
+
+
+

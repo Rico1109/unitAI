@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { formatWorkflowOutput, formatScorecard, appendRunLog } from "./utils.js";
 import type { RunLogEntry } from "./utils.js";
-import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import { AutonomyLevel, OperationType, assertPermission } from "../utils/security/permissionManager.js";
 import { executeAIClient } from "../services/ai-executor.js";
 import { getRoleBackend } from "../config/config.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
@@ -28,8 +28,9 @@ const featureDesignSchema = z.object({
   testType: z.enum(["unit", "integration", "e2e"])
     .optional().default("unit")
     .describe("Type of tests to generate"),
-  autonomyLevel: z.nativeEnum(AutonomyLevel)
-    .optional().describe("Autonomy level for workflow operations (default: read-only)"),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   validationBackends: z.array(z.enum(["ask-gemini", "cursor-agent", "droid"]))
     .optional()
     .describe("Additional backends to validate the generated plan"),
@@ -146,7 +147,9 @@ export async function executeFeatureDesign(
   } = params;
   const featureDescription = sanitizeUserInput(rawFeatureDescription);
   const workflowStart = Date.now();
-  const autonomyLevel = params.autonomyLevel || AutonomyLevel.READ_ONLY;
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const autonomyLevel = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.MEDIUM;
+  assertPermission(autonomyLevel, OperationType.WRITE_FILE, 'this workflow may write files via AI agents');
 
   onProgress?.(`🎯 Starting feature design workflow for: ${featureDescription}`);
 
@@ -284,7 +287,7 @@ export async function executeFeatureDesign(
           prompt: `Feature: ${featureDescription}\n\nTarget files: ${targetFiles.join(", ")}\n\nContext (if available):\n${context || "N/A"}\n\nGenerate concrete implementation suggestions (patch outline, risks, recommended tests).`,
           attachments: attachments.length ? attachments : targetFiles.slice(0, 3),
           outputFormat: "text",
-          autoApprove: false
+          autonomyLevel
         });
         finalOutput += `\n## Implementer Fallback Suggestions\n\n${fallbackPlan}\n\n---\n\n`;
       } catch (err) {

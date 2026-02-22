@@ -2,6 +2,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { ERROR_MESSAGES } from "../constants.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { resolveAutonomyLevel } from "../utils/security/permissionManager.js";
 
 /**
  * Tool execution context - provides requestId, correlationId and progress callback
@@ -135,6 +136,14 @@ export async function executeTool(
   // Validate arguments
   try {
     const validatedArgs = tool.zodSchema.parse(args);
+
+    // Resolve "auto" autonomy level to concrete level before calling workflow
+    if ('autonomyLevel' in validatedArgs) {
+      validatedArgs.autonomyLevel = resolveAutonomyLevel(
+        validatedArgs.autonomyLevel ?? 'auto',
+        name
+      );
+    }
 
     // Simple approach: always pass both, tool can use what it needs
     // Legacy tools will receive (args, onProgress) where second param is a function

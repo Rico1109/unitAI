@@ -59,8 +59,10 @@ vi.mock('../../src/utils/security/pathValidator.js', () => ({
 // Import subject under test
 import {
   executeAIClient,
+  transformOptionsForBackend,
   AIExecutionOptions
 } from '../../src/services/ai-executor.js';
+import { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 
 describe('AIExecutor', () => {
   beforeEach(() => {
@@ -185,7 +187,8 @@ describe('AIExecutor', () => {
 
       const args = mocks.executeCommand.mock.calls[0][1];
       expect(args).toContain('--auto');
-      expect(args).toContain('medium');
+      // autonomyLevel: 'high' takes priority over explicit auto: 'medium'
+      expect(args).toContain('high');
       expect(args).toContain('--session-id');
       expect(args).toContain('session-123');
       expect(args).toContain('--skip-permissions-unsafe');
@@ -228,6 +231,63 @@ describe('AIExecutor', () => {
       await expect(
         executeAIClient({ backend: BACKENDS.CURSOR, prompt: '' })
       ).rejects.toThrow();
+    });
+  });
+
+  describe('transformOptionsForBackend — autonomyLevel mapping', () => {
+    const base: AIExecutionOptions = { backend: BACKENDS.DROID, prompt: 'test' };
+
+    it('maps HIGH autonomyLevel → auto: "high" for Droid', () => {
+      const result = transformOptionsForBackend(
+        { ...base, autonomyLevel: AutonomyLevel.HIGH },
+        BACKENDS.DROID
+      );
+      expect((result as any).auto).toBe('high');
+      expect((result as any).autonomyLevel).toBeUndefined();
+    });
+
+    it('maps MEDIUM autonomyLevel → auto: "medium" for Droid', () => {
+      const result = transformOptionsForBackend(
+        { ...base, autonomyLevel: AutonomyLevel.MEDIUM },
+        BACKENDS.DROID
+      );
+      expect((result as any).auto).toBe('medium');
+    });
+
+    it('maps READ_ONLY autonomyLevel → auto: "low" for Droid', () => {
+      const result = transformOptionsForBackend(
+        { ...base, autonomyLevel: AutonomyLevel.READ_ONLY },
+        BACKENDS.DROID
+      );
+      expect((result as any).auto).toBe('low');
+    });
+
+    it('maps MEDIUM autonomyLevel → autoApprove: true for Cursor', () => {
+      const result = transformOptionsForBackend(
+        { ...base, backend: BACKENDS.CURSOR, autonomyLevel: AutonomyLevel.MEDIUM },
+        BACKENDS.CURSOR
+      );
+      expect((result as any).autoApprove).toBe(true);
+      // autonomyLevel is kept so backend executor can use it for safeguard checks
+      expect((result as any).autonomyLevel).toBe(AutonomyLevel.MEDIUM);
+    });
+
+    it('maps READ_ONLY autonomyLevel → autoApprove: false for Cursor', () => {
+      const result = transformOptionsForBackend(
+        { ...base, backend: BACKENDS.CURSOR, autonomyLevel: AutonomyLevel.READ_ONLY },
+        BACKENDS.CURSOR
+      );
+      expect((result as any).autoApprove).toBe(false);
+    });
+
+    it('strips autonomyLevel from Gemini options', () => {
+      const result = transformOptionsForBackend(
+        { ...base, backend: BACKENDS.GEMINI, autonomyLevel: AutonomyLevel.HIGH },
+        BACKENDS.GEMINI
+      );
+      expect((result as any).autonomyLevel).toBeUndefined();
+      expect((result as any).auto).toBeUndefined();
+      expect((result as any).autoApprove).toBeUndefined();
     });
   });
 

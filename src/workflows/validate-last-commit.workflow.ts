@@ -9,6 +9,7 @@ import type {
 } from "../domain/workflows/types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
+import { getRoleBackend } from '../config/config.js';
 
 /**
  * Zod schema for the validate-last-commit workflow
@@ -16,8 +17,9 @@ import { getDependencies } from '../dependencies.js';
 const validateLastCommitSchema = z.object({
   commit_ref: z.string().optional().default("HEAD")
     .describe("Riferimento al commit da validare"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)")
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 /**
@@ -73,58 +75,22 @@ Provide a detailed analysis including:
 6. Overall verdict (APPROVED/REJECTED/REVISION NEEDED)
 `;
 
-    // Customization for specific backends
-    switch (backend) {
-      case BACKENDS.GEMINI:
-        return `${basePrompt}
+    // Role-based prompt customization — respects config roles instead of hardcoded backend names
+    const architectBackend = getRoleBackend('architect');
+    const implementerBackend = getRoleBackend('implementer');
+    const testerBackend = getRoleBackend('tester');
 
-As Gemini, provide an architectural analysis focusing on:
-- Impact of changes on existing architecture
-- Long-term scalability and maintainability
-- Consistency with project design patterns
-- Integration considerations with other components
-`;
-
-      case BACKENDS.CURSOR:
-        return `${basePrompt}
-
-As Cursor Agent, provide a technical analysis focusing on:
-- Code correctness and potential bugs
-- Algorithm efficiency and complexity
-- Error handling and edge cases
-- Compliance with language conventions
-`;
-
-      case BACKENDS.DROID:
-        return `${basePrompt}
-
-As Factory Droid, verify the practical implementation:
-- Correctness of business logic
-- Error handling
-- Compliance with project standards
-`;
-
-      case BACKENDS.ROVODEV:
-        return `${basePrompt}
-
-As Rovo Dev, analyze the operational impact:
-- Dependencies introduced
-- Deployment complexity
-- Regression risks
-`;
-
-      case BACKENDS.QWEN:
-        return `${basePrompt}
-
-As Qwen, provide a logical analysis:
-- Consistency with requirements
-- Missing edge cases
-- Possible optimizations
-`;
-
-      default:
-        return basePrompt;
+    if (backend === architectBackend) {
+      return `${basePrompt}\n\nAs architect, provide an architectural analysis focusing on:\n- Impact of changes on existing architecture\n- Long-term scalability and maintainability\n- Consistency with project design patterns\n- Integration considerations with other components\n`;
     }
+    if (backend === implementerBackend) {
+      return `${basePrompt}\n\nAs implementer, verify the practical implementation:\n- Correctness of business logic\n- Error handling\n- Compliance with project standards\n`;
+    }
+    if (backend === testerBackend) {
+      return `${basePrompt}\n\nAs tester, provide a logical analysis:\n- Consistency with requirements\n- Missing edge cases\n- Possible optimizations\n`;
+    }
+
+    return basePrompt;
   };
 
   // Execute parallel analysis

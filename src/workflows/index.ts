@@ -129,7 +129,7 @@ export const workflowSchemas = {
   }),
   
   "init-session": z.object({
-    autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
+    autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"]).default("auto"),
     commitCount: z.number().int().min(1).max(50).optional()
   }).describe("Optional parameters for init-session"),
   
@@ -158,26 +158,25 @@ export const workflowSchemas = {
       .describe("Additional files to attach to the analysis (log, dump, etc.)"),
     backendOverrides: z.array(z.string()).optional()
       .describe("Manual override of AI backends"),
-    autonomyLevel: z.enum(["LOW", "MEDIUM", "HIGH", "AUTONOMOUS"]).optional()
+    autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"]).default("auto")
   }),
   "triangulated-review": z.object({
     files: z.array(z.string()).describe("Files to analyze"),
     goal: z.enum(["bugfix", "refactor"]).optional().default("refactor")
       .describe("Main objective of the review"),
-    autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-      .optional()
+    autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"]).default("auto")
   }),
   "auto-remediation": z.object({
     symptoms: z.string().describe("Description of the bug to fix"),
     maxActions: z.number().int().min(1).max(10).optional()
       .describe("Maximum number of steps in the plan"),
-    autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional()
+    autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"]).default("auto")
   }),
   "refactor-sprint": z.object({
     targetFiles: z.array(z.string()).describe("Files to refactor"),
     scope: z.string().describe("Description of the scope"),
     depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
-    autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional()
+    autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"]).default("auto")
   }),
   "overthinker": z.object({
     initialPrompt: z.string().describe("The initial raw idea or request from the user"),

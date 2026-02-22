@@ -12,10 +12,11 @@ export type ProgressCallback = (message: string) => void;
  */
 export interface BaseWorkflowParams {
   /**
-   * Autonomy level for workflow operations
-   * @default AutonomyLevel.READ_ONLY
+   * Autonomy level for workflow operations.
+   * Use "auto" to let unitAI resolve the minimum required level for the workflow.
+   * @default "auto"
    */
-  autonomyLevel?: AutonomyLevel;
+  autonomyLevel?: AutonomyLevel | 'auto';
   /**
    * Override of AI backends to use during execution
    */

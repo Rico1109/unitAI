@@ -14,8 +14,9 @@ const triangulatedReviewSchema = z.object({
   goal: z.enum(["bugfix", "refactor"])
     .optional()
     .default("refactor"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-    .optional()
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 export type TriangulatedReviewParams = z.infer<typeof triangulatedReviewSchema>;
@@ -25,6 +26,8 @@ export async function executeTriangulatedReview(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { files, goal } = params;
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as import('../utils/security/permissionManager.js').AutonomyLevel) ?? 'read-only' as any;
   const workflowStart = Date.now();
   const scorePhases: RunLogEntry['phases'] = [];
 
@@ -90,7 +93,7 @@ Return:
 - Operational steps (max 5)
 - Metrics/checks for each step
 - Residual risks`,
-      auto: "low",
+      autonomyLevel: level,
       outputFormat: "text",
       trustedSource: true  // Internal workflow - skip prompt blocking
     });

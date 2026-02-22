@@ -15,6 +15,7 @@ import { validateFilePaths } from "../utils/security/pathValidator.js";
  */
 export interface AIExecutionOptions extends BackendExecutionOptions {
   backend: string;
+  autonomyLevel?: import('../utils/security/permissionManager.js').AutonomyLevel;
 }
 
 /**
@@ -58,27 +59,49 @@ export function transformOptionsForBackend(
   const { attachments = [], prompt, ...rest } = options;
 
   // Transform autonomy params based on backend type
+  // If autonomyLevel is provided, derive backend-specific autonomy from it
   const normalizedBackend = normalizeBackendName(targetBackend);
   let result = rest;
   if (normalizedBackend === normalizeBackendName(BACKENDS.DROID)) {
-    // Droid uses 'auto' field, remove 'autoApprove'
-    const { autoApprove: _aa, auto, ...droidRest } = rest;
-    const transformedAuto = (_aa ?? false) ? "high" : (auto ?? "low");
+    // Droid uses 'auto' field, remove 'autoApprove' and 'autonomyLevel'
+    const { autoApprove: _aa, auto, autonomyLevel, ...droidRest } = rest as any;
+    let transformedAuto: string;
+    if (autonomyLevel != null) {
+      // Derive from autonomyLevel: HIGH→high, MEDIUM→medium, else→low
+      transformedAuto = autonomyLevel === 'high' ? 'high'
+                      : autonomyLevel === 'medium' ? 'medium'
+                      : 'low';
+    } else {
+      transformedAuto = (_aa ?? false) ? "high" : (auto ?? "low");
+    }
     result = { ...droidRest, auto: transformedAuto };
   } else if (
     normalizedBackend === normalizeBackendName(BACKENDS.CURSOR) ||
     normalizedBackend === normalizeBackendName(BACKENDS.ROVODEV) ||
     normalizedBackend === normalizeBackendName(BACKENDS.QWEN)
   ) {
-    // Cursor/RovoDev/Qwen use 'autoApprove' field, remove 'auto'
-    const { auto, autoApprove, ...cursorRest } = rest;
-    // Only transform autoApprove if auto is present, otherwise preserve existing autoApprove
-    const transformedAutoApprove = auto !== undefined ? (auto === "high") : (autoApprove ?? false);
-    result = { ...cursorRest, autoApprove: transformedAutoApprove };
+    // Cursor/RovoDev/Qwen use 'autoApprove' field, remove 'auto' but keep 'autonomyLevel'
+    // (backend executors read autonomyLevel directly for safeguard checks)
+    const { auto, autoApprove, autonomyLevel, ...cursorRest } = rest as any;
+    let transformedAutoApprove: boolean;
+    if (autonomyLevel != null) {
+      // MEDIUM or HIGH → autoApprove: true
+      transformedAutoApprove = autonomyLevel === 'medium' || autonomyLevel === 'high';
+    } else if (auto !== undefined) {
+      transformedAutoApprove = auto === "high";
+    } else {
+      transformedAutoApprove = autoApprove ?? false;
+    }
+    // Keep autonomyLevel so backend executors can use it for safeguard checks
+    result = { ...cursorRest, autoApprove: transformedAutoApprove, autonomyLevel };
   } else if (normalizedBackend === normalizeBackendName(BACKENDS.GEMINI)) {
-    // Gemini doesn't support autonomy params, remove both
-    const { auto: _a, autoApprove: _aa, ...geminiRest } = rest;
+    // Gemini doesn't support autonomy params, remove all
+    const { auto: _a, autoApprove: _aa, autonomyLevel: _al, ...geminiRest } = rest as any;
     result = { ...geminiRest };
+  } else {
+    // For unknown backends, strip autonomyLevel to avoid passing unknown flags
+    const { autonomyLevel: _al, ...otherRest } = rest as any;
+    result = otherRest;
   }
 
   // If target backend doesn't support files via CLI flag but has attachments,

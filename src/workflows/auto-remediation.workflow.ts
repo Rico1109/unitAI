@@ -5,13 +5,15 @@ import { executeAIClient } from "../services/ai-executor.js";
 import { getRoleBackend } from "../config/config.js";
 import { getDependencies } from '../dependencies.js';
 import { selectOptimalBackend, createTaskCharacteristics } from './model-selector.js';
-import { AutonomyLevel } from '../utils/security/permissionManager.js';
+import { AutonomyLevel, OperationType, assertPermission } from '../utils/security/permissionManager.js';
 import { sanitizeUserInput } from '../utils/security/inputSanitizer.js';
 
 const autoRemediationSchema = z.object({
   symptoms: z.string().min(1, "Describe the problem symptoms"),
   maxActions: z.number().int().min(1).max(10).optional().default(5),
-  autonomyLevel: z.nativeEnum(AutonomyLevel).optional(),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string()).optional()
 });
 
@@ -23,6 +25,10 @@ export async function executeAutoRemediation(
 ): Promise<string> {
   const { symptoms: rawSymptoms, maxActions, attachments = [] } = params;
   const symptoms = sanitizeUserInput(rawSymptoms);
+
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.MEDIUM;
+  assertPermission(level, OperationType.WRITE_FILE, 'this workflow may write files via AI agents');
 
   onProgress?.("🛠️ Generating auto-remediation plan...");
 
@@ -42,7 +48,7 @@ For each step provide:
 - Expected output
 - Checks/verifications
 - Residual risks`,
-      auto: "medium",
+      autonomyLevel: level,
       attachments,
       outputFormat: "text"
     });

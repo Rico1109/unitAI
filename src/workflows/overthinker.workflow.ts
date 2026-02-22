@@ -27,8 +27,9 @@ const overthinkerSchema = z.object({
     .describe("Filename for the final output (saved under .unitai/ unless absolute path provided)"),
   modelOverride: z.string().optional()
     .describe("Specific model/backend to use for all steps (default: auto)"),
-  autonomyLevel: z.nativeEnum(AutonomyLevel).optional()
-    .describe("Autonomy level for the workflow")
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .default("auto")
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 export type OverthinkerParams = z.infer<typeof overthinkerSchema> & BaseWorkflowParams;
