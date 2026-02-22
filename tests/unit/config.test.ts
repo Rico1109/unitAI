@@ -28,7 +28,6 @@ import {
     getDefaultFallbackOrder,
     getFallbackPriority,
     getWorkflowBackends,
-    filterAvailableBackends,
     loadConfig,
     createConfig,
     invalidateConfigCache,
@@ -199,73 +198,6 @@ describe('config.ts', () => {
             const defaults = [BACKENDS.DROID];
             const backends = getWorkflowBackends('parallel-review', defaults);
             expect(backends).toEqual(defaults);
-        });
-    });
-
-    describe('filterAvailableBackends', () => {
-        it('filters to only available backends', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false); // No config
-
-            const mockCircuitBreaker = {
-                isAvailable: vi.fn()
-                    .mockResolvedValueOnce(true)  // GEMINI available
-                    .mockResolvedValueOnce(false) // QWEN unavailable
-                    .mockResolvedValueOnce(true), // DROID available
-            };
-
-            const backends = [BACKENDS.GEMINI, BACKENDS.QWEN, BACKENDS.DROID];
-            const available = await filterAvailableBackends(
-                backends,
-                mockCircuitBreaker as any
-            );
-
-            expect(available).toEqual([BACKENDS.GEMINI, BACKENDS.DROID]);
-        });
-
-        it('returns all backends if none are available', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
-
-            const mockCircuitBreaker = {
-                isAvailable: vi.fn().mockResolvedValue(false),
-            };
-
-            const backends = [BACKENDS.GEMINI, BACKENDS.QWEN];
-            const available = await filterAvailableBackends(
-                backends,
-                mockCircuitBreaker as any
-            );
-
-            expect(available).toEqual(backends);
-        });
-
-        it('returns all backends when preferAvailable is false', async () => {
-            const mockConfig: UnitAIConfig = {
-                version: '1.0',
-                backends: { enabled: [], detected: [] },
-                roles: { architect: 'gemini', implementer: 'droid', tester: 'qwen' },
-                createdAt: '2026-01-01T00:00:00.000Z',
-                lastModified: '2026-01-01T00:00:00.000Z',
-                preferences: {
-                    preferAvailable: false,
-                    retryWithFallback: true,
-                },
-            };
-
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfig));
-
-            const mockCircuitBreaker = {
-                isAvailable: vi.fn().mockResolvedValue(false),
-            };
-
-            const backends = [BACKENDS.GEMINI, BACKENDS.QWEN];
-            const available = await filterAvailableBackends(
-                backends,
-                mockCircuitBreaker as any
-            );
-
-            expect(available).toEqual(backends);
-            expect(mockCircuitBreaker.isAvailable).not.toHaveBeenCalled();
         });
     });
 

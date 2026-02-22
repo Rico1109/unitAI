@@ -191,14 +191,18 @@ export async function selectParallelBackends(
     const remaining = available.filter(b => !selections.includes(b));
 
     if (remaining.length > 0) {
-      // Simple diversification logic
-      if (selections[0] === BACKENDS.GEMINI || selections[0] === BACKENDS.QWEN) {
-        // If primary is "thinker", add "doer" (Qwen can be both, but prioritize it as secondary to Gemini)
-        const secondary = remaining.find(b => b === BACKENDS.QWEN || b === BACKENDS.DROID);
+      // Role-based diversification — architect vs implementer/tester
+      const architectBackend = getRoleBackend('architect');
+      const implementerBackend = getRoleBackend('implementer');
+      const testerBackend = getRoleBackend('tester');
+
+      if (selections[0] === architectBackend || selections[0] === testerBackend) {
+        // Primary is "thinker" role — add "doer" as complement
+        const secondary = remaining.find(b => b === implementerBackend);
         selections.push(secondary || remaining[0]);
       } else {
-        // If primary is "doer", add "thinker" (Qwen/Gemini)
-        const thinker = remaining.find(b => b === BACKENDS.QWEN || b === BACKENDS.GEMINI);
+        // Primary is "doer" role — add "thinker" as complement
+        const thinker = remaining.find(b => b === architectBackend || b === testerBackend);
         selections.push(thinker || remaining[0]);
       }
     }

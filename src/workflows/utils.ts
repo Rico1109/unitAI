@@ -3,17 +3,11 @@ import path from 'path';
 import os from 'os';
 import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
-import {
-  createPermissionManager,
-  getDefaultAutonomyLevel,
-  type PermissionManager
-} from "../utils/security/permissionManager.js";
 import type {
   ProgressCallback,
   AIAnalysisResult,
   ParallelAnalysisResult,
-  ReviewFocus,
-  BaseWorkflowParams
+  ReviewFocus
 } from "../domain/workflows/types.js";
 import type { AIExecutionOptions } from "../services/ai-executor.js";
 
@@ -273,38 +267,6 @@ export function isFileType(filePath: string, extensions: string[]): boolean {
   const ext = filePath.split(".").pop()?.toLowerCase();
   return ext ? extensions.includes(ext) : false;
 }
-
-/**
- * Creates a PermissionManager from workflow parameters
- *
- * Extracts autonomyLevel from parameters (if present) and creates a PermissionManager
- * with the appropriate level. If not specified, uses the default level (READ_ONLY).
- *
- * @param params - Workflow parameters extending BaseWorkflowParams
- * @returns PermissionManager configured with the appropriate autonomy level
- *
- * @example
- * ```typescript
- * async function myWorkflow(params: MyWorkflowParams) {
- *   const permissions = createWorkflowPermissionManager(params);
- *
- *   // Check permissions before risky operations
- *   if (permissions.git.canCommit()) {
- *     // Execute commit
- *   }
- *
- *   // Or assert that throws error if not allowed
- *   permissions.git.assertPush("pushing to remote");
- * }
- * ```
- */
-export function createWorkflowPermissionManager(
-  params: BaseWorkflowParams
-): PermissionManager {
-  const level = params.autonomyLevel || getDefaultAutonomyLevel();
-  return createPermissionManager(level);
-}
-
 
 
 

@@ -178,7 +178,7 @@ describe('Model Selector', () => {
       expect(new Set(backends).size).toBe(2); // No duplicates
     });
 
-    it('should complement Gemini with Qwen', async () => {
+    it('should complement Gemini (architect) with Droid (implementer)', async () => {
       const task: TaskCharacteristics = {
         complexity: 'high',
         tokenBudget: 50000,
@@ -190,7 +190,7 @@ describe('Model Selector', () => {
 
       const backends = await selectParallelBackends(task, mockCB, 2);
       expect(backends[0]).toBe(BACKENDS.GEMINI);
-      expect(backends[1]).toBe(BACKENDS.QWEN);
+      expect(backends[1]).toBe(BACKENDS.DROID);
     });
 
     it('should select up to 3 backends', async () => {

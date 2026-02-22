@@ -47,7 +47,6 @@ export interface LogEntry {
   duration?: number;              // Milliseconds (for timing)
   workflowId?: string;            // To correlate logs for same workflow
   correlationId?: string;         // For distributed tracing across services
-  parentSpanId?: string;          // For distributed tracing (future)
 }
 
 /**

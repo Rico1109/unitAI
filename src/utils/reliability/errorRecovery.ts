@@ -102,112 +102,7 @@ export function defaultErrorClassifier(error: Error): ErrorType {
 /**
  * Execute operation with retry logic and recovery
  */
-export async function executeWithRecovery<T>(
-  operation: () => Promise<T>,
-  options: {
-    classifier?: ErrorClassifier;
-    strategy?: Partial<RecoveryStrategy>;
-    operationName?: string;
-    onRetry?: (attempt: number, error: Error) => void;
-  } = {}
-): Promise<T> {
-  const classifier = options.classifier || defaultErrorClassifier;
-  const operationName = options.operationName || 'unknown-operation';
 
-  let lastError: Error | null = null;
-  let attempt = 0;
-
-  while (true) {
-    try {
-      attempt++;
-      
-      if (attempt > 1) {
-        structuredLogger.info(
-          LogCategory.SYSTEM,
-          'error-recovery',
-          operationName,
-          `Retry attempt ${attempt}`,
-          { attempt }
-        );
-      }
-
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-      
-      const errorType = classifier(lastError);
-      const strategy = {
-        ...RECOVERY_STRATEGIES[errorType],
-        ...options.strategy
-      };
-
-      structuredLogger.warn(
-        LogCategory.SYSTEM,
-        'error-recovery',
-        operationName,
-        `Operation failed: ${lastError.message}`,
-        {
-          attempt,
-          errorType,
-          strategy: {
-            maxRetries: strategy.maxRetries,
-            willRetry: attempt <= strategy.maxRetries
-          }
-        }
-      );
-
-      // Check if we should retry
-      if (attempt > strategy.maxRetries) {
-        structuredLogger.error(
-          LogCategory.SYSTEM,
-          'error-recovery',
-          operationName,
-          `Max retries (${strategy.maxRetries}) exceeded`,
-          lastError,
-          { errorType, totalAttempts: attempt }
-        );
-        
-        throw lastError;
-      }
-
-      // Call retry callback
-      if (options.onRetry) {
-        options.onRetry(attempt, lastError);
-      }
-
-      // Wait before retry with exponential backoff
-      const backoffIndex = Math.min(attempt - 1, strategy.backoffMs.length - 1);
-      const backoffMs = strategy.backoffMs[backoffIndex];
-
-      if (backoffMs > 0) {
-        structuredLogger.debug(
-          LogCategory.SYSTEM,
-          'error-recovery',
-          operationName,
-          `Waiting ${backoffMs}ms before retry`,
-          { backoffMs, attempt }
-        );
-        
-        await sleep(backoffMs);
-      }
-
-      // Execute fallback action if defined
-      if (strategy.fallbackAction) {
-        try {
-          await strategy.fallbackAction();
-        } catch (fallbackError) {
-          structuredLogger.error(
-            LogCategory.SYSTEM,
-            'error-recovery',
-            operationName,
-            'Fallback action failed',
-            fallbackError as Error
-          );
-        }
-      }
-    }
-  }
-}
 
 /**
  * Circuit breaker states
@@ -470,10 +365,6 @@ export class CircuitBreakerRegistry {
   }
 }
 
-/**
- * Global circuit breaker registry
- */
-export const circuitBreakers = new CircuitBreakerRegistry();
 
 /**
  * Sleep utility

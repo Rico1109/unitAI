@@ -254,32 +254,3 @@ export function getWorkflowBackends(workflowName: string, defaults: string[]): s
     return defaults;
 }
 
-/**
- * Filter backends to only those available (circuit breaker not open)
- * Respects preferences.preferAvailable setting
- */
-export async function filterAvailableBackends(
-    backends: string[],
-    cb: CircuitBreaker
-): Promise<string[]> {
-    const config = loadConfig();
-    const preferAvailable = config?.preferences?.preferAvailable ?? true;
-
-    if (!preferAvailable) {
-        return backends;
-    }
-
-    const availabilityChecks = await Promise.all(
-        backends.map(async (b) => ({
-            backend: b,
-            available: await cb.isAvailable(b)
-        }))
-    );
-
-    const available = availabilityChecks
-        .filter((check) => check.available)
-        .map((check) => check.backend);
-
-    // Return available backends, or all backends if none available
-    return available.length > 0 ? available : backends;
-}

@@ -14,6 +14,5 @@ export {
 
 // Export error recovery utilities
 export {
-    executeWithRecovery,
     ErrorType
 } from './errorRecovery.js';

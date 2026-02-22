@@ -138,6 +138,6 @@ export class UnitAIServer {
      */
     async stop(): Promise<void> {
         logger.info("Stopping server...");
-        closeDependencies();
+        await closeDependencies();
     }
 }
