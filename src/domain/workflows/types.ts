@@ -2,7 +2,38 @@ import { z } from "zod";
 import { AutonomyLevel } from "../../utils/security/permissionManager.js";
 
 /**
- * Callback type for execution progress reporting
+ * Structured progress event. Use with formatProgress() to build
+ * consistent, parseable messages for the ProgressCallback.
+ */
+export interface ProgressEvent {
+  /** Workflow or phase name, e.g. "Phase 1/Prompt Refiner" */
+  step: string;
+  /** Lifecycle position of this event */
+  status: 'start' | 'progress' | 'complete' | 'error';
+  /** Human-readable detail */
+  message?: string;
+  /** Optional machine-readable metadata for future consumers */
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Formats a ProgressEvent into the string expected by ProgressCallback.
+ * Centralises the message format so all workflows emit consistent output.
+ *
+ * @example
+ *   onProgress?.(formatProgress({ step: 'Phase 1', status: 'start' }));
+ *   // → "[start] Phase 1"
+ *   onProgress?.(formatProgress({ step: 'Phase 1', status: 'complete', message: 'done' }));
+ *   // → "[complete] Phase 1: done"
+ */
+export function formatProgress(event: ProgressEvent): string {
+  const base = `[${event.status}] ${event.step}`;
+  return event.message ? `${base}: ${event.message}` : base;
+}
+
+/**
+ * Callback type for execution progress reporting.
+ * Pass the result of formatProgress() for structured, consistent messages.
  */
 export type ProgressCallback = (message: string) => void;
 
@@ -55,36 +86,6 @@ export type ReviewFocus = "architecture" | "security" | "performance" | "quality
  * Validation depth levels
  */
 export type ValidationDepth = "quick" | "thorough" | "paranoid";
-
-/**
- * Parameters for the parallel-review workflow
- */
-export interface ParallelReviewParams extends BaseWorkflowParams {
-  files: string[];
-  focus?: ReviewFocus;
-}
-
-/**
- * Parameters for the pre-commit-validate workflow
- */
-export interface PreCommitValidateParams extends BaseWorkflowParams {
-  depth: ValidationDepth;
-}
-
-/**
- * Parameters for the validate-last-commit workflow
- */
-export interface ValidateLastCommitParams extends BaseWorkflowParams {
-  commit_ref?: string;
-}
-
-/**
- * Parameters for the bug-hunt workflow
- */
-export interface BugHuntParams extends BaseWorkflowParams {
-  symptoms: string;
-  suspected_files?: string[];
-}
 
 /**
  * Result of AI analysis

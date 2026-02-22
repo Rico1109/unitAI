@@ -134,7 +134,7 @@ ${content}
     history.push({ step: "Master Prompt", agent: "Prompt Refiner", content: masterPrompt });
     onProgress?.("✅ Master Prompt generated.");
   } catch (e: unknown) {
-    throw new Error(`Failed in Phase 1: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Overthinker [Phase 1/Prompt Refiner] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Save Master Prompt immediately (to .unitai directory)
@@ -187,7 +187,7 @@ ${content}
     history.push({ step: "Initial Reasoning", agent: "Lead Architect", content: currentThinking });
     onProgress?.("✅ Initial reasoning completed.");
   } catch (e: unknown) {
-     throw new Error(`Failed in Phase 2: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Overthinker [Phase 2/Initial Reasoning] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // ============================================================================ 
@@ -229,7 +229,7 @@ ${content}
       onProgress?.(`✅ Iteration ${i} completed.`);
     } catch (e: unknown) {
       // FAIL-FAST: Phase 3 iteration failure stops the entire workflow
-      throw new Error(`Failed in Phase 3, Iteration ${i}: ${e instanceof Error ? e.message : String(e)}`);
+      throw new Error(`Overthinker [Phase 3/Review iteration ${i}/${iterations}] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -272,7 +272,7 @@ ${content}
     onProgress?.("✅ Final synthesis completed.");
   } catch (e: unknown) {
     // FAIL-FAST: Phase 4 synthesis failure stops the entire workflow
-    throw new Error(`Failed in Phase 4 (Final Consolidation): ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Overthinker [Phase 4/Final Consolidation] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Save to file

@@ -5,7 +5,6 @@ import { generateWorkflowId, structuredLogger } from "../services/structured-log
 import type {
   WorkflowDefinition,
   ProgressCallback,
-  ParallelReviewParams,
   ReviewFocus
 } from "../domain/workflows/types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
@@ -32,6 +31,8 @@ const parallelReviewSchema = z.object({
     .optional()
     .describe("Files to attach to analysis (passed to Cursor/Droid)")
 });
+
+export type ParallelReviewParams = z.infer<typeof parallelReviewSchema>;
 
 /**
  * Executes the parallel review workflow

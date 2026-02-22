@@ -4,8 +4,7 @@ import { getGitCommitInfo, isGitRepository } from "../utils/cli/gitHelper.js";
 import { runParallelAnalysis, formatWorkflowOutput } from "./utils.js";
 import type {
   WorkflowDefinition,
-  ProgressCallback,
-  ValidateLastCommitParams
+  ProgressCallback
 } from "../domain/workflows/types.js";
 import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
@@ -20,6 +19,8 @@ const validateLastCommitSchema = z.object({
   autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
     .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
+
+export type ValidateLastCommitParams = z.infer<typeof validateLastCommitSchema>;
 
 /**
  * Executes the last commit validation workflow

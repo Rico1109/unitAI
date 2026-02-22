@@ -1,11 +1,7 @@
 import { z } from "zod";
 import type {
   WorkflowDefinition,
-  ProgressCallback,
-  ParallelReviewParams,
-  PreCommitValidateParams,
-  ValidateLastCommitParams,
-  BugHuntParams
+  ProgressCallback
 } from "../domain/workflows/types.js";
 
 // Import workflow definitions
