@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { executeWorkflow, smartWorkflowsSchema } from "../workflows/index.js";
+import { resolveAutonomyLevel } from "../utils/security/permissionManager.js";
 import type { ToolExecutionContext } from "./registry.js";
 
 /**
@@ -10,6 +11,17 @@ const executeSmartWorkflow = async (
   context: ToolExecutionContext
 ): Promise<string> => {
   const { workflow, params = {} } = args;
+
+  // Resolve "auto" (or undefined) autonomyLevel before reaching executeWorkflow.
+  // This tool bypasses executeTool() in the registry, so we must replicate
+  // the resolution step here — otherwise assertPermission("auto", ...) crashes.
+  if (params) {
+    params.autonomyLevel = resolveAutonomyLevel(
+      params.autonomyLevel ?? 'auto',
+      workflow
+    );
+  }
+
   const { onProgress } = context;
 
   onProgress?.(`Avvio del workflow: ${workflow}`);
