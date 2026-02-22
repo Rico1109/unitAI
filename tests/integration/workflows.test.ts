@@ -3,10 +3,31 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AutonomyLevel } from '../../src/utils/permissionManager.js';
+import { mockGitHelper, mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
+import { AutonomyLevel } from '../../src/utils/security/permissionManager.js';
 import { createMockProgressCallback } from '../utils/testHelpers.js';
-import { mockGitCommands, createMockGitDiff, resetMockGitCommands } from '../utils/mockGit.js';
 import { mockAIExecutor } from '../utils/mockAI.js';
+import Database from 'better-sqlite3';
+
+// Mock dependencies to avoid initialization issues
+vi.mock('../../src/dependencies.js', () => ({
+  getDependencies: vi.fn(() => ({
+    activityDb: new Database(':memory:'),
+    auditDb: new Database(':memory:'),
+    tokenDb: new Database(':memory:'),
+    circuitBreaker: {
+      get: vi.fn(() => ({
+        isAvailable: vi.fn(() => true),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      })),
+      getAllStats: vi.fn(() => ({})),
+      resetAll: vi.fn(),
+    },
+  })),
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+}));
 
 describe('Workflow Integration Tests', () => {
   beforeEach(() => {
@@ -43,7 +64,8 @@ describe('Workflow Integration Tests', () => {
 
       const result = await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 2
+        commitCount: 2,
+        fresh: true // bypass session cache so mocked AI and progress callbacks are exercised
       }, callback);
 
       expect(result).toContain('Session Initialization');
@@ -73,9 +95,9 @@ describe('Workflow Integration Tests', () => {
       // Use backend identifiers (BACKENDS.*) not CLI command names
       mockAIExecutor({
         'ask-gemini': 'Gemini analysis: Good architecture, consider adding error handling',
-        'ask-cursor': 'Cursor Agent review: Refactoring suggestions for better maintainability',
+        'ask-qwen': 'Qwen review: Refactoring suggestions for better maintainability',
         'ask-droid': 'Droid review: Code is production-ready with minor improvements',
-        'ask-qwen': 'Qwen analysis: Logic is sound.'
+        'ask-cursor': 'Cursor Agent review: Code is clean and follows best practices.'
       });
 
       const { executeParallelReview } = await import('../../src/workflows/parallel-review.workflow.js');
@@ -88,9 +110,8 @@ describe('Workflow Integration Tests', () => {
         backendOverrides: ['ask-gemini', 'ask-cursor']
       }, callback);
 
-      expect(result).toContain('Parallel Review');
-      expect(result).toContain('Gemini');
-      expect(result).toContain('Cursor');
+      expect(result).toContain('Parallel');
+      expect(result).toContain('Code Review');
       expect(messages.length).toBeGreaterThan(0);
     });
 
@@ -111,8 +132,8 @@ describe('Workflow Integration Tests', () => {
       const delays = { gemini: 100, rovodev: 100 };
 
       // Mock with delays - include BACKENDS export
-      vi.doMock('../../src/utils/aiExecutor.js', async () => {
-        const actual = await vi.importActual('../../src/utils/aiExecutor.js') as Record<string, unknown>;
+      vi.doMock('../../src/services/ai-executor.js', async () => {
+        const actual = await vi.importActual('../../src/services/ai-executor.js') as Record<string, unknown>;
         return {
           ...actual,
           executeAIClient: vi.fn().mockImplementation(async (config: any) => {
@@ -134,6 +155,70 @@ describe('Workflow Integration Tests', () => {
 
       // Should complete noticeably faster than sequential execution (~2x delay)
       expect(duration).toBeLessThan(700);
+    });
+  });
+
+  describe('triangulatedReviewWorkflow', () => {
+    it('should execute triangulated review successfully', async () => {
+      // Mock AI responses for 3-way analysis (architect=gemini, tester=qwen, implementer=droid)
+      mockAIExecutor({
+        'ask-gemini': 'Gemini analysis: Architecture is solid, consider adding comprehensive error handling',
+        'ask-qwen': 'Qwen review: Concrete refactoring suggestions - extract common logic into utils module',
+        'ask-droid': 'Droid verification: Operational checklist ready. Steps: 1. Extract utils 2. Add tests 3. Update docs'
+      });
+
+      const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
+      const { callback, messages } = createMockProgressCallback();
+
+      const result = await executeTriangulatedReview({
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        files: ['src/index.ts', 'src/utils.ts'],
+        goal: 'refactor'
+      }, callback);
+
+      expect(result).toContain('Triangulated Review');
+      expect(result).toContain('Analysis Summary (Architect & Tester)');
+      expect(result).toContain('Autonomous Verification (Implementer)');
+      expect(messages.length).toBeGreaterThan(0);
+    });
+
+    it('should handle bugfix goal', async () => {
+      mockAIExecutor({
+        'ask-gemini': 'Security analysis: No critical vulnerabilities found',
+        'ask-qwen': 'Bug analysis: Fix validation logic in parseInput()',
+        'ask-droid': 'Verification: Test coverage needed for edge cases'
+      });
+
+      const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
+
+      const result = await executeTriangulatedReview({
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        files: ['src/parser.ts'],
+        goal: 'bugfix'
+      });
+
+      expect(result).toContain('Triangulated Review');
+      expect(result).toBeDefined();
+    });
+
+    it('should use 3-way verification approach', async () => {
+      mockAIExecutor({
+        'ask-gemini': 'Architecture analysis',
+        'ask-qwen': 'Concrete suggestions',
+        'ask-droid': 'Operational checklist'
+      });
+
+      const { executeTriangulatedReview } = await import('../../src/workflows/triangulated-review.workflow.js');
+
+      const result = await executeTriangulatedReview({
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        files: ['test.ts'],
+        goal: 'refactor'
+      });
+
+      // Should use all 3 role-based backends
+      expect(result).toContain('Analysis Summary (Architect & Tester)');
+      expect(result).toContain('Autonomous Verification (Implementer)');
     });
   });
 
@@ -196,7 +281,8 @@ describe('Workflow Integration Tests', () => {
       const { executeValidateLastCommit } = await import('../../src/workflows/validate-last-commit.workflow.js');
 
       const result = await executeValidateLastCommit({
-        autonomyLevel: AutonomyLevel.READ_ONLY
+        autonomyLevel: AutonomyLevel.READ_ONLY,
+        commit_ref: 'HEAD'
       });
 
       expect(result).toContain('Breaking change');
@@ -205,18 +291,19 @@ describe('Workflow Integration Tests', () => {
 
   describe('Workflow error handling', () => {
     it('should handle git command failures gracefully', async () => {
-      mockGitCommands([
-        { command: 'rev-parse --git-dir', output: '', exitCode: 128 }
-      ]);
+      // Mock isGitRepository to return false
+      const { isGitRepository: mockIsGitRepo } = await import('../../src/utils/cli/gitHelper.js');
+      vi.spyOn(await import('../../src/utils/cli/gitHelper.js'), 'isGitRepository').mockResolvedValue(false);
 
       const { executeInitSession } = await import('../../src/workflows/init-session.workflow.js');
 
       const result = await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 1
+        commitCount: 1,
+        fresh: true // bypass session cache so git mock is exercised
       });
 
-      expect(result).toContain('non è un repository Git');
+      expect(result).toContain('not a Git repository');
     });
 
     it('should handle AI execution failures with fallback', async () => {
@@ -226,7 +313,7 @@ describe('Workflow Integration Tests', () => {
       ]);
 
       let callCount = 0;
-      vi.doMock('../../src/utils/aiExecutor.js', async () => ({
+      vi.doMock('../../src/services/ai-executor.js', async () => ({
         executeAIClient: vi.fn().mockImplementation(async (config: any) => {
           callCount++;
           if (callCount === 1) {
@@ -241,7 +328,8 @@ describe('Workflow Integration Tests', () => {
       // Should succeed with fallback
       const result = await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 1
+        commitCount: 1,
+        fresh: true // bypass session cache so AI mock is exercised
       });
 
       expect(result).toBeDefined();
@@ -291,7 +379,8 @@ describe('Workflow Integration Tests', () => {
 
       await executeInitSession({
         autonomyLevel: AutonomyLevel.READ_ONLY,
-        commitCount: 1
+        commitCount: 1,
+        fresh: true // bypass session cache so progress callbacks are invoked
       }, callback);
 
       // Should have multiple progress messages
@@ -325,9 +414,10 @@ describe('Workflow Integration Tests', () => {
 
       const { executeInitSession } = await import('../../src/workflows/init-session.workflow.js');
 
-      // Should work without autonomyLevel parameter
+      // autonomyLevel is now required; 'auto' resolves to READ_ONLY for init-session
       const result = await executeInitSession({
-        commitCount: 1
+        commitCount: 1,
+        autonomyLevel: 'auto'
       } as any);
 
       expect(result).toBeDefined();

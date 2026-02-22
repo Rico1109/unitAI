@@ -1,6 +1,6 @@
 /**
  * Activity Analytics Service
- * 
+ *
  * Aggregates and analyzes user activity data from multiple sources:
  * - Audit trail (autonomous operations)
  * - Token metrics (tool usage efficiency)
@@ -8,13 +8,14 @@
  * - Agent performance
  */
 
-import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
-import { AuditTrail, AuditEntry, AuditStats } from '../utils/auditTrail.js';
-import { TokenSavingsMetrics, TokenSavingsStats } from '../utils/tokenEstimator.js';
+import { AuditTrail, AuditEntry, AuditStats, getAuditTrail } from '../services/audit-trail.js';
+import { TokenSavingsMetrics, TokenSavingsStats } from '../services/token-estimator.js';
 import { logger } from '../utils/logger.js';
 import { ActivityRepository } from '../repositories/activity.js';
+import { getDependencies } from '../dependencies.js';
+import { MCPActivity } from '../domain/common/activity.js';
 
 /**
  * Time range for activity queries
@@ -66,24 +67,8 @@ export interface UserActivitySummary {
 }
 
 /**
- * MCP Server activity record
- */
-export interface MCPActivity {
-  id: string;
-  timestamp: Date;
-  activityType: 'tool_invocation' | 'workflow_execution' | 'agent_action';
-  toolName?: string;
-  workflowName?: string;
-  agentName?: string;
-  duration?: number;
-  success: boolean;
-  errorMessage?: string;
-  metadata: Record<string, any>;
-}
-
-/**
  * Activity Analytics Service
- * 
+ *
  * Provides comprehensive analytics across all MCP server activities
  */
 export class ActivityAnalytics {
@@ -93,27 +78,26 @@ export class ActivityAnalytics {
 
   constructor(
     repository: ActivityRepository,
-    auditDbPath?: string,
-    tokenDbPath?: string
+    auditTrail: AuditTrail,
+    tokenMetrics: TokenSavingsMetrics
   ) {
-    // Initialize data sources
-    this.auditTrail = new AuditTrail(auditDbPath);
-    this.tokenMetrics = new TokenSavingsMetrics(tokenDbPath);
+    // Inject dependencies
+    this.auditTrail = auditTrail;
+    this.tokenMetrics = tokenMetrics;
     this.repository = repository;
 
-    // Ensure schema is initialized
-    this.repository.initializeSchema();
+    // Note: Schema initialization happens in dependencies.ts
   }
 
   /**
    * Record an MCP activity
    */
-  recordActivity(activity: Omit<MCPActivity, 'id' | 'timestamp'>): string {
+  async recordActivity(activity: Omit<MCPActivity, 'id' | 'timestamp'>): Promise<string> {
     const id = this.generateId();
     const timestamp = Date.now();
 
     try {
-      this.repository.create({
+      await this.repository.create({
         id,
         timestamp,
         ...activity
@@ -131,7 +115,7 @@ export class ActivityAnalytics {
   /**
    * Query MCP activities
    */
-  queryActivities(filters: {
+  async queryActivities(filters: {
     activityType?: string;
     toolName?: string;
     workflowName?: string;
@@ -139,9 +123,9 @@ export class ActivityAnalytics {
     endTime?: Date;
     success?: boolean;
     limit?: number;
-  } = {}): MCPActivity[] {
+  } = {}): Promise<MCPActivity[]> {
     try {
-      return this.repository.query({
+      return await this.repository.query({
         ...filters,
         startTime: filters.startTime?.getTime(),
         endTime: filters.endTime?.getTime()
@@ -156,18 +140,18 @@ export class ActivityAnalytics {
   /**
    * Get comprehensive user activity summary
    */
-  getActivitySummary(days: number = 7): UserActivitySummary {
+  async getActivitySummary(days: number = 7): Promise<UserActivitySummary> {
     const startTime = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const endTime = new Date();
 
     // Get audit statistics
-    const auditStats = this.auditTrail.getStats({ startTime, endTime });
+    const auditStats = await this.auditTrail.getStats({ startTime, endTime });
 
     // Get token savings statistics
-    const tokenStats = this.tokenMetrics.getStats({ startTime, endTime });
+    const tokenStats = await this.tokenMetrics.getStats({ startTime, endTime });
 
     // Get MCP activities
-    const activities = this.queryActivities({ startTime, endTime });
+    const activities = await this.queryActivities({ startTime, endTime });
 
     // Calculate tool usage stats
     const toolUsageMap = new Map<string, ToolUsageStats>();
@@ -316,10 +300,10 @@ export class ActivityAnalytics {
   /**
    * Get tool usage statistics for a specific tool
    */
-  getToolStats(toolName: string, days: number = 7): ToolUsageStats | null {
+  async getToolStats(toolName: string, days: number = 7): Promise<ToolUsageStats | null> {
     const startTime = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const activities = this.queryActivities({
+    const activities = await this.queryActivities({
       activityType: 'tool_invocation',
       toolName,
       startTime
@@ -355,10 +339,10 @@ export class ActivityAnalytics {
   /**
    * Get workflow execution statistics
    */
-  getWorkflowStats(workflowName: string, days: number = 7): WorkflowStats | null {
+  async getWorkflowStats(workflowName: string, days: number = 7): Promise<WorkflowStats | null> {
     const startTime = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const activities = this.queryActivities({
+    const activities = await this.queryActivities({
       activityType: 'workflow_execution',
       workflowName,
       startTime
@@ -397,18 +381,18 @@ export class ActivityAnalytics {
   /**
    * Get real-time activity feed
    */
-  getRecentActivities(limit: number = 50): MCPActivity[] {
-    return this.queryActivities({ limit });
+  async getRecentActivities(limit: number = 50): Promise<MCPActivity[]> {
+    return await this.queryActivities({ limit });
   }
 
   /**
    * Cleanup old activity records
    */
-  cleanup(daysToKeep: number = 30): number {
+  async cleanup(daysToKeep: number = 30): Promise<number> {
     const cutoffTimestamp = Date.now() - (daysToKeep * 24 * 60 * 60 * 1000);
 
     try {
-      const deleted = this.repository.cleanup(cutoffTimestamp);
+      const deleted = await this.repository.cleanup(cutoffTimestamp);
       logger.info(`Cleaned up ${deleted} old activity records`);
       return deleted;
     } catch (error) {
@@ -421,12 +405,12 @@ export class ActivityAnalytics {
   /**
    * Close all database connections
    */
-  close(): void {
-    // Repository handling is managed by DI container typically, 
-    // but if we own resources we can close them. 
+  async close(): Promise<void> {
+    // Repository handling is managed by DI container typically,
+    // but if we own resources we can close them.
     // Here we delegate up or ignore since DI container closes db.
     this.auditTrail.close();
-    this.tokenMetrics.close();
+    await this.tokenMetrics.close();
   }
 
   /**
@@ -440,19 +424,22 @@ export class ActivityAnalytics {
 
 // Singleton instance
 let analyticsInstance: ActivityAnalytics | null = null;
-import { getDependencies } from "../dependencies.js";
-
 
 /**
  * Get or create the global analytics instance
  * Note: This relies on dependencies being initialized earlier in the lifecycle
  */
-export function getActivityAnalytics(): ActivityAnalytics {
+export async function getActivityAnalytics(): Promise<ActivityAnalytics> {
   if (!analyticsInstance) {
     try {
       const deps = getDependencies();
       const repo = new ActivityRepository(deps.activityDb);
-      analyticsInstance = new ActivityAnalytics(repo);
+      await repo.initializeSchema();
+      const audit = await getAuditTrail();
+      // Use AsyncDatabase and await initialization
+      const tokens = new TokenSavingsMetrics(deps.tokenDb);
+      await tokens.initializeSchema();
+      analyticsInstance = new ActivityAnalytics(repo, audit, tokens);
     } catch (e) {
       // Fallback for scripts/tests that might not have init dependencies
       // Ideally we should fix those call sites, but for now this is safter transition

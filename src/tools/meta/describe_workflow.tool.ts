@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UnifiedTool, toolRegistry } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext, toolRegistry } from "../registry.js";
 
 export const describeWorkflowTool: UnifiedTool = {
   name: "describe_workflow",
@@ -8,7 +8,8 @@ export const describeWorkflowTool: UnifiedTool = {
     name: z.string().describe("The name of the workflow tool (e.g., 'workflow_parallel_review')")
   }),
   category: "meta",
-  execute: async ({ name }) => {
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    const { name } = args;
     const tool = toolRegistry.find(t => t.name === name);
     
     if (!tool) {

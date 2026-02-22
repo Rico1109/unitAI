@@ -1,22 +1,23 @@
 /**
  * Pre-Commit Validation Workflow
- * 
+ *
  * Validates staged changes before committing, checking for:
  * - Security issues (secrets, vulnerabilities)
  * - Code quality issues
  * - Breaking changes
- * 
+ *
  * Uses parallel AI analysis with multiple backends for comprehensive validation.
  */
 
 import { z } from 'zod';
-import type { WorkflowDefinition, ProgressCallback } from './types.js';
-import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
-import { selectOptimalBackend, createTaskCharacteristics } from './modelSelector.js';
-import { getStagedDiff } from '../utils/gitHelper.js';
+import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
+import { executeAIClient, BACKENDS } from '../services/ai-executor.js';
+import { selectOptimalBackend, createTaskCharacteristics } from './model-selector.js';
+import { getDependencies } from '../dependencies.js';
+import { getStagedDiff } from '../utils/cli/gitHelper.js';
 import { formatWorkflowOutput } from './utils.js';
-import { logAudit } from '../utils/auditTrail.js';
-import { estimateFileTokens } from '../utils/tokenEstimator.js';
+import { logAudit } from '../services/audit-trail.js';
+import { estimateFileTokens } from '../services/token-estimator.js';
 import { resolve } from 'path';
 import { logger } from '../utils/logger.js';
 async function estimateDiffTokens(stagedDiff: string): Promise<{ files: string[]; tokens: number; }> {
@@ -53,32 +54,33 @@ async function estimateDiffTokens(stagedDiff: string): Promise<{ files: string[]
 
 async function generateAutonomousRemediationPlan(
   stagedDiff: string,
-  depth: string
+  depth: string,
+  autonomyLevel?: string
 ): Promise<string> {
-  const prompt = `Agisci come Factory Droid (GLM-4.6) e genera un piano di remediation autonomo per questo diff git.
+  const prompt = `Act as Factory Droid (GLM-4.6) and generate an autonomous remediation plan for this git diff.
 
-Profondità richiesta: ${depth}
+Required depth: ${depth}
 
 Diff:
 \`\`\`diff
 ${stagedDiff}
 \`\`\`
 
-Produci un piano strutturato con:
-1. Priorità delle azioni (CRITICAL/HIGH/MEDIUM)
-2. Step consigliati (max 5)
-3. Verifiche automatiche suggerite
-4. Rischi residui`;
+Produce a structured plan with:
+1. Action priorities (CRITICAL/HIGH/MEDIUM)
+2. Suggested steps (max 5)
+3. Suggested automatic checks
+4. Residual risks`;
 
+  const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('implementation');
   task.requiresCodeGeneration = true;
-  const backend = selectOptimalBackend(task);
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return executeAIClient({
     backend,
     prompt,
-    auto: backend === BACKENDS.DROID ? "low" : undefined,
-    autoApprove: backend === BACKENDS.ROVODEV ? true : undefined,
+    autonomyLevel: (autonomyLevel as any),
     outputFormat: "text"
   });
 }
@@ -89,9 +91,9 @@ Produci un piano strutturato con:
 export const preCommitValidateSchema = z.object({
   depth: z.enum(['quick', 'thorough', 'paranoid'])
     .default('thorough')
-    .describe('Profondità della validazione'),
-  autonomyLevel: z.enum(['LOW', 'MEDIUM', 'HIGH', 'AUTONOMOUS'])
-    .default('MEDIUM')
+    .describe('Validation depth'),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 export type PreCommitValidateParams = z.infer<typeof preCommitValidateSchema>;
@@ -121,7 +123,8 @@ Format as JSON:
 
   const task = createTaskCharacteristics('security');
   task.domain = 'security';
-  const backend = selectOptimalBackend(task);
+  const { circuitBreaker } = getDependencies();
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return await executeAIClient({
     backend,
@@ -162,7 +165,8 @@ Respond with JSON:
 }`;
 
   const task = createTaskCharacteristics('review');
-  const backend = selectOptimalBackend(task);
+  const { circuitBreaker } = getDependencies();
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return await executeAIClient({
     backend,
@@ -199,7 +203,8 @@ Respond with JSON:
 
   const task = createTaskCharacteristics('architecture');
   task.requiresArchitecturalThinking = true;
-  const backend = selectOptimalBackend(task);
+  const { circuitBreaker } = getDependencies();
+  const backend = await selectOptimalBackend(task, circuitBreaker);
 
   return await executeAIClient({
     backend,
@@ -284,6 +289,9 @@ export async function executePreCommitValidate(
   params: PreCommitValidateParams,
   onProgress?: ProgressCallback
 ): Promise<string> {
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = params.autonomyLevel ?? 'read-only';
+
   onProgress?.('🔍 Reading staged changes...');
 
   const stagedDiff = await getStagedDiff();
@@ -294,7 +302,7 @@ export async function executePreCommitValidate(
 
   const diffEstimation = await estimateDiffTokens(stagedDiff);
   if (diffEstimation.tokens > 0) {
-    onProgress?.(`📏 Token stimati per il diff: ~${diffEstimation.tokens}`);
+    onProgress?.(`📏 Estimated tokens for diff: ~${diffEstimation.tokens}`);
     logger.info(`[pre-commit-validate] Estimated token budget: ~${diffEstimation.tokens}`);
   }
 
@@ -322,9 +330,9 @@ export async function executePreCommitValidate(
 
   let remediationSection = '';
   if (params.depth === 'paranoid') {
-    onProgress?.('🤖 Generazione piano di remediation con Droid...');
+    onProgress?.('🤖 Generating remediation plan with Droid...');
     try {
-      const remediationPlan = await generateAutonomousRemediationPlan(stagedDiff, params.depth);
+      const remediationPlan = await generateAutonomousRemediationPlan(stagedDiff, params.depth, level);
       remediationSection = `
 ## Autonomous Remediation Plan (Droid/Rovodev)
 
@@ -335,7 +343,7 @@ ${remediationPlan}
       remediationSection = `
 ## Autonomous Remediation Plan (Droid/Rovodev)
 
-Impossibile generare il piano: ${errorMsg}
+Unable to generate plan: ${errorMsg}
 `;
     }
   }
@@ -343,7 +351,7 @@ Impossibile generare il piano: ${errorMsg}
   const tokenSection = diffEstimation.tokens > 0 ? `
 ## Token Estimate
 
-~${diffEstimation.tokens.toLocaleString()} token stimati per i file modificati (${diffEstimation.files.length} file)
+~${diffEstimation.tokens.toLocaleString()} estimated tokens for modified files (${diffEstimation.files.length} file)
 ` : '';
 
   const finalReport = `${report}

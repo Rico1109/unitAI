@@ -11,7 +11,7 @@ import {
   type TokenEstimate,
   type ToolSuggestion,
   type ToolContext
-} from "../../src/utils/tokenEstimator.js";
+} from "../../src/services/token-estimator.js";
 import { stat, access } from "fs/promises";
 
 // Mock fs/promises

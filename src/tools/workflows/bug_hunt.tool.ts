@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { bugHuntWorkflow } from "../../workflows/bug-hunt.workflow.js";
 
 export const workflowBugHuntTool: UnifiedTool = {
     name: "workflow_bug_hunt",
     description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Bug Hunt
 
 Orchestrates a multi-agent investigation to find and analyze bugs based on symptoms.
@@ -50,7 +52,7 @@ Use when you have a bug report or error message but don't know exactly where the
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await bugHuntWorkflow.execute(args, onProgress);
+    execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+        return await bugHuntWorkflow.execute(args, context.onProgress);
     }
 };

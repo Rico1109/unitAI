@@ -12,8 +12,27 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@/agents/*": ["src/agents/*"],
+      "@/backends/*": ["src/backends/*"],
+      "@/workflows/*": ["src/workflows/*"],
+      "@/services/*": ["src/services/*"],
+      "@/tools/*": ["src/tools/*"],
+      "@/config/*": ["src/config/*"],
+      "@/domain/*": ["src/domain/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/repositories/*": ["src/repositories/*"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

@@ -1,14 +1,19 @@
 import { z } from "zod";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
-import { formatWorkflowOutput } from "./utils.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
-import { BACKENDS } from "../constants.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
+import { formatWorkflowOutput, formatScorecard, appendRunLog } from "./utils.js";
+import type { RunLogEntry } from "./utils.js";
+import { executeAIClient } from "../services/ai-executor.js";
+import { getRoleBackend } from "../config/config.js";
+import { getDependencies } from '../dependencies.js';
+import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
+import { AutonomyLevel, OperationType, assertPermission } from '../utils/security/permissionManager.js';
 
 const refactorSprintSchema = z.object({
-  targetFiles: z.array(z.string()).min(1, "Indicare almeno un file"),
-  scope: z.string().min(1, "Descrivere lo scopo del refactor"),
+  targetFiles: z.array(z.string()).min(1, "Specify at least one file"),
+  scope: z.string().min(1, "Describe the refactor scope"),
   depth: z.enum(["light", "balanced", "deep"]).optional().default("balanced"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"]).optional(),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string()).optional()
 });
 
@@ -19,87 +24,116 @@ export async function executeRefactorSprint(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { targetFiles, scope, depth, attachments = [] } = params;
+  const workflowStart = Date.now();
+  const scorePhases: RunLogEntry['phases'] = [];
 
-  onProgress?.(`⚙️ Refactor sprint avviato (${depth}) su ${targetFiles.length} file`);
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.MEDIUM;
+  assertPermission(level, OperationType.WRITE_FILE, 'this workflow may write files via AI agents');
 
-  let cursorPlan = "";
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('refactor-sprint');
+  const selectedBackends = await selectParallelBackends(task, circuitBreaker, 3);
+
+  const implementerBackend = selectedBackends[0] ?? getRoleBackend('implementer');
+  const architectBackend   = selectedBackends[1] ?? getRoleBackend('architect');
+  const testerBackend      = selectedBackends[2] ?? getRoleBackend('tester');
+
+  onProgress?.(`⚙️ Refactor sprint started (${depth}) on ${targetFiles.length} files`);
+
+  let implementerPlan = "";
+  const implStart = Date.now();
   try {
-    cursorPlan = await executeAIClient({
-      backend: BACKENDS.CURSOR,
-      prompt: `Stai pianificando un refactor (${depth}). Scopo: ${scope}.
+    implementerPlan = await executeAIClient({
+      backend: implementerBackend,
+      prompt: `You are planning a refactor (${depth}). Scope: ${scope}.
 
-File interessati:
+Target files:
 ${targetFiles.join("\n")}
 
-Genera:
-- Piano in step numerati
-- Patch suggerite (anche descrittive)
-- Test consigliati`,
+Generate:
+- Numbered step plan
+- Suggested patches (can be descriptive)
+- Recommended tests`,
       attachments: attachments.length ? attachments : targetFiles.slice(0, 5),
       outputFormat: "text"
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    cursorPlan = `Impossibile ottenere il piano da Cursor Agent: ${errorMsg}`;
+    implementerPlan = `Unable to get plan from implementer: ${errorMsg}`;
   }
+  scorePhases.push({ name: 'plan', backend: implementerBackend, durationMs: Date.now() - implStart, success: !implementerPlan.startsWith('Unable') });
 
-  let geminiReview = "";
+  let architectReview = "";
+  const archStart = Date.now();
   try {
-    geminiReview = await executeAIClient({
-      backend: BACKENDS.GEMINI,
-      prompt: `Valuta il seguente piano di refactor per ${scope} e segnala rischi architetturali.
+    architectReview = await executeAIClient({
+      backend: architectBackend,
+      prompt: `Evaluate the following refactor plan for ${scope} and report architectural risks.
 
-File target:
+Target files:
 ${targetFiles.join(", ")}
 
-Piano:
-${cursorPlan}`
+Plan:
+${implementerPlan}`
     });
   } catch (error) {
-    geminiReview = `Impossibile ottenere validazione da Gemini: ${error instanceof Error ? error.message : String(error)}`;
+    architectReview = `Unable to get validation from architect: ${error instanceof Error ? error.message : String(error)}`;
   }
+  scorePhases.push({ name: 'review', backend: architectBackend, durationMs: Date.now() - archStart, success: !architectReview.startsWith('Unable') });
 
-  let droidChecklist = "";
+  let testerChecklist = "";
+  const testerStart = Date.now();
   try {
-    droidChecklist = await executeAIClient({
-      backend: BACKENDS.DROID,
-      prompt: `Trasforma questo piano di refactoring in una checklist operativa pronta all'esecuzione.
+    testerChecklist = await executeAIClient({
+      backend: testerBackend,
+      prompt: `Transform this refactoring plan into an operational checklist ready for execution.
 
 Scope: ${scope}
 Depth: ${depth}
 
-Piano di riferimento:
-${cursorPlan}
+Reference plan:
+${implementerPlan}
 
-Checklist richiesta:
-- Step dettagliati
-- Comandi/strumenti suggeriti
-- Criteri di completamento`,
-      auto: depth === "deep" ? "medium" : "low",
+Requested checklist:
+- Detailed steps
+- Suggested commands/tools
+- Completion criteria`,
+      autonomyLevel: level,
       outputFormat: "text"
     });
   } catch (error) {
-    droidChecklist = `Impossibile generare checklist da Droid: ${error instanceof Error ? error.message : String(error)}`;
+    testerChecklist = `Unable to generate checklist from tester: ${error instanceof Error ? error.message : String(error)}`;
   }
+  scorePhases.push({ name: 'checklist', backend: testerBackend, durationMs: Date.now() - testerStart, success: !testerChecklist.startsWith('Unable') });
 
   const content = `
-## Cursor Agent Plan
-${cursorPlan}
+## Implementer Plan
+${implementerPlan}
 
 ---
 
-## Gemini Architectural Review
-${geminiReview}
+## Architect Review
+${architectReview}
 
 ---
 
-## Droid Operational Checklist
-${droidChecklist}
+## Tester Checklist
+${testerChecklist}
 `;
+
+  const totalMs = Date.now() - workflowStart;
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'refactor-sprint',
+    phases: scorePhases,
+    totalDurationMs: totalMs,
+    success: scorePhases.every(p => p.success)
+  });
 
   return formatWorkflowOutput(
     "Refactor Sprint",
-    content,
+    content + '\n\n' + formatScorecard(scorePhases, totalMs),
     {
       targetFiles,
       scope,
@@ -110,7 +144,7 @@ ${droidChecklist}
 
 export const refactorSprintWorkflow: WorkflowDefinition = {
   name: "refactor-sprint",
-  description: "Coordina Cursor, Gemini e Droid per pianificare un refactor multi-step",
+  description: "Coordinates Cursor, Gemini, and Droid to plan a multi-step refactor",
   schema: refactorSprintSchema,
   execute: executeRefactorSprint
 };

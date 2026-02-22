@@ -9,7 +9,7 @@ import {
   getWorkflowContext,
   assertWorkflowContext,
   withContext
-} from '../../src/workflows/workflowContext.js';
+} from '../../src/workflows/workflow-context.js';
 
 describe('WorkflowContext', () => {
   let ctx: WorkflowContext;

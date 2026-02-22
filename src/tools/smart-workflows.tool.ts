@@ -1,26 +1,39 @@
 import { z } from "zod";
 import { executeWorkflow, smartWorkflowsSchema } from "../workflows/index.js";
-import type { ToolExecuteFunction } from "./registry.js";
+import { resolveAutonomyLevel } from "../utils/security/permissionManager.js";
+import type { ToolExecutionContext } from "./registry.js";
 
 /**
- * Esegue il workflow richiesto
+ * Executes the requested workflow
  */
-const executeSmartWorkflow: ToolExecuteFunction = async (
-  args,
-  onProgress
+const executeSmartWorkflow = async (
+  args: Record<string, any>,
+  context: ToolExecutionContext
 ): Promise<string> => {
   const { workflow, params = {} } = args;
-  
-  onProgress?.(`Avvio del workflow: ${workflow}`);
-  
+
+  // Resolve "auto" (or undefined) autonomyLevel before reaching executeWorkflow.
+  // This tool bypasses executeTool() in the registry, so we must replicate
+  // the resolution step here — otherwise assertPermission("auto", ...) crashes.
+  if (params) {
+    params.autonomyLevel = resolveAutonomyLevel(
+      params.autonomyLevel ?? 'auto',
+      workflow
+    );
+  }
+
+  const { onProgress } = context;
+
+  onProgress?.(`Starting workflow: ${workflow}`);
+
   try {
     const result = await executeWorkflow(workflow, params, onProgress);
-    onProgress?.(`Workflow ${workflow} completato con successo`);
+    onProgress?.(`Workflow ${workflow} completed successfully`);
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    onProgress?.(`Errore nel workflow ${workflow}: ${errorMessage}`);
-    throw new Error(`Errore nell'esecuzione del workflow ${workflow}: ${errorMessage}`);
+    onProgress?.(`Workflow ${workflow} failed: ${errorMessage}`);
+    throw new Error(`Failed to execute workflow ${workflow}: ${errorMessage}`);
   }
 };
 
@@ -29,22 +42,22 @@ const executeSmartWorkflow: ToolExecuteFunction = async (
  */
 export const smartWorkflowsTool = {
   name: "smart-workflows",
-  description: "Flussi di lavoro intelligenti che orchestrano più backend AI per compiti complessi come revisione parallela del codice, validazione pre-commit e caccia ai bug",
+  description: "Smart workflows that orchestrate multiple AI backends for complex tasks such as parallel code review, pre-commit validation, and bug hunting",
   zodSchema: smartWorkflowsSchema,
   execute: executeSmartWorkflow,
   category: "workflows",
   prompt: {
     name: "smart-workflows",
-    description: "Esegui flussi di lavoro intelligenti che combinano più backend AI",
+    description: "Execute smart workflows that combine multiple AI backends",
     arguments: [
       {
         name: "workflow",
-        description: "Nome del workflow da eseguire",
+        description: "Name of the workflow to execute",
         required: true
       },
       {
         name: "params",
-        description: "Parametri specifici del workflow",
+        description: "Workflow-specific parameters",
         required: false
       }
     ]

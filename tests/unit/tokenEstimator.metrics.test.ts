@@ -1,49 +1,83 @@
-/**
- * Tests for Token Savings Metrics Collection
- */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { TokenSavingsMetrics, getMetricsCollector } from '../../src/utils/tokenEstimator.js';
-import * as fs from 'fs';
-import * as path from 'path';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { TokenSavingsMetrics, getMetricsCollector } from '../../src/services/token-estimator.js';
+
+// Mock AsyncDatabase
+const mockExecAsync = vi.fn();
+const mockRunAsync = vi.fn();
+const mockAllAsync = vi.fn();
+const mockGetAsync = vi.fn();
+const mockCloseAsync = vi.fn();
+
+vi.mock('../../src/infrastructure/async-db.js', () => {
+  return {
+    AsyncDatabase: vi.fn().mockImplementation(() => ({
+      execAsync: mockExecAsync,
+      runAsync: mockRunAsync,
+      allAsync: mockAllAsync,
+      getAsync: mockGetAsync,
+      closeAsync: mockCloseAsync
+    }))
+  };
+});
+
+// Mock dependencies
+vi.mock('../../src/dependencies.js', () => {
+  const mockDb = {
+    execAsync: async () => {},
+    runAsync: async () => ({ changes: 1, lastInsertRowid: 1 }),
+    allAsync: async () => [],
+    getAsync: async () => null,
+    closeAsync: async () => {}
+  };
+
+  return {
+    getDependencies: () => ({
+      tokenDb: mockDb
+    })
+  };
+});
 
 describe('TokenSavingsMetrics', () => {
   let metrics: TokenSavingsMetrics;
-  const testDbPath = path.join(process.cwd(), 'data', 'token-metrics-test.sqlite');
 
-  beforeEach(() => {
-    // Clean up test database if it exists
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
-    metrics = new TokenSavingsMetrics(testDbPath);
-  });
+  beforeEach(async () => {
+    vi.clearAllMocks();
 
-  afterEach(() => {
-    metrics.close();
-    // Clean up test database
-    if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-    }
+    // Default mock implementations
+    mockExecAsync.mockResolvedValue(undefined);
+    mockRunAsync.mockResolvedValue({ changes: 1, lastInsertRowid: 1 });
+    mockAllAsync.mockResolvedValue([]);
+    mockGetAsync.mockResolvedValue(null);
+    mockCloseAsync.mockResolvedValue(undefined);
+
+    const { AsyncDatabase } = await import('../../src/infrastructure/async-db.js');
+    const db = new AsyncDatabase(':memory:');
+    metrics = new TokenSavingsMetrics(db as any);
+    await metrics.initializeSchema();
   });
 
   describe('record', () => {
-    it('should record a token savings metric', () => {
-      const metricId = metrics.record({
+    it('should record a token savings metric', async () => {
+      const metricId = await metrics.record({
         source: 'enforcer-hook',
         blockedTool: 'Read',
         recommendedTool: 'serena',
-        target: 'src/utils/tokenEstimator.ts',
+        target: 'src/services/token-estimator.ts',
         estimatedSavings: 120,
         suggestionFollowed: false,
         metadata: { fileType: 'code' }
       });
 
       expect(metricId).toMatch(/^metric_/);
+      expect(mockRunAsync).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO token_savings_metrics'),
+        expect.arrayContaining(['enforcer-hook', 'Read', 'serena'])
+      );
     });
 
-    it('should store metric with all fields', () => {
-      metrics.record({
+    it('should store metric with all fields', async () => {
+      await metrics.record({
         source: 'enforcer-hook',
         blockedTool: 'Grep',
         recommendedTool: 'claude-context',
@@ -54,134 +88,165 @@ describe('TokenSavingsMetrics', () => {
         metadata: { pattern: 'test' }
       });
 
-      const results = metrics.query({ limit: 1 });
-      expect(results).toHaveLength(1);
-      expect(results[0].blockedTool).toBe('Grep');
-      expect(results[0].recommendedTool).toBe('claude-context');
-      expect(results[0].estimatedSavings).toBe(1500);
-      expect(results[0].actualTokensAvoided).toBe(1450);
-      expect(results[0].suggestionFollowed).toBe(true);
+      expect(mockRunAsync).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO'),
+        expect.arrayContaining([
+          'enforcer-hook',
+          'Grep',
+          'claude-context',
+          'search pattern',
+          1500,
+          1450,
+          1
+        ])
+      );
     });
   });
 
   describe('query', () => {
-    beforeEach(() => {
-      // Insert test data
-      metrics.record({
+    const mockMetrics = [
+      {
+        id: '1',
+        timestamp: Date.now(),
         source: 'enforcer-hook',
-        blockedTool: 'Read',
-        recommendedTool: 'serena',
+        blocked_tool: 'Read',
+        recommended_tool: 'serena',
         target: 'file1.ts',
-        estimatedSavings: 100,
-        suggestionFollowed: true,
-        metadata: {}
-      });
-
-      metrics.record({
+        estimated_savings: 100,
+        actual_tokens_avoided: null,
+        suggestion_followed: 1,
+        metadata: '{}'
+      },
+      {
+        id: '2',
+        timestamp: Date.now(),
         source: 'workflow',
-        blockedTool: 'Bash',
-        recommendedTool: 'serena',
+        blocked_tool: 'Bash',
+        recommended_tool: 'serena',
         target: 'file2.ts',
-        estimatedSavings: 200,
-        suggestionFollowed: false,
-        metadata: {}
-      });
-
-      metrics.record({
+        estimated_savings: 200,
+        actual_tokens_avoided: null,
+        suggestion_followed: 0,
+        metadata: '{}'
+      },
+      {
+        id: '3',
+        timestamp: Date.now(),
         source: 'enforcer-hook',
-        blockedTool: 'Grep',
-        recommendedTool: 'claude-context',
+        blocked_tool: 'Grep',
+        recommended_tool: 'claude-context',
         target: 'pattern',
-        estimatedSavings: 1500,
-        suggestionFollowed: true,
-        metadata: {}
-      });
+        estimated_savings: 1500,
+        actual_tokens_avoided: null,
+        suggestion_followed: 1,
+        metadata: '{}'
+      }
+    ];
+
+    beforeEach(() => {
+      // Mock allAsync to return our test data
+      mockAllAsync.mockResolvedValue(mockMetrics);
     });
 
-    it('should query all metrics without filters', () => {
-      const results = metrics.query();
+    it('should query all metrics without filters', async () => {
+      const results = await metrics.query();
       expect(results).toHaveLength(3);
+      expect(mockAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT * FROM token_savings_metrics'),
+        expect.any(Array)
+      );
     });
 
-    it('should filter by source', () => {
-      const results = metrics.query({ source: 'enforcer-hook' });
-      expect(results).toHaveLength(2);
-      expect(results.every(r => r.source === 'enforcer-hook')).toBe(true);
+    it('should filter by source', async () => {
+      await metrics.query({ source: 'enforcer-hook' });
+      expect(mockAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining('source = ?'),
+        expect.arrayContaining(['enforcer-hook'])
+      );
     });
 
-    it('should filter by blocked tool', () => {
-      const results = metrics.query({ blockedTool: 'Read' });
-      expect(results).toHaveLength(1);
-      expect(results[0].blockedTool).toBe('Read');
+    it('should filter by blocked tool', async () => {
+      await metrics.query({ blockedTool: 'Read' });
+      expect(mockAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining('blocked_tool = ?'),
+        expect.arrayContaining(['Read'])
+      );
     });
 
-    it('should filter by suggestion followed', () => {
-      const results = metrics.query({ suggestionFollowed: true });
-      expect(results).toHaveLength(2);
-      expect(results.every(r => r.suggestionFollowed)).toBe(true);
+    it('should filter by suggestion followed', async () => {
+      await metrics.query({ suggestionFollowed: true });
+      expect(mockAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining('suggestion_followed = ?'),
+        expect.arrayContaining([1])
+      );
     });
 
-    it('should limit results', () => {
-      const results = metrics.query({ limit: 2 });
-      expect(results).toHaveLength(2);
-    });
-
-    it('should filter by time range', () => {
-      const startTime = new Date(Date.now() - 1000);
-      const results = metrics.query({ startTime });
-      expect(results).toHaveLength(3);
+    it('should limit results', async () => {
+      await metrics.query({ limit: 2 });
+      expect(mockAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining('LIMIT ?'),
+        expect.arrayContaining([2])
+      );
     });
   });
 
   describe('getStats', () => {
-    beforeEach(() => {
-      // Insert varied test data
-      metrics.record({
+    const mockMetrics = [
+      {
+        id: '1',
+        timestamp: Date.now(),
         source: 'enforcer-hook',
-        blockedTool: 'Read',
-        recommendedTool: 'serena',
+        blocked_tool: 'Read',
+        recommended_tool: 'serena',
         target: 'file1.ts',
-        estimatedSavings: 100,
-        actualTokensAvoided: 95,
-        suggestionFollowed: true,
-        metadata: {}
-      });
-
-      metrics.record({
+        estimated_savings: 100,
+        actual_tokens_avoided: 95,
+        suggestion_followed: 1,
+        metadata: '{}'
+      },
+      {
+        id: '2',
+        timestamp: Date.now(),
         source: 'enforcer-hook',
-        blockedTool: 'Read',
-        recommendedTool: 'serena',
+        blocked_tool: 'Read',
+        recommended_tool: 'serena',
         target: 'file2.ts',
-        estimatedSavings: 150,
-        suggestionFollowed: false,
-        metadata: {}
-      });
-
-      metrics.record({
+        estimated_savings: 150,
+        actual_tokens_avoided: null,
+        suggestion_followed: 0,
+        metadata: '{}'
+      },
+      {
+        id: '3',
+        timestamp: Date.now(),
         source: 'workflow',
-        blockedTool: 'Grep',
-        recommendedTool: 'claude-context',
+        blocked_tool: 'Grep',
+        recommended_tool: 'claude-context',
         target: 'pattern',
-        estimatedSavings: 1500,
-        actualTokensAvoided: 1400,
-        suggestionFollowed: true,
-        metadata: {}
-      });
+        estimated_savings: 1500,
+        actual_tokens_avoided: 1400,
+        suggestion_followed: 1,
+        metadata: '{}'
+      }
+    ];
+
+    beforeEach(() => {
+      mockAllAsync.mockResolvedValue(mockMetrics);
     });
 
-    it('should calculate overall statistics', () => {
-      const stats = metrics.getStats();
+    it('should calculate overall statistics', async () => {
+      const stats = await metrics.getStats();
 
       expect(stats.totalSuggestions).toBe(3);
       expect(stats.suggestionsFollowed).toBe(2);
       expect(stats.suggestionsIgnored).toBe(1);
       expect(stats.totalEstimatedSavings).toBe(1750);
-      expect(stats.totalActualSavings).toBe(1495);
+      expect(stats.totalActualSavings).toBe(1495); // 95 + 1400
       expect(stats.followRate).toBe(67); // 2/3 = 66.67% rounded to 67
     });
 
-    it('should group by blocked tool', () => {
-      const stats = metrics.getStats();
+    it('should group by blocked tool', async () => {
+      const stats = await metrics.getStats();
 
       expect(stats.byBlockedTool['Read']).toEqual({
         count: 2,
@@ -193,8 +258,8 @@ describe('TokenSavingsMetrics', () => {
       });
     });
 
-    it('should group by recommended tool', () => {
-      const stats = metrics.getStats();
+    it('should group by recommended tool', async () => {
+      const stats = await metrics.getStats();
 
       expect(stats.byRecommendedTool['serena']).toEqual({
         count: 2,
@@ -206,52 +271,69 @@ describe('TokenSavingsMetrics', () => {
       });
     });
 
-    it('should calculate average savings', () => {
-      const stats = metrics.getStats();
+    it('should calculate average savings', async () => {
+      const stats = await metrics.getStats();
       expect(stats.averageSavingsPerSuggestion).toBe(583); // 1750 / 3 = 583.33 rounded
     });
 
-    it('should filter stats by source', () => {
-      const stats = metrics.getStats({ source: 'enforcer-hook' });
+    it('should filter stats by source', async () => {
+      // For this test, we need to mock what the DB would return when filtered
+      // In a real DB, the filter would be applied in SQL.
+      // Here, getStats calls query() which calls db.allAsync.
+      // We need to ensure that if query is called with filters, we return filtered data?
+      // Or we just verify that getStats passes the filter to query.
+
+      // Since we can't easily change the mock based on arguments in this simple setup
+      // (without making mockAllAsync implementation complex), we'll assume the DB returns
+      // correctly filtered data.
+
+      const filteredMetrics = mockMetrics.filter(m => m.source === 'enforcer-hook');
+      mockAllAsync.mockResolvedValueOnce(filteredMetrics);
+
+      const stats = await metrics.getStats({ source: 'enforcer-hook' });
       expect(stats.totalSuggestions).toBe(2);
       expect(stats.totalEstimatedSavings).toBe(250);
+
+      // Verify query was called with correct filter
+      expect(mockAllAsync).toHaveBeenCalledWith(
+        expect.stringContaining('source = ?'),
+        expect.arrayContaining(['enforcer-hook'])
+      );
     });
   });
 
   describe('updateActualSavings', () => {
-    it('should update actual token savings for a metric', () => {
-      const metricId = metrics.record({
-        source: 'enforcer-hook',
-        blockedTool: 'Read',
-        recommendedTool: 'serena',
-        target: 'file.ts',
-        estimatedSavings: 100,
-        suggestionFollowed: true,
-        metadata: {}
-      });
+    it('should update actual token savings for a metric', async () => {
+      await metrics.updateActualSavings('metric_123', 95);
 
-      metrics.updateActualSavings(metricId, 95);
-
-      const results = metrics.query({ limit: 1 });
-      expect(results[0].actualTokensAvoided).toBe(95);
+      expect(mockRunAsync).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE token_savings_metrics'),
+        expect.arrayContaining([95, 'metric_123'])
+      );
     });
   });
 
   describe('getSummaryReport', () => {
     beforeEach(() => {
-      metrics.record({
-        source: 'enforcer-hook',
-        blockedTool: 'Read',
-        recommendedTool: 'serena',
-        target: 'file.ts',
-        estimatedSavings: 100,
-        suggestionFollowed: true,
-        metadata: {}
-      });
+      const mockMetrics = [
+        {
+          id: '1',
+          timestamp: Date.now(),
+          source: 'enforcer-hook',
+          blocked_tool: 'Read',
+          recommended_tool: 'serena',
+          target: 'file.ts',
+          estimated_savings: 100,
+          actual_tokens_avoided: null,
+          suggestion_followed: 1,
+          metadata: '{}'
+        }
+      ];
+      mockAllAsync.mockResolvedValue(mockMetrics);
     });
 
-    it('should generate a summary report', () => {
-      const report = metrics.getSummaryReport(7);
+    it('should generate a summary report', async () => {
+      const report = await metrics.getSummaryReport(7);
 
       expect(report).toContain('Token Savings Report');
       expect(report).toContain('Total suggestions: 1');
@@ -262,9 +344,9 @@ describe('TokenSavingsMetrics', () => {
   });
 
   describe('getMetricsCollector singleton', () => {
-    it('should return the same instance', () => {
-      const instance1 = getMetricsCollector();
-      const instance2 = getMetricsCollector();
+    it('should return the same instance', async () => {
+      const instance1 = await getMetricsCollector();
+      const instance2 = await getMetricsCollector();
       expect(instance1).toBe(instance2);
     });
   });

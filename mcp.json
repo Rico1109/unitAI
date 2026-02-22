@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "unitai": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/home/rico/Projects/CodeBase/unitAI/dist/index.js"
+      ],
+      "env": {}
+    }
+  }
+}

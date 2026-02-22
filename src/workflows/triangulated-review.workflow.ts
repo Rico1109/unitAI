@@ -1,17 +1,21 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
-import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput } from "./utils.js";
-import type { WorkflowDefinition, ProgressCallback } from "./types.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
+import { runParallelAnalysis, buildCodeReviewPrompt, formatWorkflowOutput, formatScorecard, appendRunLog } from "./utils.js";
+import type { RunLogEntry } from "./utils.js";
+import type { WorkflowDefinition, ProgressCallback } from "../domain/workflows/types.js";
+import { executeAIClient } from "../services/ai-executor.js";
+import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
+import { getDependencies } from '../dependencies.js';
+import { getRoleBackend } from "../config/config.js";
 
 const triangulatedReviewSchema = z.object({
   files: z.array(z.string())
-    .min(1, "Specificare almeno un file da analizzare"),
+    .min(1, "Specify at least one file to analyze"),
   goal: z.enum(["bugfix", "refactor"])
     .optional()
     .default("refactor"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-    .optional()
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 export type TriangulatedReviewParams = z.infer<typeof triangulatedReviewSchema>;
@@ -21,79 +25,120 @@ export async function executeTriangulatedReview(
   onProgress?: ProgressCallback
 ): Promise<string> {
   const { files, goal } = params;
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as import('../utils/security/permissionManager.js').AutonomyLevel) ?? 'read-only' as any;
+  const workflowStart = Date.now();
+  const scorePhases: RunLogEntry['phases'] = [];
 
-  onProgress?.(`🧭 Triangulated review avviata su ${files.length} file (goal: ${goal})`);
+  onProgress?.(`🧭 Triangulated review started on ${files.length} files (goal: ${goal})`);
+
+  // Determine configured backends for roles
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('triangulated-review', { complexity: 'high' });
+
+  const architectBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('architect')]);
+  const testerBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('tester')]);
+  const implementerBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('implementer')]);
+
+  // Check for backend convergence (reduced diversity)
+  const uniqueBackends = new Set([architectBackend, testerBackend, implementerBackend]);
+  if (uniqueBackends.size < 3) {
+     onProgress?.(`⚠️ Warning: Multiple roles converged to same backend(s) due to availability/configuration. Diversity reduced. (${[architectBackend, testerBackend, implementerBackend].join(', ')})`);
+  }
 
   const promptBuilder = (backend: string): string => {
     const basePrompt = buildCodeReviewPrompt(files, goal === "bugfix" ? "security" : "quality");
 
-    switch (backend) {
-      case BACKENDS.GEMINI:
-        return `${basePrompt}
+    if (backend === architectBackend) {
+      return `${basePrompt}
 
 Focus:
-- Allineamento architetturale
-- Impatto a lungo termine rispetto all'obiettivo ${goal}`;
-      case BACKENDS.CURSOR:
-        return `${basePrompt}
+- Architectural alignment
+- Long-term impact relative to goal ${goal}`;
+    } else if (backend === testerBackend) {
+      return `${basePrompt}
 
-Genera suggerimenti concreti di refactoring con priorità e rischi residui.`;
-      default:
-        return basePrompt;
+Generate concrete refactoring suggestions with priorities and residual risks.`;
+    } else {
+      return basePrompt;
     }
   };
 
+  const analysisStart = Date.now();
   const analysisResult = await runParallelAnalysis(
-    [BACKENDS.GEMINI, BACKENDS.CURSOR],
+    [architectBackend, testerBackend],
     promptBuilder,
     onProgress,
-    (backend) => backend === BACKENDS.CURSOR
-      ? { attachments: files.slice(0, 5), outputFormat: "text" }
-      : {}
+    (backend) => backend === testerBackend
+      ? { attachments: files.slice(0, 5), outputFormat: "text", trustedSource: true }
+      : { trustedSource: true }  // All internal workflows are trusted
   );
 
-  let droidVerification = "";
+  const analysisMs = Date.now() - analysisStart;
+  for (const r of analysisResult.results) {
+    scorePhases.push({ name: 'analysis', backend: r.backend, durationMs: analysisMs, success: r.success, error: r.error });
+  }
+
+  let verificationResult = "";
+  const verifyStart = Date.now();
   try {
-    droidVerification = await executeAIClient({
-      backend: BACKENDS.DROID,
-      prompt: `Verifica questo set di file e genera una checklist operativa per completare il goal "${goal}".
+    verificationResult = await executeAIClient({
+      backend: implementerBackend,
+      prompt: `Verify this set of files and generate an operational checklist to complete the goal "${goal}".
 File:
 ${files.join("\n")}
 
-Restituisci:
-- Step operativi (max 5)
-- Metriche/controlli per ciascun step
-- Rischi residui`,
-      auto: "low",
-      outputFormat: "text"
+Return:
+- Operational steps (max 5)
+- Metrics/checks for each step
+- Residual risks`,
+      autonomyLevel: level,
+      outputFormat: "text",
+      trustedSource: true  // Internal workflow - skip prompt blocking
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    droidVerification = `Impossibile eseguire Droid: ${errorMsg}`;
+    verificationResult = `Unable to execute verification (${implementerBackend}): ${errorMsg}`;
   }
+  scorePhases.push({
+    name: 'verification',
+    backend: implementerBackend,
+    durationMs: Date.now() - verifyStart,
+    success: !verificationResult.startsWith('Unable to execute')
+  });
 
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
 
   const content = `
-## Sintesi Analisi (Gemini + Cursor)
+## Analysis Summary (Architect & Tester)
 ${analysisResult.synthesis}
 
 ---
 
-## Autonomous Verification (Droid)
-${droidVerification}
+## Autonomous Verification (Implementer)
+${verificationResult}
 
 ---
 
-## Stato Backend
-- Successi: ${successful.map(r => r.backend).join(", ") || "Nessuno"}
-- Fallimenti: ${failed.map(r => `${r.backend} (${r.error})`).join(", ") || "Nessuno"}
+## Backend Status
+- Successes: ${successful.map(r => r.backend).join(", ") || "None"}
+- Failures: ${failed.map(r => `${r.backend} (${r.error})`).join(", ") || "None"}
 `;
+
+  const totalMs = Date.now() - workflowStart;
+  const scorecardText = formatScorecard(scorePhases, totalMs);
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'triangulated-review',
+    phases: scorePhases,
+    totalDurationMs: totalMs,
+    success: successful.length > 0
+  });
 
   return formatWorkflowOutput(
     "Triangulated Review",
-    content,
+    content + '\n\n' + scorecardText,
     {
       files,
       goal,
@@ -105,7 +150,7 @@ ${droidVerification}
 
 export const triangulatedReviewWorkflow: WorkflowDefinition = {
   name: "triangulated-review",
-  description: "Confronta prospettive multiple (Gemini, Cursor, Droid) per bugfix/refactor di file specifici",
+  description: "Compares multiple perspectives (Gemini, Cursor, Droid) for bugfix/refactor of specific files",
   schema: triangulatedReviewSchema,
   execute: executeTriangulatedReview
 };

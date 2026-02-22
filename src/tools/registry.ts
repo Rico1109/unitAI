@@ -2,13 +2,36 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { ERROR_MESSAGES } from "../constants.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { resolveAutonomyLevel } from "../utils/security/permissionManager.js";
 
 /**
- * Tool execution function type
+ * Tool execution context - provides requestId, correlationId and progress callback
+ */
+export interface ToolExecutionContext {
+  requestId: string;
+  correlationId: string;
+  onProgress?: (message: string) => void;
+}
+
+/**
+ * Progress callback type
+ */
+export type ProgressCallback = (message: string) => void;
+
+/**
+ * New tool execution function type with context
  */
 export type ToolExecuteFunction = (
   args: Record<string, any>,
-  onProgress?: (message: string) => void
+  context: ToolExecutionContext
+) => Promise<string>;
+
+/**
+ * Legacy tool execution function type (for backward compatibility)
+ */
+export type LegacyToolExecuteFunction = (
+  args: Record<string, any>,
+  onProgress?: ProgressCallback
 ) => Promise<string>;
 
 /**
@@ -18,7 +41,7 @@ export interface UnifiedTool {
   name: string;
   description: string;
   zodSchema: z.ZodObject<any>;
-  execute: ToolExecuteFunction;
+  execute: ToolExecuteFunction | LegacyToolExecuteFunction;
   category?: string;
   metadata?: {
     category?: string;
@@ -87,7 +110,9 @@ export function getToolDefinitions(): Tool[] {
 export async function executeTool(
   name: string,
   args: Record<string, any>,
-  onProgress?: (message: string) => void
+  onProgress?: (message: string) => void,
+  requestId?: string,
+  correlationId?: string
 ): Promise<string> {
   // Find the tool
   const tool = toolRegistry.find(t => t.name === name);
@@ -95,12 +120,37 @@ export async function executeTool(
     throw new Error(`${ERROR_MESSAGES.TOOL_NOT_FOUND}: ${name}`);
   }
 
+  // Generate requestId if not provided
+  const effectiveRequestId = requestId || `req-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+  // Generate correlationId if not provided (for distributed tracing)
+  const effectiveCorrelationId = correlationId || `corr-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+  // Create execution context
+  const context: ToolExecutionContext = {
+    requestId: effectiveRequestId,
+    correlationId: effectiveCorrelationId,
+    onProgress
+  };
+
   // Validate arguments
   try {
     const validatedArgs = tool.zodSchema.parse(args);
 
-    // Execute the tool
-    return await tool.execute(validatedArgs, onProgress);
+    // Resolve "auto" autonomy level to concrete level before calling workflow
+    if ('autonomyLevel' in validatedArgs) {
+      validatedArgs.autonomyLevel = resolveAutonomyLevel(
+        validatedArgs.autonomyLevel ?? 'auto',
+        name
+      );
+    }
+
+    // Simple approach: always pass both, tool can use what it needs
+    // Legacy tools will receive (args, onProgress) where second param is a function
+    // New tools will receive (args, context) where second param is an object with requestId
+    // We call with the context, and if the tool expects legacy signature,
+    // it will just use the onProgress property or ignore it
+    return await (tool.execute as any)(validatedArgs, context);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errorDetails = error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", ");

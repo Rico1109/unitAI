@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { featureDesignWorkflow } from "../../workflows/feature-design.workflow.js";
 
 export const workflowFeatureDesignTool: UnifiedTool = {
   name: "workflow_feature_design",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Feature Design
 
 Orchestrates a multi-agent team to design, implement, and test a feature.
@@ -44,8 +46,8 @@ Use for complex features requiring multiple files or careful architectural plann
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await featureDesignWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await featureDesignWorkflow.execute(args, context.onProgress);
   }
 };
 

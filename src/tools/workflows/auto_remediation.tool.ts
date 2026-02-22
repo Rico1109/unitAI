@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { autoRemediationWorkflow } from "../../workflows/auto-remediation.workflow.js";
 
 export const workflowAutoRemediationTool: UnifiedTool = {
     name: "workflow_auto_remediation",
     description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Auto Remediation
 
 Generates an autonomous remediation plan using Factory Droid.
@@ -42,7 +44,7 @@ Use when you need a concrete, executable plan to fix a known issue or implement 
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await autoRemediationWorkflow.execute(args, onProgress);
+    execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+        return await autoRemediationWorkflow.execute(args, context.onProgress);
     }
 };

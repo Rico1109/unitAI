@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { refactorSprintWorkflow } from "../../workflows/refactor-sprint.workflow.js";
 
 export const workflowRefactorSprintTool: UnifiedTool = {
     name: "workflow_refactor_sprint",
     description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Refactor Sprint
 
 Coordinates a multi-agent team to plan and execute a complex refactor.
@@ -43,7 +45,7 @@ Use for significant code restructuring, technical debt reduction, or pattern mig
             }
         }
     ],
-    execute: async (args, onProgress) => {
-        return await refactorSprintWorkflow.execute(args, onProgress);
+    execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+        return await refactorSprintWorkflow.execute(args, context.onProgress);
     }
 };

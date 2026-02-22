@@ -1,16 +1,22 @@
 /**
  * Bug Hunt Workflow
- * 
+ *
  * Searches for and analyzes bugs based on symptoms.
  * Uses AI to discover relevant files and perform parallel analysis.
  */
 
 import { z } from 'zod';
-import type { WorkflowDefinition, ProgressCallback } from './types.js';
-import { executeAIClient, BACKENDS } from '../utils/aiExecutor.js';
-import { formatWorkflowOutput } from './utils.js';
-import { selectParallelBackends, createTaskCharacteristics } from './modelSelector.js';
-import { logAudit } from '../utils/auditTrail.js';
+import type { WorkflowDefinition, ProgressCallback } from '../domain/workflows/types.js';
+import { executeAIClient } from '../services/ai-executor.js';
+import { getRoleBackend } from '../config/config.js';
+import { formatWorkflowOutput, formatScorecard, appendRunLog } from './utils.js';
+import type { RunLogEntry } from './utils.js';
+import { selectParallelBackends, createTaskCharacteristics } from './model-selector.js';
+import { logAudit } from '../services/audit-trail.js';
+import { getDependencies } from '../dependencies.js';
+import { AutonomyLevel, OperationType, assertPermission } from '../utils/security/permissionManager.js';
+import { validateFilePath } from '../utils/security/pathValidator.js';
+import { sanitizeUserInput } from '../utils/security/inputSanitizer.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -18,10 +24,10 @@ import { join } from 'path';
  * Schema dei parametri per bug-hunt
  */
 export const bugHuntSchema = z.object({
-  symptoms: z.string().describe('Descrizione dei sintomi del problema'),
-  suspected_files: z.array(z.string()).optional().describe('File sospetti da analizzare'),
-  autonomyLevel: z.enum(['LOW', 'MEDIUM', 'HIGH', 'AUTONOMOUS'])
-    .default('MEDIUM'),
+  symptoms: z.string().describe('Description of the problem symptoms'),
+  suspected_files: z.array(z.string()).optional().describe('Suspected files to analyze'),
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.'),
   attachments: z.array(z.string())
     .optional()
     .describe('File aggiuntivi da allegare alle analisi (es. log)'),
@@ -73,7 +79,8 @@ function hasIssue(analysis: string): boolean {
  */
 async function findRelatedFiles(filePath: string): Promise<string[]> {
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const safePath = validateFilePath(filePath);
+    const content = readFileSync(safePath, 'utf-8');
     const relatedFiles: string[] = [];
 
     // Extract import statements
@@ -111,22 +118,34 @@ export async function executeBugHunt(
   params: BugHuntParams,
   onProgress?: ProgressCallback
 ): Promise<string> {
-  const { symptoms, suspected_files, attachments = [], backendOverrides } = params;
+  const { symptoms: rawSymptoms, suspected_files, attachments = [], backendOverrides } = params;
+  const symptoms = sanitizeUserInput(rawSymptoms);
+  const workflowStart = Date.now();
+  const scorePhases: RunLogEntry['phases'] = [];
+
+  // autonomyLevel is always a concrete AutonomyLevel here (registry resolves "auto")
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.MEDIUM;
+  assertPermission(level, OperationType.WRITE_FILE, 'this workflow may write files via AI agents');
 
   await logAudit({
     operation: 'bug-hunt-start',
-    autonomyLevel: params.autonomyLevel || 'MEDIUM',
+    autonomyLevel: level,
     details: `Hunting bug with symptoms: ${symptoms}`
   });
 
   let filesToAnalyze = suspected_files || [];
+
+  // Role-based backend selection (resolved once per workflow run)
+  const architectBackend   = getRoleBackend('architect');
+  const implementerBackend = getRoleBackend('implementer');
+  const testerBackend      = getRoleBackend('tester');
 
   // Step 1: Find files if not provided
   if (filesToAnalyze.length === 0) {
     onProgress?.('🔍 Searching codebase for relevant files...');
 
     const searchResults = await executeAIClient({
-      backend: BACKENDS.GEMINI,
+      backend: architectBackend,
       prompt: `Given these bug symptoms, list the most likely files in the codebase that could be causing the issue.
 
 Symptoms: ${symptoms}
@@ -153,30 +172,37 @@ List only file paths, one per line, in order of likelihood.`
 
   const fileContents = filesToAnalyze
     .filter(f => existsSync(f))
-    .map(f => ({ path: f, content: readFileSync(f, 'utf-8') }));
+    .flatMap(f => {
+      try {
+        const safePath = validateFilePath(f);
+        return [{ path: f, content: readFileSync(safePath, 'utf-8') }];
+      } catch {
+        return [];
+      }
+    });
 
   // Dynamic Backend Selection
+  const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('bug-hunt');
   const selectedBackends = backendOverrides && backendOverrides.length > 0
     ? backendOverrides
-    : selectParallelBackends(task, 3); // Try to get up to 3 backends
+    : await selectParallelBackends(task, circuitBreaker, 3);
 
-  const runGemini = selectedBackends.includes(BACKENDS.GEMINI);
-  const runCursor = selectedBackends.includes(BACKENDS.CURSOR);
-  const runDroid = selectedBackends.includes(BACKENDS.DROID);
-  const runRovodev = selectedBackends.includes(BACKENDS.ROVODEV);
-  const runQwen = selectedBackends.includes(BACKENDS.QWEN);
+  const runArchitect   = selectedBackends.includes(architectBackend);
+  const runImplementer = selectedBackends.includes(implementerBackend);
+  const runTester      = selectedBackends.includes(testerBackend);
 
-  let geminiAnalysis = '';
-  let qwenAnalysis = '';
+  let architectAnalysis = '';
+  let testerAnalysis = '';
 
   const analysisTasks: Promise<void>[] = [];
 
-  // Primary Analysis (Gemini or Qwen)
-  if (runGemini) {
+  // Primary Analysis (architect or tester as fallback)
+  const analysisStart = Date.now();
+  if (runArchitect) {
     analysisTasks.push(
       executeAIClient({
-        backend: BACKENDS.GEMINI,
+        backend: architectBackend,
         prompt: `Analyze these files for the reported bug.
 Symptoms: ${symptoms}
 Files:
@@ -187,17 +213,16 @@ Provide:
 3. Why this causes the symptoms
 4. Potential side effects`
       }).then(result => {
-        geminiAnalysis = result;
+        architectAnalysis = result;
       }).catch(error => {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        geminiAnalysis = `Impossibile completare l'analisi con Gemini: ${errorMsg}`;
+        architectAnalysis = `Unable to complete analysis with architect: ${errorMsg}`;
       })
     );
-  } else if (runQwen) {
-    // Fallback/Alternative to Gemini
+  } else if (runTester) {
     analysisTasks.push(
       executeAIClient({
-        backend: BACKENDS.QWEN,
+        backend: testerBackend,
         prompt: `Analyze these files for the reported bug.
 Symptoms: ${symptoms}
 Files:
@@ -205,91 +230,105 @@ ${fileContents.map(f => `\n--- ${f.path} ---\n${f.content}`).join('\n')}
 Provide root cause analysis and potential side effects.`,
         outputFormat: 'text'
       }).then(result => {
-        qwenAnalysis = result;
+        testerAnalysis = result;
       }).catch(error => {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        qwenAnalysis = `Impossibile completare l'analisi con Qwen: ${errorMsg}`;
+        testerAnalysis = `Unable to complete analysis with tester: ${errorMsg}`;
       })
     );
   }
 
   await Promise.all(analysisTasks);
+  const analysisMs = Date.now() - analysisStart;
+  const analysisBackend = runArchitect ? architectBackend : (runTester ? testerBackend : 'none');
+  const analysisSuccess = runArchitect
+    ? !architectAnalysis.startsWith('Unable to complete')
+    : !testerAnalysis.startsWith('Unable to complete');
+  scorePhases.push({
+    name: 'root-cause-analysis',
+    backend: analysisBackend,
+    durationMs: analysisMs,
+    success: analysisSuccess
+  });
 
   let hypothesis = '';
   let hypothesisBackend = '';
 
-  if (runQwen) {
-    hypothesisBackend = BACKENDS.QWEN;
-  } else if (runCursor) {
-    hypothesisBackend = BACKENDS.CURSOR;
+  // Hypothesis: tester is fast and logical, implementer as fallback
+  if (runTester) {
+    hypothesisBackend = testerBackend;
+  } else if (runImplementer) {
+    hypothesisBackend = implementerBackend;
   }
 
   if (hypothesisBackend) {
-    onProgress?.(`🧠 Generazione ipotesi con ${hypothesisBackend}...`);
+    onProgress?.(`🧠 Generating hypotheses with ${hypothesisBackend}...`);
+    const hypothesisStart = Date.now();
+    let hypothesisSuccess = true;
     try {
       hypothesis = await executeAIClient({
         backend: hypothesisBackend,
-        prompt: `Agisci come investigatore del codice. Hai i seguenti sintomi e file analizzati.
+        prompt: `Act as a code investigator. You have the following symptoms and analyzed files.
 Symptoms: ${symptoms}
-Files principali:
+Main files:
 ${filesToAnalyze.join("\n")}
-Genera:
-1. 3-5 ipotesi ordinate per probabilità
-2. Evidenze richieste per confermarle
-3. Esperimenti/strumenti suggeriti
-4. Metriche da monitorare`,
+Generate:
+1. 3-5 hypotheses ordered by probability
+2. Evidence required to confirm them
+3. Suggested experiments/tools
+4. Metrics to monitor`,
         attachments,
         outputFormat: "text"
       });
     } catch (error) {
+      hypothesisSuccess = false;
       const errorMsg = error instanceof Error ? error.message : String(error);
-      hypothesis = `Impossibile eseguire ${hypothesisBackend}: ${errorMsg}`;
+      hypothesis = `Unable to execute hypothesis generation: ${errorMsg}`;
     }
+    scorePhases.push({
+      name: 'hypothesis',
+      backend: hypothesisBackend,
+      durationMs: Date.now() - hypothesisStart,
+      success: hypothesisSuccess
+    });
   }
 
   let remediationPlan = '';
-  // Use Droid OR Rovodev for remediation
-  if (runDroid) {
-    onProgress?.('🤖 Preparazione piano di remediation con Droid...');
+  if (runImplementer) {
+    onProgress?.('🤖 Preparing remediation plan with implementer...');
+    const remediationStart = Date.now();
+    let remediationSuccess = true;
     try {
       remediationPlan = await executeAIClient({
-        backend: BACKENDS.DROID,
-        prompt: `Crea un piano operativo per risolvere i bug descritti.
+        backend: implementerBackend,
+        prompt: `Create an operational plan to resolve the described bugs.
 Symptoms: ${symptoms}
 Files:
 ${filesToAnalyze.join("\n")}
-Output richiesto:
-- Step di remediation (max 5) con priorità
-- Verifiche automatiche per ciascun step
-- Rischi residui`,
-        auto: "medium",
+Required output:
+- Remediation steps (max 5) with priorities
+- Automated checks for each step
+- Residual risks`,
+        autonomyLevel: level,
         attachments,
         outputFormat: "text"
       });
     } catch (error) {
+      remediationSuccess = false;
       const errorMsg = error instanceof Error ? error.message : String(error);
-      remediationPlan = `Impossibile generare fix plan con Droid: ${errorMsg}`;
+      remediationPlan = `Unable to generate fix plan with implementer: ${errorMsg}`;
     }
-  } else if (runRovodev) {
-    onProgress?.('🤖 Preparazione piano di remediation con Rovodev...');
-    try {
-      remediationPlan = await executeAIClient({
-        backend: BACKENDS.ROVODEV,
-        prompt: `Crea un piano operativo per risolvere i bug descritti.
-  Symptoms: ${symptoms}
-  Files:
-  ${filesToAnalyze.join("\n")}`,
-        autoApprove: true // Yolo mode for planning
-      });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      remediationPlan = `Impossibile generare fix plan con Rovodev: ${errorMsg}`;
-    }
+    scorePhases.push({
+      name: 'remediation-plan',
+      backend: implementerBackend,
+      durationMs: Date.now() - remediationStart,
+      success: remediationSuccess
+    });
   }
 
   // Step 3: Check if we need to analyze related files
   const problematicFiles = fileContents.filter(f =>
-    hasIssue(geminiAnalysis)
+    hasIssue(architectAnalysis)
   );
 
   let relatedFilesAnalysis = '';
@@ -308,13 +347,16 @@ Output richiesto:
 
     if (uniqueRelated.length > 0) {
       onProgress?.(`📎 Analyzing ${uniqueRelated.length} related files...`);
-
       relatedFilesAnalysis = `\n\n### Related Files Impact\n${uniqueRelated.join(', ')}`;
     }
   }
 
   // Step 4: Synthesize comprehensive report
   onProgress?.('📝 Generating comprehensive bug report...');
+
+  const totalMs = Date.now() - workflowStart;
+  const overallSuccess = scorePhases.every(p => p.success);
+  const scorecard = formatScorecard(scorePhases, totalMs);
 
   const report = `
 # Bug Hunt Report
@@ -327,22 +369,14 @@ ${filesToAnalyze.join('\n')}
 
 ---
 
-## Root Cause Analysis (Gemini/Qwen)
-${geminiAnalysis || qwenAnalysis}
+## Root Cause Analysis
+${architectAnalysis || testerAnalysis}
 
 ---
 
-${hypothesis ? `---
+${hypothesis ? `---\n\n## Hypothesis Exploration\n${hypothesis}\n` : ''}
 
-## Hypothesis Exploration (Cursor Agent / Qwen)
-${hypothesis}
-` : ''}
-
-${remediationPlan ? `---
-
-## Autonomous Fix Plan (Droid/Rovodev)
-${remediationPlan}
-` : ''}
+${remediationPlan ? `---\n\n## Autonomous Fix Plan\n${remediationPlan}\n` : ''}
 
 ${relatedFilesAnalysis}
 
@@ -352,12 +386,22 @@ ${relatedFilesAnalysis}
 - **Files Analyzed**: ${filesToAnalyze.length}
 - **Problematic Files**: ${problematicFiles.length}
 - **Related Files**: ${relatedFilesAnalysis ? 'Yes' : 'No'}
+
+${scorecard}
 `;
 
   await logAudit({
     operation: 'bug-hunt-complete',
-    autonomyLevel: params.autonomyLevel || 'MEDIUM',
+    autonomyLevel: level,
     details: `Analyzed ${filesToAnalyze.length} files`
+  });
+
+  appendRunLog({
+    ts: new Date().toISOString(),
+    workflow: 'bug-hunt',
+    phases: scorePhases,
+    totalDurationMs: totalMs,
+    success: overallSuccess
   });
 
   return formatWorkflowOutput('Bug Hunt', report);

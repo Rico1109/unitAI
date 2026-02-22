@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { preCommitValidateWorkflow } from "../../workflows/pre-commit-validate.workflow.js";
 
 export const workflowPreCommitValidateTool: UnifiedTool = {
   name: "workflow_pre_commit_validate",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Pre-Commit Validation
 
 Validate staged changes before committing to git.
@@ -49,8 +51,8 @@ Run this *after* 'git add' but *before* 'git commit'.
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await preCommitValidateWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await preCommitValidateWorkflow.execute(args, context.onProgress);
   }
 };
 

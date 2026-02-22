@@ -1,16 +1,16 @@
 /**
  * Activity Repository
- * 
+ *
  * Data access layer for MCP Activities.
  */
 import { BaseRepository } from "./base.js";
-import { MCPActivity } from "../services/activityAnalytics.js"; // We'll keep interfaces shared for now or move to domain types later
+import { MCPActivity } from "../domain/common/activity.js";
 import { logger } from "../utils/logger.js";
 
 export class ActivityRepository extends BaseRepository {
 
-    initializeSchema(): void {
-        this.db.exec(`
+    async initializeSchema(): Promise<void> {
+        await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS mcp_activities (
         id TEXT PRIMARY KEY,
         timestamp INTEGER NOT NULL,
@@ -32,15 +32,15 @@ export class ActivityRepository extends BaseRepository {
     `);
     }
 
-    create(activity: Omit<MCPActivity, 'id' | 'timestamp'> & { id: string, timestamp: number }): void {
-        const stmt = this.db.prepare(`
+    async create(activity: Omit<MCPActivity, 'id' | 'timestamp'> & { id: string, timestamp: number }): Promise<void> {
+        const sql = `
         INSERT INTO mcp_activities (
           id, timestamp, activity_type, tool_name, workflow_name,
           agent_name, duration, success, error_message, metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
+      `;
 
-        stmt.run(
+        await this.db.runAsync(sql, [
             activity.id,
             activity.timestamp,
             activity.activityType,
@@ -51,10 +51,10 @@ export class ActivityRepository extends BaseRepository {
             activity.success ? 1 : 0,
             activity.errorMessage || null,
             JSON.stringify(activity.metadata || {})
-        );
+        ]);
     }
 
-    query(filters: {
+    async query(filters: {
         activityType?: string;
         toolName?: string;
         workflowName?: string;
@@ -62,7 +62,7 @@ export class ActivityRepository extends BaseRepository {
         endTime?: number;
         success?: boolean;
         limit?: number;
-    }): MCPActivity[] {
+    }): Promise<MCPActivity[]> {
         let sql = 'SELECT * FROM mcp_activities WHERE 1=1';
         const params: any[] = [];
 
@@ -103,13 +103,13 @@ export class ActivityRepository extends BaseRepository {
             params.push(filters.limit);
         }
 
-        const rows = this.db.prepare(sql).all(...params);
+        const rows = await this.db.allAsync(sql, params);
         return rows.map((row: any) => this.rowToActivity(row));
     }
 
-    cleanup(cutoffTimestamp: number): number {
-        const stmt = this.db.prepare('DELETE FROM mcp_activities WHERE timestamp < ?');
-        const result = stmt.run(cutoffTimestamp);
+    async cleanup(cutoffTimestamp: number): Promise<number> {
+        const sql = 'DELETE FROM mcp_activities WHERE timestamp < ?';
+        const result = await this.db.runAsync(sql, [cutoffTimestamp]);
         return result.changes;
     }
 

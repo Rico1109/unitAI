@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { triangulatedReviewWorkflow } from "../../workflows/triangulated-review.workflow.js";
 
 export const workflowTriangulatedReviewTool: UnifiedTool = {
   name: "workflow_triangulated_review",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Triangulated Review
 
 Perform a 3-way cross-check on critical changes.
@@ -41,8 +43,8 @@ Best for critical refactors or complex bug fixes where you need high confidence.
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await triangulatedReviewWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await triangulatedReviewWorkflow.execute(args, context.onProgress);
   }
 };
 

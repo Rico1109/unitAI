@@ -1,10 +1,14 @@
 import { z } from "zod";
-import { executeAIClient, BACKENDS } from "../utils/aiExecutor.js";
+import { executeAIClient, BACKENDS } from "../services/ai-executor.js";
+import { getRoleBackend } from "../config/config.js";
+import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
+import { getDependencies } from '../dependencies.js';
 import { formatWorkflowOutput } from "./utils.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
-import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "./types.js";
+import { AutonomyLevel, OperationType, assertPermission } from "../utils/security/permissionManager.js";
+import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "../domain/workflows/types.js";
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
+import { validatePath, validateFilePath } from "../utils/security/pathValidator.js";
 
 /**
  * Overthinker Workflow
@@ -23,8 +27,8 @@ const overthinkerSchema = z.object({
     .describe("Filename for the final output (saved under .unitai/ unless absolute path provided)"),
   modelOverride: z.string().optional()
     .describe("Specific model/backend to use for all steps (default: auto)"),
-  autonomyLevel: z.nativeEnum(AutonomyLevel).optional()
-    .describe("Autonomy level for the workflow")
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
 export type OverthinkerParams = z.infer<typeof overthinkerSchema> & BaseWorkflowParams;
@@ -41,6 +45,11 @@ export async function executeOverthinker(
     modelOverride
   } = params;
 
+  // autonomyLevel is resolved to a concrete AutonomyLevel by the registry before
+  // this function is called. Assert write permission since we write files to .unitai/
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.LOW;
+  assertPermission(level, OperationType.WRITE_FILE, 'overthinker writes output files to .unitai/');
+
   onProgress?.(`🧠 Starting Overthinker workflow for: "${initialPrompt.slice(0, 50)}"...`);
 
   // 1. Gather Context
@@ -48,13 +57,15 @@ export async function executeOverthinker(
   for (const file of contextFiles) {
     if (existsSync(file)) {
       try {
-        const content = readFileSync(file, 'utf-8');
+        // SECURITY: Validate file path to prevent path traversal attacks
+        const validatedFilePath = validateFilePath(file);
+        const content = readFileSync(validatedFilePath, 'utf-8');
         gatheredContext += `
 --- File: ${file} ---
 ${content}
 `;
       } catch (e) {
-        onProgress?.(`⚠️ Could not read context file ${file}`);
+        onProgress?.(`⚠️ Could not read context file ${file}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -64,7 +75,9 @@ ${content}
   for (const file of projectStandardsFiles) {
      if (existsSync(file) && !contextFiles.includes(file)) {
         try {
-            const content = readFileSync(file, 'utf-8');
+            // SECURITY: Validate file path to prevent path traversal attacks
+            const validatedFilePath = validateFilePath(file);
+            const content = readFileSync(validatedFilePath, 'utf-8');
             gatheredContext += `
 --- Project Standards (${file}) ---
 ${content}
@@ -76,7 +89,15 @@ ${content}
   }
 
   const history: { step: string; content: string; agent: string }[] = [];
-  const backendToUse = modelOverride || BACKENDS.GEMINI; // Default to powerful model
+  
+  const { circuitBreaker } = getDependencies();
+  const task = createTaskCharacteristics('overthinker', { requiresCreativity: true, complexity: 'high', requiresArchitecturalThinking: true });
+  
+  let selectedBackend = modelOverride;
+  if (!selectedBackend) {
+     selectedBackend = await selectOptimalBackend(task, circuitBreaker, [getRoleBackend('architect')]);
+  }
+  const backendToUse = selectedBackend;
 
   // ============================================================================ 
   // PHASE 1: PROMPT REFINER
@@ -112,12 +133,27 @@ ${content}
     });
     history.push({ step: "Master Prompt", agent: "Prompt Refiner", content: masterPrompt });
     onProgress?.("✅ Master Prompt generated.");
-  } catch (e: any) {
-    throw new Error(`Failed in Phase 1: ${e.message}`);
+  } catch (e: unknown) {
+    throw new Error(`Overthinker [Phase 1/Prompt Refiner] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  // Save Master Prompt immediately
-  writeFileSync(`master_prompt_${new Date().getTime()}.md`, masterPrompt);
+  // Save Master Prompt immediately (to .unitai directory)
+  try {
+    const outputDir = ".unitai";
+    const masterPromptFile = join(outputDir, `master_prompt_${new Date().getTime()}.md`);
+
+    if (!existsSync(outputDir)) {
+      mkdirSync(outputDir, { recursive: true });
+    }
+
+    // SECURITY: Validate output path to prevent path traversal attacks
+    const validatedMasterPromptPath = validatePath(masterPromptFile, process.cwd());
+    writeFileSync(validatedMasterPromptPath, masterPrompt);
+    onProgress?.(`💾 Saved master prompt to: ${masterPromptFile}`);
+  } catch (e: unknown) {
+    onProgress?.(`⚠️ Could not save master prompt: ${e instanceof Error ? e.message : String(e)}`);
+    // Don't fail the workflow if master prompt can't be saved (it's logged in history anyway)
+  }
 
 
   // ============================================================================ 
@@ -150,8 +186,8 @@ ${content}
     });
     history.push({ step: "Initial Reasoning", agent: "Lead Architect", content: currentThinking });
     onProgress?.("✅ Initial reasoning completed.");
-  } catch (e: any) {
-     throw new Error(`Failed in Phase 2: ${e.message}`);
+  } catch (e: unknown) {
+    throw new Error(`Overthinker [Phase 2/Initial Reasoning] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // ============================================================================ 
@@ -191,8 +227,9 @@ ${content}
       currentThinking = improvedThinking;
       history.push({ step: `Iteration ${i}`, agent: `Reviewer #${i}`, content: currentThinking });
       onProgress?.(`✅ Iteration ${i} completed.`);
-    } catch (e: any) {
-        onProgress?.(`⚠️ Iteration ${i} failed: ${e.message}. Continuing with previous thinking.`);
+    } catch (e: unknown) {
+      // FAIL-FAST: Phase 3 iteration failure stops the entire workflow
+      throw new Error(`Overthinker [Phase 3/Review iteration ${i}/${iterations}] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -233,9 +270,9 @@ ${content}
     });
     history.push({ step: "Final Synthesis", agent: "Consolidator", content: finalDocument });
     onProgress?.("✅ Final synthesis completed.");
-  } catch (e: any) {
-      // If synthesis fails, fallback to the last thinking state
-      finalDocument = `# Overthinking Output (Fallback)\n\nSynthesis failed. Here is the last thinking state:\n\n${currentThinking}`;
+  } catch (e: unknown) {
+    // FAIL-FAST: Phase 4 synthesis failure stops the entire workflow
+    throw new Error(`Overthinker [Phase 4/Final Consolidation] failed on backend "${backendToUse}": ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Save to file
@@ -251,10 +288,12 @@ ${content}
         }
     }
 
-    writeFileSync(finalOutputPath, finalDocument);
+    // SECURITY: Validate output path to prevent path traversal attacks
+    const validatedOutputPath = validatePath(finalOutputPath, resolve('.unitai'));
+    writeFileSync(validatedOutputPath, finalDocument);
     onProgress?.(`💾 Saved final output to: ${finalOutputPath}`);
-  } catch (e: any) {
-    onProgress?.(`⚠️ Could not write file: ${e.message}`);
+  } catch (e: unknown) {
+    onProgress?.(`⚠️ Could not write file: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   return formatWorkflowOutput(

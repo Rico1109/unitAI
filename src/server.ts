@@ -12,6 +12,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
+    McpError,
+    ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
 import { MCP_CONFIG } from "./constants.js";
 import { logger } from "./utils/logger.js";
@@ -20,11 +22,9 @@ import { getToolDefinitions, executeTool, toolExists } from "./tools/index.js";
 
 export class UnitAIServer {
     private server: Server;
-    private dependencies: AppDependencies;
+    private dependencies!: AppDependencies;
 
     constructor() {
-        this.dependencies = initializeDependencies();
-
         this.server = new Server(
             {
                 name: MCP_CONFIG.SERVER_NAME,
@@ -54,20 +54,22 @@ export class UnitAIServer {
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name: toolName, arguments: args = {} } = request.params;
 
-            logger.info(`Tool call: ${toolName}`);
+            // Generate unique requestId and correlationId for this MCP request
+            const requestId = `mcp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+            const correlationId = `corr-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+            logger.info(`Tool call: ${toolName} [requestId: ${requestId}, correlationId: ${correlationId}]`);
 
             if (!toolExists(toolName)) {
-                logger.error(`Tool not found: ${toolName}`);
-                throw new Error(`Tool '${toolName}' not found`);
-                // Note: SDK handles errors and returns isError: true
+                logger.error(`Tool not found: ${toolName} [requestId: ${requestId}, correlationId: ${correlationId}]`);
+                throw new McpError(ErrorCode.MethodNotFound, `Tool '${toolName}' not found`);
             }
 
-            // TODO: Add proper progress reporting hook if SDK supports it in this handler context
-            // For now, simple execution
-            const onProgress = (msg: string) => logger.progress(msg);
+            // Progress callback with requestId and correlationId
+            const onProgress = (msg: string) => logger.progress(`[${requestId}|${correlationId}] ${msg}`);
 
             try {
-                const result = await executeTool(toolName, args, onProgress);
+                const result = await executeTool(toolName, args, onProgress, requestId, correlationId);
                 return {
                     content: [
                         {
@@ -78,7 +80,7 @@ export class UnitAIServer {
                 };
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                logger.error(`Tool ${toolName} failed: ${errorMessage}`);
+                logger.error(`Tool ${toolName} failed [requestId: ${requestId}, correlationId: ${correlationId}]: ${errorMessage}`);
                 throw error; // Let SDK wrap it
             }
         });
@@ -89,13 +91,60 @@ export class UnitAIServer {
      */
     async start(): Promise<void> {
         try {
+            // Initialize dependencies first
+            this.dependencies = await initializeDependencies();
+
             const transport = new StdioServerTransport();
             await this.server.connect(transport);
             logger.info("UnitAI MCP Server started (Stdio)");
+
+            this.setupShutdownHandlers();
         } catch (error) {
             logger.error("Failed to start server", error);
-            closeDependencies();
+            await this.stop();
             process.exit(1);
+        }
+    }
+
+    /**
+     * Setup graceful shutdown handlers for SIGINT and SIGTERM
+     */
+    private setupShutdownHandlers(): void {
+        let isShuttingDown = false;
+
+        const shutdown = async (signal: string) => {
+            if (isShuttingDown) return;
+            isShuttingDown = true;
+
+            logger.info(`Received ${signal}, initiating graceful shutdown...`);
+
+            // Set a timeout to force exit if graceful shutdown takes too long
+            const forceExitTimeout = setTimeout(() => {
+                logger.warn("Graceful shutdown grace period expired, forcing exit");
+                process.exit(1);
+            }, 10000); // 10 second grace period
+
+            try {
+                await this.stop();
+                clearTimeout(forceExitTimeout);
+                process.exit(0);
+            } catch (error) {
+                logger.error("Error during shutdown", error);
+                clearTimeout(forceExitTimeout);
+                process.exit(1);
+            }
+        };
+
+        process.on('SIGINT', () => shutdown('SIGINT'));
+        process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+        // When the MCP host closes the stdio transport (stdin EOF), trigger
+        // graceful cleanup. This prevents "Database is locked" errors when the
+        // user restarts their AI client without the process receiving a signal.
+        // Guarded for non-TTY so it only fires in MCP pipe context, not during
+        // interactive dev sessions where stdin is a terminal.
+        if (!process.stdin.isTTY) {
+            process.stdin.on('close', () => shutdown('stdin-close'));
         }
     }
 
@@ -104,6 +153,6 @@ export class UnitAIServer {
      */
     async stop(): Promise<void> {
         logger.info("Stopping server...");
-        closeDependencies();
+        await closeDependencies();
     }
 }

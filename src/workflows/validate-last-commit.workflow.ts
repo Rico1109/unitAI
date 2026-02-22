@@ -1,26 +1,29 @@
 import { z } from "zod";
 import { BACKENDS } from "../constants.js";
-import { getGitCommitInfo, isGitRepository } from "../utils/gitHelper.js";
+import { getGitCommitInfo, isGitRepository } from "../utils/cli/gitHelper.js";
 import { runParallelAnalysis, formatWorkflowOutput } from "./utils.js";
 import type {
   WorkflowDefinition,
-  ProgressCallback,
-  ValidateLastCommitParams
-} from "./types.js";
-import { selectParallelBackends, createTaskCharacteristics } from "./modelSelector.js";
+  ProgressCallback
+} from "../domain/workflows/types.js";
+import { selectParallelBackends, createTaskCharacteristics } from "./model-selector.js";
+import { getDependencies } from '../dependencies.js';
+import { getRoleBackend } from '../config/config.js';
 
 /**
- * Schema Zod per il workflow validate-last-commit
+ * Zod schema for the validate-last-commit workflow
  */
 const validateLastCommitSchema = z.object({
   commit_ref: z.string().optional().default("HEAD")
     .describe("Riferimento al commit da validare"),
-  autonomyLevel: z.enum(["read-only", "low", "medium", "high"])
-    .optional().describe("Livello di autonomia per le operazioni del workflow (default: read-only)")
+  autonomyLevel: z.enum(["auto", "read-only", "low", "medium", "high"])
+    .describe('Ask the user: "What permission level for this workflow? auto = I choose the minimum needed, read-only = analysis only, low = file writes allowed, medium = git commit/branch/install deps, high = git push + external APIs." Use auto if unsure.')
 });
 
+export type ValidateLastCommitParams = z.infer<typeof validateLastCommitSchema>;
+
 /**
- * Esegue il workflow di validazione dell'ultimo commit
+ * Executes the last commit validation workflow
  */
 export async function executeValidateLastCommit(
   params: z.infer<typeof validateLastCommitSchema>,
@@ -28,110 +31,75 @@ export async function executeValidateLastCommit(
 ): Promise<string> {
   const { commit_ref } = params;
 
-  onProgress?.(`Avvio validazione del commit: ${commit_ref}`);
+  onProgress?.(`Starting commit validation: ${commit_ref}`);
 
-  // Verifica se siamo in un repository Git
+  // Check if we are in a Git repository
   if (!await isGitRepository()) {
-    throw new Error("Directory corrente non è un repository Git");
+    throw new Error("Current directory is not a Git repository");
   }
 
-  // Recupero informazioni del commit
-  onProgress?.("Recupero informazioni commit...");
+  // Retrieve commit information
+  onProgress?.("Retrieving commit information...");
   let commitInfo;
   try {
     commitInfo = await getGitCommitInfo(commit_ref);
   } catch (error) {
-    throw new Error(`Impossibile recuperare informazioni per il commit ${commit_ref}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Unable to retrieve information for commit ${commit_ref}: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  // Preparazione dei prompt per ogni backend
+  // Preparing prompts for each backend
   const promptBuilder = (backend: string): string => {
     const basePrompt = `
-Analizza il seguente commit Git per identificare problemi, breaking changes e best practices:
+Analyze the following Git commit to identify issues, breaking changes, and best practices:
 
-**Informazioni Commit:**
+**Commit Information:**
 - Hash: ${commitInfo.hash}
-- Autore: ${commitInfo.author}
-- Data: ${commitInfo.date}
-- Messaggio: ${commitInfo.message}
+- Author: ${commitInfo.author}
+- Date: ${commitInfo.date}
+- Message: ${commitInfo.message}
 
-**File Modificati:**
+**Modified Files:**
 ${commitInfo.files.map(f => `- ${f}`).join("\n")}
 
 **Diff:**
 \`\`\`diff
-${commitInfo.diff.substring(0, 3000)}${commitInfo.diff.length > 3000 ? "\n... (diff troncato per lunghezza)" : ""}
+${commitInfo.diff.substring(0, 3000)}${commitInfo.diff.length > 3000 ? "\n... (diff truncated due to length)" : ""}
 \`\`\`
 
-Fornisci un'analisi dettagliata includendo:
-1. Breaking changes identificati
-2. Problemi di sicurezza o performance
-3. Violazioni delle best practices
-4. Problemi di qualità del codice
-5. Raccomandazioni specifiche
-6. Verdetto complessivo (APPROVATO/RIFIUTATO/NECESSARIA REVISIONE)
+Provide a detailed analysis including:
+1. Identified breaking changes
+2. Security or performance issues
+3. Best practices violations
+4. Code quality issues
+5. Specific recommendations
+6. Overall verdict (APPROVED/REJECTED/REVISION NEEDED)
 `;
 
-    // Personalizzazione per backend specifici
-    switch (backend) {
-      case BACKENDS.GEMINI:
-        return `${basePrompt}
+    // Role-based prompt customization — respects config roles instead of hardcoded backend names
+    const architectBackend = getRoleBackend('architect');
+    const implementerBackend = getRoleBackend('implementer');
+    const testerBackend = getRoleBackend('tester');
 
-Come Gemini, fornisci un'analisi architetturale con attenzione a:
-- Impatto delle modifiche sull'architettura esistente
-- Scalabilità e manutenibilità a lungo termine
-- Consistenza con i pattern di design del progetto
-- Considerazioni sull'integrazione con altri componenti
-`;
-
-      case BACKENDS.CURSOR:
-        return `${basePrompt}
-
-Come Cursor Agent, fornisci un'analisi tecnica con focus su:
-- Correttezza del codice e potenziali bug
-- Efficienza degli algoritmi e complessità
-- Gestione degli errori e edge cases
-- Conformità con le convenzioni del linguaggio
-`;
-
-      case BACKENDS.DROID:
-        return `${basePrompt}
-
-Come Factory Droid, verifica l'implementazione pratica:
-- Correttezza della logica di business
-- Gestione degli errori
-- Conformità agli standard di progetto
-`;
-
-      case BACKENDS.ROVODEV:
-        return `${basePrompt}
-
-Come Rovo Dev, analizza l'impatto operativo:
-- Dipendenze introdotte
-- Complessità di deployment
-- Rischi di regressione
-`;
-
-      case BACKENDS.QWEN:
-        return `${basePrompt}
-
-Come Qwen, fornisci un'analisi logica:
-- Coerenza con i requisiti
-- Edge cases mancanti
-- Ottimizzazioni possibili
-`;
-
-      default:
-        return basePrompt;
+    if (backend === architectBackend) {
+      return `${basePrompt}\n\nAs architect, provide an architectural analysis focusing on:\n- Impact of changes on existing architecture\n- Long-term scalability and maintainability\n- Consistency with project design patterns\n- Integration considerations with other components\n`;
     }
+    if (backend === implementerBackend) {
+      return `${basePrompt}\n\nAs implementer, verify the practical implementation:\n- Correctness of business logic\n- Error handling\n- Compliance with project standards\n`;
+    }
+    if (backend === testerBackend) {
+      return `${basePrompt}\n\nAs tester, provide a logical analysis:\n- Consistency with requirements\n- Missing edge cases\n- Possible optimizations\n`;
+    }
+
+    return basePrompt;
   };
 
-  // Esecuzione dell'analisi parallela
-  onProgress?.("Avvio analisi parallela...");
+  // Execute parallel analysis
+  onProgress?.("Starting parallel analysis...");
 
+  const { circuitBreaker } = getDependencies();
   const task = createTaskCharacteristics('review');
   task.requiresArchitecturalThinking = true; // Commit validation often needs architectural context
-  const backendsToUse = selectParallelBackends(task, 2);
+  const backendsToUse = await selectParallelBackends(task, circuitBreaker, 2);
 
   const analysisResult = await runParallelAnalysis(
     backendsToUse,
@@ -139,11 +107,11 @@ Come Qwen, fornisci un'analisi logica:
     onProgress
   );
 
-  // Analisi dei risultati
+  // Analyzing results
   const successful = analysisResult.results.filter(r => r.success);
   const failed = analysisResult.results.filter(r => !r.success);
 
-  // Preparazione dell'output
+  // Preparing output
   let outputContent = "";
   const metadata: Record<string, any> = {
     commitRef: commit_ref,
@@ -158,96 +126,96 @@ Come Qwen, fornisci un'analisi logica:
     timestamp: new Date().toISOString()
   };
 
-  // Informazioni del commit
+  // Commit information
   outputContent += `
-## Informazioni Commit
+## Commit Information
 
 - **Hash**: ${commitInfo.hash}
-- **Autore**: ${commitInfo.author}
-- **Data**: ${commitInfo.date}
-- **Messaggio**: ${commitInfo.message}
-- **File modificati**: ${commitInfo.files.length}
+- **Author**: ${commitInfo.author}
+- **Date**: ${commitInfo.date}
+- **Message**: ${commitInfo.message}
+- **Modified files**: ${commitInfo.files.length}
 
-### File Modificati
+### Modified Files
 ${commitInfo.files.map(f => `- ${f}`).join("\n")}
 `;
 
-  // Se abbiamo risultati, usiamo la sintesi già preparata
+  // If we have results, use the prepared synthesis
   if (analysisResult.synthesis) {
     outputContent += analysisResult.synthesis;
   } else {
-    outputContent += "\n## Analisi del Commit\n\n";
-    outputContent += "Nessun risultato disponibile dall'analisi.\n";
+    outputContent += "\n## Commit Analysis\n\n";
+    outputContent += "No results available from analysis.\n";
   }
 
-  // Verdetto combinato
+  // Combined Verdict
   if (successful.length > 0) {
     outputContent += `
-## Verdetto Combinato
+## Combined Verdict
 
-Basandosi sull'analisi parallela (${successful.map(r => r.backend).join(" + ")}):
+Based on parallel analysis (${successful.map(r => r.backend).join(" + ")}):
 
 `;
 
-    // Logica per determinare il verdetto
-    // In un'implementazione reale, potremmo analizzare i testi delle risposte
-    // Per ora, usiamo una logica semplificata
+    // Logic to determine the verdict
+    // In a real implementation, we could analyze the response texts
+    // For now, we use simplified logic
     const hasFailures = failed.length > 0;
     const hasSuccessfulAnalyses = successful.length > 0;
 
     if (hasFailures && !hasSuccessfulAnalyses) {
-      outputContent += `### ❌ RIFIUTATO
+      outputContent += `### ❌ REJECTED
 
-L'analisi non può essere completata a causa di errori nei backend.
+Analysis could not be completed due to backend errors.
 `;
     } else if (hasFailures) {
-      outputContent += `### ⚠️ NECESSARIA REVISIONE PARZIALE
+      outputContent += `### ⚠️ PARTIAL REVISION NEEDED
 
-Alcune analisi sono fallite, ma quelle completate suggeriscono la necessità di revisione.
+Some analyses failed, but completed ones suggest the need for revision.
 `;
     } else {
-      outputContent += `### ✅ APPROVATO CON RISERVE
+      outputContent += `### ✅ APPROVED WITH RESERVATIONS
 
-L'analisi è stata completata con successo. Si raccomanda di attenere alle raccomandazioni fornite.
+Analysis completed successfully. Adherence to recommendations is advised.
 `;
     }
   }
 
-  // Avvisi se alcuni backend sono falliti
+  // Warnings if some backends failed
   if (failed.length > 0) {
     outputContent += `
-## ⚠️ Avvisi
+## ⚠️ Warnings
 
-I seguenti backend non hanno completato l'analisi:
+The following backends did not complete the analysis:
 ${failed.map(f => `- **${f.backend}**: ${f.error}`).join("\n")}
 
-La validazione potrebbe essere incompleta. Si consiglia di risolvere i problemi e riprovare.
+Validation may be incomplete. It is recommended to resolve issues and try again.
 `;
   }
 
-  // Raccomandazioni finali
+  // Final recommendations
   outputContent += `
-## Raccomandazioni Finali
+## Final Recommendations
 
-1. **Revisione del codice**: Verifica manualmente le modifiche prima del merge
-2. **Test**: Esegui test completi per verificare che non ci siano regressioni
-3. **Documentazione**: Aggiorna la documentazione se necessario
-4. **Comunicazione**: Informa il team delle modifiche significative
+1. **Code Review**: Manually verify changes before merging
+2. **Test**: Run complete tests to verify there are no regressions
+3. **Documentation**: Update documentation if needed
+4. **Communication**: Inform the team of significant changes
 
-Per dettagli specifici, consulta le analisi individuali sopra.
+For specific details, consult the individual analyses above.
 `;
 
-  onProgress?.(`Validazione commit completata: ${successful.length}/${analysisResult.results.length} analisi riuscite`);
+  onProgress?.(`Commit validation completed: ${successful.length}/${analysisResult.results.length} successful analyses`);
 
-  return formatWorkflowOutput(`Validazione Commit (Commit Validation): ${commit_ref}`, outputContent, metadata);
+  return formatWorkflowOutput(`Commit Validation: ${commit_ref}`, outputContent, metadata);
 }
 
 /**
- * Definizione del workflow validate-last-commit
+ * Definition of the validate-last-commit workflow
  */
 export const validateLastCommitWorkflow: WorkflowDefinition = {
   name: 'validate-last-commit',
-  description: "Valida un commit Git specifico utilizzando analisi parallela con Gemini e Cursor per identificare problemi e breaking changes",
+  description: "Validates a specific Git commit using parallel analysis with Gemini and Cursor to identify issues and breaking changes",
   schema: validateLastCommitSchema,
   execute: executeValidateLastCommit
 };

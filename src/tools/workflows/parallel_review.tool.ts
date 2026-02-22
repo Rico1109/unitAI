@@ -1,9 +1,11 @@
-import { UnifiedTool } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext } from "../registry.js";
 import { parallelReviewWorkflow } from "../../workflows/parallel-review.workflow.js";
 
 export const workflowParallelReviewTool: UnifiedTool = {
   name: "workflow_parallel_review",
   description: `
+⚠️ BEFORE INVOKING: Ask the user which autonomyLevel they want (auto / read-only / low / medium / high). Do NOT call this tool without asking first.
+
 # Parallel Code Review
 
 Run comprehensive code review using multiple AI backends in parallel.
@@ -52,8 +54,8 @@ Use this tool when you need a deep review of specific files, especially before m
       }
     }
   ],
-  execute: async (args, onProgress) => {
-    return await parallelReviewWorkflow.execute(args, onProgress);
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    return await parallelReviewWorkflow.execute(args, context.onProgress);
   }
 };
 

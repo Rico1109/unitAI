@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { AI_MODELS, BACKENDS, ERROR_MESSAGES } from "../constants.js";
-import { executeAIClient } from "../utils/aiExecutor.js";
-import type { UnifiedTool } from "./registry.js";
-import { AutonomyLevel } from "../utils/permissionManager.js";
+import { executeAIClient } from "../services/ai-executor.js";
+import type { UnifiedTool, ToolExecutionContext } from "./registry.js";
+import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import { CONFIG } from "../config.js";
 
 // const droidModels = [AI_MODELS.DROID.PRIMARY] as const;
 
@@ -10,36 +11,36 @@ const droidSchema = z.object({
   prompt: z
     .string()
     .min(1)
-    .describe("Prompt da passare a droid exec"),
+    .describe("Prompt to pass to droid exec"),
   // model: z.enum(droidModels).optional(), // REMOVED
   auto: z
     .enum(["low", "medium", "high"])
     .default("low")
-    .describe("Livello di autonomia (--auto)"),
+    .describe("Autonomy level (--auto)"),
   outputFormat: z
     .enum(["text", "json"])
     .default("text")
-    .describe("Formato dell'output"),
+    .describe("Output format"),
   sessionId: z
     .string()
     .optional()
-    .describe("ID sessione per continuare conversazioni precedenti"),
+    .describe("Session ID to continue previous conversations"),
   skipPermissionsUnsafe: z
     .boolean()
     .default(false)
-    .describe("Imposta --skip-permissions-unsafe (solo autonomia HIGH)"),
+    .describe("Set --skip-permissions-unsafe (HIGH autonomy only)"),
   files: z
     .array(z.string())
     .optional()
-    .describe("File da allegare via --file"),
+    .describe("Files to attach via --file"),
   cwd: z
     .string()
     .optional()
-    .describe("Directory di lavoro da passare a --cwd"),
+    .describe("Working directory to pass to --cwd"),
   autonomyLevel: z
     .nativeEnum(AutonomyLevel)
     .optional()
-    .describe("Livello di autonomia del workflow (per enforcement interno)")
+    .describe("Workflow autonomy level (for internal enforcement)")
 });
 
 export type DroidToolParams = z.infer<typeof droidSchema>;
@@ -49,7 +50,7 @@ export const droidTool: UnifiedTool = {
   description: "Factory Droid CLI (GLM-4.6) per task agentici con livelli di autonomia configurabili",
   category: "ai-client",
   zodSchema: droidSchema,
-  execute: async (args, onProgress) => {
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
     const {
       prompt,
       auto,
@@ -60,14 +61,38 @@ export const droidTool: UnifiedTool = {
       cwd,
       autonomyLevel
     } = args;
+    const { onProgress } = context;
 
     if (!prompt || !prompt.trim()) {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
     }
 
-    if (skipPermissionsUnsafe && autonomyLevel !== AutonomyLevel.HIGH) {
-      throw new Error(
-        "Flag --skip-permissions-unsafe consentito solo con autonomyLevel=high"
+    // SECURITY: Permission bypass validation
+    if (skipPermissionsUnsafe) {
+      // Check 1: Only allowed with HIGH autonomy level
+      if (autonomyLevel !== AutonomyLevel.HIGH) {
+        throw new Error(
+          "Flag --skip-permissions-unsafe allowed only with autonomyLevel=high"
+        );
+      }
+
+      // Check 2: NEVER allow in production environment
+      if (CONFIG.runtime.isProduction) {
+        throw new Error(
+          "Permission bypass not allowed in production environment"
+        );
+      }
+
+      // Check 3: Require explicit opt-in via environment variable
+      if (!CONFIG.security.allowPermissionBypass) {
+        throw new Error(
+          "Permission bypass requires UNITAI_ALLOW_PERMISSION_BYPASS=true environment variable"
+        );
+      }
+
+      // Log warning if bypass is enabled
+      console.warn(
+        "⚠️  WARNING: Permission bypass enabled - NOT FOR PRODUCTION USE"
       );
     }
 
@@ -86,21 +111,21 @@ export const droidTool: UnifiedTool = {
   },
   prompt: {
     name: "droid",
-    description: "Esegui Factory Droid (GLM-4.6) per task agentici multi-step",
+    description: "Execute Factory Droid (GLM-4.6) for multi-step agentic tasks",
     arguments: [
       {
         name: "prompt",
-        description: "Prompt principale da eseguire",
+        description: "Main prompt to execute",
         required: true
       },
       {
         name: "auto",
-        description: "Livello di autonomia (low/medium/high)",
+        description: "Autonomy level (low/medium/high)",
         required: false
       },
       {
         name: "sessionId",
-        description: "Sessione esistente da riprendere",
+        description: "Existing session to resume",
         required: false
       }
     ]

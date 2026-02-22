@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UnifiedTool, toolRegistry } from "../registry.js";
+import { UnifiedTool, ToolExecutionContext, toolRegistry } from "../registry.js";
 
 export const listWorkflowsTool: UnifiedTool = {
   name: "list_workflows",
@@ -11,7 +11,8 @@ export const listWorkflowsTool: UnifiedTool = {
       .describe("Filter by category")
   }),
   category: "meta",
-  execute: async ({ category }) => {
+  execute: async (args: Record<string, any>, context: ToolExecutionContext) => {
+    const { category } = args;
     const workflows = toolRegistry.filter(t =>
       (t.name.startsWith('workflow_') || t.category === 'workflow') &&
       (category === 'all' || t.metadata?.category === category)

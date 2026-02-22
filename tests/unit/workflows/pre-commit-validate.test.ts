@@ -4,13 +4,31 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { preCommitValidateWorkflow } from '../../../src/workflows/pre-commit-validate.workflow.js';
-import * as gitHelper from '../../../src/utils/gitHelper.js';
-import * as aiExecutor from '../../../src/utils/aiExecutor.js';
-import * as auditTrail from '../../../src/utils/auditTrail.js';
+import * as gitHelper from '../../../src/utils/cli/gitHelper.js';
+import * as aiExecutor from '../../../src/services/ai-executor.js';
+import * as auditTrail from '../../../src/services/audit-trail.js';
 
-vi.mock('../../../src/utils/gitHelper.js');
-vi.mock('../../../src/utils/aiExecutor.js');
-vi.mock('../../../src/utils/auditTrail.js');
+vi.mock('../../../src/utils/cli/gitHelper.js');
+vi.mock('../../../src/services/ai-executor.js');
+vi.mock('../../../src/services/audit-trail.js');
+
+// Mock dependencies to avoid initialization errors
+vi.mock('../../../src/dependencies.js', () => ({
+  initializeDependencies: vi.fn(),
+  closeDependencies: vi.fn(),
+  getDependencies: vi.fn().mockReturnValue({
+    activityDb: {}, auditDb: {}, tokenDb: {}, metricsDb: {},
+    circuitBreaker: {
+      get: vi.fn().mockReturnValue({
+        isAvailable: vi.fn().mockReturnValue(true),
+        onSuccess: vi.fn(),
+        onFailure: vi.fn(),
+      }),
+      getAllStats: vi.fn().mockReturnValue({}),
+      resetAll: vi.fn(),
+    },
+  }),
+}));
 
 describe('pre-commit-validate workflow', () => {
   beforeEach(() => {
@@ -51,7 +69,7 @@ diff --git a/src/test.ts b/src/test.ts
       depth: 'thorough'
     });
 
-    expect(result).toContain('Pre-Commit Validation');
+    expect(result).toContain('Pre-Commit Validation Report');
     expect(aiExecutor.executeAIClient).toHaveBeenCalledTimes(3);
     expect(result).toContain('FAIL'); // Should fail due to secrets
   });

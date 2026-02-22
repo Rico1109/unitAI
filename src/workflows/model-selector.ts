@@ -1,0 +1,385 @@
+/**
+ * Smart Model Selection
+ * 
+ * Rule-based system for selecting the optimal AI backend based on task characteristics.
+ * Simpler and more pragmatic than meta-orchestration approaches.
+ */
+
+import { BACKENDS } from '../services/ai-executor.js';
+import { logAudit } from '../services/audit-trail.js';
+import { getFallbackPriority, getRoleBackend, isBackendEnabled } from '../config/config.js';
+
+export interface TaskCharacteristics {
+  complexity: 'low' | 'medium' | 'high';
+  tokenBudget: number;
+  requiresArchitecturalThinking: boolean;
+  requiresCodeGeneration: boolean;
+  requiresSpeed: boolean;
+  requiresCreativity: boolean;
+  domain?: 'security' | 'performance' | 'architecture' | 'debugging' | 'general';
+}
+
+export interface BackendMetrics {
+  backend: string;
+  totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
+  avgResponseTime: number;
+  lastUsed: Date;
+}
+
+/**
+ * Backend selection statistics
+ */
+class BackendStats {
+  private stats = new Map<string, BackendMetrics>();
+
+  /**
+   * Record a backend call
+   */
+  recordCall(backend: string, success: boolean, responseTimeMs: number): void {
+    const current = this.stats.get(backend) || {
+      backend,
+      totalCalls: 0,
+      successfulCalls: 0,
+      failedCalls: 0,
+      avgResponseTime: 0,
+      lastUsed: new Date()
+    };
+
+    current.totalCalls++;
+    if (success) {
+      current.successfulCalls++;
+    } else {
+      current.failedCalls++;
+    }
+
+    // Update average response time
+    current.avgResponseTime =
+      (current.avgResponseTime * (current.totalCalls - 1) + responseTimeMs) / current.totalCalls;
+
+    current.lastUsed = new Date();
+    this.stats.set(backend, current);
+  }
+
+  /**
+   * Get statistics for a backend
+   */
+  getStats(backend: string): BackendMetrics | undefined {
+    return this.stats.get(backend);
+  }
+
+  /**
+   * Get all statistics
+   */
+  getAllStats(): BackendMetrics[] {
+    return Array.from(this.stats.values());
+  }
+
+  /**
+   * Get success rate for a backend
+   */
+  getSuccessRate(backend: string): number {
+    const stats = this.stats.get(backend);
+    if (!stats || stats.totalCalls === 0) return 1.0; // Assume good if unknown
+    return stats.successfulCalls / stats.totalCalls;
+  }
+}
+
+/**
+ * Global backend statistics
+ */
+const backendStats = new BackendStats();
+
+/**
+ * Select optimal backend based on task characteristics
+ */
+import type { CircuitBreakerRegistry } from '../utils/reliability/errorRecovery.js';
+
+/**
+ * Select optimal backend based on task characteristics
+ */
+export async function selectOptimalBackend(
+  task: TaskCharacteristics,
+  circuitBreaker: CircuitBreakerRegistry,
+  allowedBackends?: string[]
+): Promise<string> {
+  const candidates = allowedBackends || Object.values(BACKENDS);
+
+  // 1. Filter by Configured/Enabled Backends
+  const enabledCandidates = candidates.filter(b => isBackendEnabled(b));
+
+  // 2. Filter out unavailable backends (Circuit Breaker)
+  const availabilityChecks = await Promise.all(
+    enabledCandidates.map(async (b) => ({ backend: b, available: circuitBreaker.get(b).isAvailable() }))
+  );
+  const availableCandidates = availabilityChecks
+    .filter((check) => check.available)
+    .map((check) => check.backend);
+
+  if (availableCandidates.length === 0) {
+    // If all are down, use emergency fallback from config or Qwen
+    const priority = getFallbackPriority();
+    const emergency = priority.find(b => enabledCandidates.includes(b));
+    return emergency || BACKENDS.QWEN;
+  }
+
+  // Helper to check if a backend is available
+  const isAvailable = (b: string) => availableCandidates.includes(b);
+
+  // 3. Determine Preferred Role based on Task
+  let role: 'architect' | 'implementer' | 'tester' = 'tester';
+
+  if (task.requiresArchitecturalThinking || task.domain === 'architecture') {
+    role = 'architect';
+  } else if (task.requiresCodeGeneration && !task.requiresSpeed) {
+    role = 'implementer';
+  } else if (task.domain === 'debugging' || task.domain === 'security' || task.requiresSpeed) {
+    role = 'tester';
+  }
+
+  const preferredBackend = getRoleBackend(role);
+
+  // 4. Return Preferred if Available
+  if (isAvailable(preferredBackend)) {
+    return preferredBackend;
+  }
+
+  // 5. Fallback: Use Configured Priority
+  const priority = getFallbackPriority();
+  for (const b of priority) {
+    if (isAvailable(b)) return b;
+  }
+
+  return availableCandidates[0];
+}
+
+
+
+/**
+ * Select multiple backends for parallel analysis
+ */
+export async function selectParallelBackends(
+  task: TaskCharacteristics,
+  circuitBreaker: CircuitBreakerRegistry,
+  count: number = 2
+): Promise<string[]> {
+  const selections: string[] = [];
+  const priority = getFallbackPriority();
+
+  // Filter by enabled backends
+  const enabled = priority.filter(b => isBackendEnabled(b));
+
+  const availabilityChecks = await Promise.all(
+    enabled.map(async (b) => ({ backend: b, available: circuitBreaker.get(b).isAvailable() }))
+  );
+  const available = availabilityChecks
+    .filter((check) => check.available)
+    .map((check) => check.backend);
+
+  if (available.length === 0) return [BACKENDS.QWEN]; // Fallback to Qwen
+
+  // Strategy: diversify for different strengths
+  if (count >= 1) {
+    // First choice: optimal backend
+    const primary = await selectOptimalBackend(task, circuitBreaker, available);
+    selections.push(primary);
+  }
+
+  if (count >= 2 && selections.length < count) {
+    // Second choice: complementary backend
+    const remaining = available.filter(b => !selections.includes(b));
+
+    if (remaining.length > 0) {
+      // Role-based diversification — architect vs implementer/tester
+      const architectBackend = getRoleBackend('architect');
+      const implementerBackend = getRoleBackend('implementer');
+      const testerBackend = getRoleBackend('tester');
+
+      if (selections[0] === architectBackend || selections[0] === testerBackend) {
+        // Primary is "thinker" role — add "doer" as complement
+        const secondary = remaining.find(b => b === implementerBackend);
+        selections.push(secondary || remaining[0]);
+      } else {
+        // Primary is "doer" role — add "thinker" as complement
+        const thinker = remaining.find(b => b === architectBackend || b === testerBackend);
+        selections.push(thinker || remaining[0]);
+      }
+    }
+  }
+
+  if (count >= 3 && selections.length < count) {
+    // Fill remaining slots
+    const remaining = available.filter(b => !selections.includes(b));
+    selections.push(...remaining.slice(0, count - selections.length));
+  }
+
+  return selections.slice(0, count);
+}
+
+/**
+ * Record backend usage for learning
+ */
+export function recordBackendUsage(
+  backend: string,
+  task: TaskCharacteristics,
+  success: boolean,
+  responseTimeMs: number
+): void {
+  backendStats.recordCall(backend, success, responseTimeMs);
+
+  // Audit log
+  logAudit({
+    operation: 'backend-selection',
+    autonomyLevel: 'MEDIUM',
+    details: `Backend: ${backend}, Success: ${success}, Time: ${responseTimeMs}ms, Task: ${JSON.stringify(task)}`
+  }).catch(err => console.warn('Failed to log backend usage:', err));
+}
+
+/**
+ * Get backend statistics
+ */
+export function getBackendStats(): BackendMetrics[] {
+  return backendStats.getAllStats();
+}
+
+/**
+ * Select a fallback backend when the primary fails
+ * Returns a different backend from the failed one, prioritizing by reliability
+ */
+export async function selectFallbackBackend(
+  failedBackend: string,
+  circuitBreaker: CircuitBreakerRegistry,
+  triedBackends: string[] = []
+): Promise<string> {
+  // Priority order for fallbacks (wizard-configured or defaults)
+  const fallbackOrder = getFallbackPriority();
+
+  // Filter out the failed backend, already-tried backends, and unavailable ones
+  const availabilityChecks = await Promise.all(
+    fallbackOrder
+      .filter((b) => b !== failedBackend && !triedBackends.includes(b))
+      .map(async (b) => ({ backend: b, available: circuitBreaker.get(b).isAvailable() }))
+  );
+  const available = availabilityChecks
+    .filter((check) => check.available)
+    .map((check) => check.backend);
+
+  if (available.length > 0) {
+    return available[0];
+  }
+
+  // If all are unavailable, return first that's not the failed one AND not already tried
+  const anyOther = fallbackOrder.find(b => b !== failedBackend && !triedBackends.includes(b));
+
+  // If no untried backends remain, throw to stop the loop
+  if (!anyOther) {
+    throw new Error(`No fallback backends available. All backends tried: ${[...triedBackends, failedBackend].join(', ')}`);
+  }
+
+  return anyOther;
+}
+
+/**
+ * Get recommendations for backend selection
+ */
+export function getBackendRecommendations(): string {
+  const stats = backendStats.getAllStats();
+
+  if (stats.length === 0) {
+    return 'No backend usage data available yet.';
+  }
+
+  const sorted = stats.sort((a, b) => b.successfulCalls - a.successfulCalls);
+
+  let report = '# Backend Usage Statistics\n\n';
+
+  for (const stat of sorted) {
+    const successRate = (stat.successfulCalls / stat.totalCalls * 100).toFixed(1);
+    report += `## ${stat.backend}\n`;
+    report += `- Total Calls: ${stat.totalCalls}\n`;
+    report += `- Success Rate: ${successRate}%\n`;
+    report += `- Avg Response Time: ${stat.avgResponseTime.toFixed(0)}ms\n`;
+    report += `- Last Used: ${stat.lastUsed.toISOString()}\n\n`;
+  }
+
+  return report;
+}
+
+/**
+ * Helper to create task characteristics from workflow context
+ */
+export function createTaskCharacteristics(
+  workflowName: string,
+  customOverrides?: Partial<TaskCharacteristics>
+): TaskCharacteristics {
+  // Default characteristics based on workflow
+  const defaults: Record<string, TaskCharacteristics> = {
+    'parallel-review': {
+      complexity: 'high',
+      tokenBudget: 50000,
+      requiresArchitecturalThinking: true,
+      requiresCodeGeneration: false,
+      requiresSpeed: false,
+      requiresCreativity: false,
+      domain: 'architecture'
+    },
+    'pre-commit-validate': {
+      complexity: 'medium',
+      tokenBudget: 30000,
+      requiresArchitecturalThinking: false,
+      requiresCodeGeneration: false,
+      requiresSpeed: true,
+      requiresCreativity: false,
+      domain: 'security'
+    },
+    'bug-hunt': {
+      complexity: 'high',
+      tokenBudget: 40000,
+      requiresArchitecturalThinking: false,
+      requiresCodeGeneration: false,
+      requiresSpeed: false,
+      requiresCreativity: false,
+      domain: 'debugging'
+    },
+    'feature-design': {
+      complexity: 'high',
+      tokenBudget: 60000,
+      requiresArchitecturalThinking: true,
+      requiresCodeGeneration: true,
+      requiresSpeed: false,
+      requiresCreativity: true,
+      domain: 'architecture'
+    },
+    'validate-last-commit': {
+      complexity: 'medium',
+      tokenBudget: 25000,
+      requiresArchitecturalThinking: false,
+      requiresCodeGeneration: false,
+      requiresSpeed: true,
+      requiresCreativity: false,
+      domain: 'general'
+    },
+    'auto-remediation': {
+      complexity: 'medium',
+      tokenBudget: 30000,
+      requiresArchitecturalThinking: false,
+      requiresCodeGeneration: true,
+      requiresSpeed: false,
+      requiresCreativity: false,
+      domain: 'general'
+    }
+  };
+
+  const base = defaults[workflowName] || {
+    complexity: 'medium',
+    tokenBudget: 30000,
+    requiresArchitecturalThinking: false,
+    requiresCodeGeneration: false,
+    requiresSpeed: false,
+    requiresCreativity: false,
+    domain: 'general'
+  };
+
+  return { ...base, ...customOverrides };
+}

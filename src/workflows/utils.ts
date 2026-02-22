@@ -1,21 +1,18 @@
-import { executeAIClient } from "../utils/aiExecutor.js";
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { executeAIClient } from "../services/ai-executor.js";
 import { BACKENDS } from "../constants.js";
-import {
-  createPermissionManager,
-  getDefaultAutonomyLevel,
-  type PermissionManager
-} from "../utils/permissionManager.js";
 import type {
   ProgressCallback,
   AIAnalysisResult,
   ParallelAnalysisResult,
-  ReviewFocus,
-  BaseWorkflowParams
-} from "./types.js";
-import type { AIExecutionOptions } from "../utils/aiExecutor.js";
+  ReviewFocus
+} from "../domain/workflows/types.js";
+import type { AIExecutionOptions } from "../services/ai-executor.js";
 
 /**
- * Esegue un'analisi AI con un backend specifico
+ * Executes an AI analysis with a specific backend
  */
 export async function runAIAnalysis(
   backend: string,
@@ -24,7 +21,7 @@ export async function runAIAnalysis(
   onProgress?: ProgressCallback
 ): Promise<AIAnalysisResult> {
   try {
-    onProgress?.(`Avvio analisi con ${backend}...`);
+    onProgress?.(`Starting analysis with ${backend}...`);
 
     const {
       onProgress: optionProgress,
@@ -57,7 +54,7 @@ export async function runAIAnalysis(
 }
 
 /**
- * Esegue analisi parallele con più backend AI
+ * Executes parallel analysis with multiple AI backends
  */
 export async function runParallelAnalysis(
   backends: string[],
@@ -65,7 +62,7 @@ export async function runParallelAnalysis(
   onProgress?: ProgressCallback,
   optionsBuilder?: (backend: string) => Partial<Omit<AIExecutionOptions, "backend" | "prompt">>
 ): Promise<ParallelAnalysisResult> {
-  onProgress?.(`Avvio analisi parallela con ${backends.length} backend...`);
+  onProgress?.(`Starting parallel analysis with ${backends.length} backends...`);
 
   const promises = backends.map(backend =>
     runAIAnalysis(
@@ -78,7 +75,7 @@ export async function runParallelAnalysis(
 
   const results = await Promise.all(promises);
 
-  // Sintesi dei risultati
+  // Synthesis of results
   const synthesis = synthesizeResults(results);
 
   return {
@@ -88,17 +85,17 @@ export async function runParallelAnalysis(
 }
 
 /**
- * Sintetizza i risultati di analisi multiple
+ * Synthesizes results from multiple analyses
  */
 export function synthesizeResults(results: AIAnalysisResult[]): string {
   const successful = results.filter(r => r.success);
   const failed = results.filter(r => !r.success);
 
-  let synthesis = "# Analisi Combinata\n\n";
+  let synthesis = "# Combined Analysis\n\n";
 
-  // Aggiungi risultati riusciti
+  // Add successful results
   if (successful.length > 0) {
-    synthesis += "## Risultati delle Analisi\n\n";
+    synthesis += "## Analysis Results\n\n";
 
     successful.forEach(result => {
       synthesis += `### ${result.backend}\n\n`;
@@ -106,13 +103,13 @@ export function synthesizeResults(results: AIAnalysisResult[]): string {
     });
   }
 
-  // Aggiungi errori se presenti
+  // Add errors if present
   if (failed.length > 0) {
-    synthesis += "## Errori Rilevati\n\n";
+    synthesis += "## Detected Errors\n\n";
 
     failed.forEach(result => {
       synthesis += `### ${result.backend}\n\n`;
-      synthesis += `**Errore:** ${result.error}\n\n`;
+      synthesis += `**Error:** ${result.error}\n\n`;
     });
   }
 
@@ -120,7 +117,7 @@ export function synthesizeResults(results: AIAnalysisResult[]): string {
 }
 
 /**
- * Costruisce un prompt per l'analisi del codice in base al focus
+ * Builds a code review prompt based on focus
  */
 export function buildCodeReviewPrompt(
   files: string[],
@@ -131,74 +128,74 @@ export function buildCodeReviewPrompt(
   switch (focus) {
     case "architecture":
       focusInstructions = `
-Concentrati sull'architettura del codice:
-- Struttura e organizzazione del progetto
-- Pattern di design utilizzati
-- Separazione delle responsabilità
-- Accoppiamento e coesione
-- Scalabilità e manutenibilità
+Focus on code architecture:
+- Project structure and organization
+- Design patterns used
+- Separation of responsibilities
+- Coupling and cohesion
+- Scalability and maintainability
 `;
       break;
     case "security":
       focusInstructions = `
-Concentrati sulla sicurezza del codice:
-- Vulnerabilità comuni (SQL injection, XSS, CSRF)
-- Gestione dell'autenticazione e autorizzazione
-- Validazione degli input
-- Gestione dei dati sensibili
-- Configurazioni di sicurezza
+Focus on code security:
+- Common vulnerabilities (SQL injection, XSS, CSRF)
+- Authentication and authorization management
+- Input validation
+- Sensitive data management
+- Security configurations
 `;
       break;
     case "performance":
       focusInstructions = `
-Concentrati sulle prestazioni del codice:
-- Efficienza degli algoritmi
-- Utilizzo della memoria
-- Complessità computazionale
-- Ottimizzazioni possibili
-- Colli di bottiglia
+Focus on code performance:
+- Algorithm efficiency
+- Memory usage
+- Computational complexity
+- Possible optimizations
+- Bottlenecks
 `;
       break;
     case "quality":
       focusInstructions = `
-Concentrati sulla qualità del codice:
-- Leggibilità e manutenibilità
-- Copertura dei test
-- Gestione degli errori
-- Documentazione
-- Best practices del linguaggio
+Focus on code quality:
+- Readability and maintainability
+- Test coverage
+- Error handling
+- Documentation
+- Language best practices
 `;
       break;
     case "all":
     default:
       focusInstructions = `
-Analisi completa del codice includendo:
-- Architettura e design
-- Sicurezza
-- Prestazioni
-- Qualità e manutenibilità
+Complete code analysis including:
+- Architecture and design
+- Security
+- Performance
+- Quality and maintainability
 - Best practices
 `;
       break;
   }
 
   return `
-Analizza i seguenti file: ${files.join(", ")}
+Analyze the following files: ${files.join(", ")}
 
 ${focusInstructions}
 
-Fornisci un'analisi dettagliata con:
-1. Punti di forza identificati
-2. Problemi o aree di miglioramento
-3. Raccomandazioni specifiche
-4. Priorità dei problemi (se applicabile)
+Provide a detailed analysis with:
+1. Identified strengths
+2. Issues or areas for improvement
+3. Specific recommendations
+4. Issue priority (if applicable)
 
-Sii specifico e fornisci esempi concreti quando possibile.
+Be specific and provide concrete examples when possible.
 `;
 }
 
 /**
- * Costruisce un prompt per la caccia ai bug
+ * Builds a prompt for bug hunting
  */
 export function buildBugHuntPrompt(
   symptoms: string,
@@ -207,34 +204,34 @@ export function buildBugHuntPrompt(
   let filesSection = "";
   if (suspectedFiles && suspectedFiles.length > 0) {
     filesSection = `
-File sospetti da analizzare:
+Suspected files to analyze:
 ${suspectedFiles.map(f => `- ${f}`).join("\n")}
 `;
   }
 
   return `
-Sintomi del problema: ${symptoms}
+Problem symptoms: ${symptoms}
 
 ${filesSection}
 
-Analizza il problema seguendo questo approccio:
-1. Identifica le possibili cause radice
-2. Cerca pattern comuni di bug correlati
-3. Suggerisci un piano di debug
-4. Proponi soluzioni specifiche
-5. Indica come prevenire problemi simili in futuro
+Analyze the problem following this approach:
+1. Identify possible root causes
+2. Look for common bug patterns related
+3. Suggest a debugging plan
+4. Propose specific solutions
+5. Indicate how to prevent similar problems in the future
 
-Fai attenzione a:
+Pay attention to:
 - Race conditions
-- Errori di gestione null/undefined
-- Problemi asincroni
+- Null/undefined handling errors
+- Asynchronous issues
 - Memory leak
-- Errori di logica
+- Logic errors
 `;
 }
 
 /**
- * Formatta l'output per la visualizzazione
+ * Formats output for display
  */
 export function formatWorkflowOutput(
   title: string,
@@ -244,7 +241,7 @@ export function formatWorkflowOutput(
   let output = `# ${title}\n\n`;
 
   if (metadata) {
-    output += "## Metadati\n\n";
+    output += "## Metadata\n\n";
     Object.entries(metadata).forEach(([key, value]) => {
       output += `- **${key}**: ${value}\n`;
     });
@@ -257,151 +254,85 @@ export function formatWorkflowOutput(
 }
 
 /**
- * Estrae il nome del file da un path completo
+ * Extracts file name from full path
  */
 export function extractFileName(filePath: string): string {
   return filePath.split("/").pop() || filePath;
 }
 
 /**
- * Verifica se un file è di un certo tipo
+ * Checks if a file is of a certain type
  */
 export function isFileType(filePath: string, extensions: string[]): boolean {
   const ext = filePath.split(".").pop()?.toLowerCase();
   return ext ? extensions.includes(ext) : false;
 }
 
-/**
- * Crea un PermissionManager dai parametri del workflow
- *
- * Estrae l'autonomyLevel dai parametri (se presente) e crea un PermissionManager
- * con il livello appropriato. Se non specificato, usa il livello di default (READ_ONLY).
- *
- * @param params - Parametri del workflow che estendono BaseWorkflowParams
- * @returns PermissionManager configurato con il livello di autonomia appropriato
- *
- * @example
- * ```typescript
- * async function myWorkflow(params: MyWorkflowParams) {
- *   const permissions = createWorkflowPermissionManager(params);
- *
- *   // Verifica permessi prima di operazioni rischiose
- *   if (permissions.git.canCommit()) {
- *     // Esegui commit
- *   }
- *
- *   // Oppure assert che lancia errore se non permesso
- *   permissions.git.assertPush("pushing to remote");
- * }
- * ```
- */
-export function createWorkflowPermissionManager(
-  params: BaseWorkflowParams
-): PermissionManager {
-  const level = params.autonomyLevel || getDefaultAutonomyLevel();
-  return createPermissionManager(level);
-}
+
 
 // ============================================================================
-// Agent Integration Helpers
+// Observability: Run Log + Scorecard
 // ============================================================================
 
-/**
- * Crea un AgentConfig dai parametri del workflow
- *
- * Converte i parametri di un workflow in una configurazione Agent-compatible,
- * gestendo autonomy level e progress callback.
- *
- * @param params - Parametri del workflow che estendono BaseWorkflowParams
- * @param onProgress - Callback opzionale per report di progresso
- * @returns AgentConfig pronto per l'uso con gli agent
- *
- * @example
- * ```typescript
- * import { AgentFactory } from "../agents/index.js";
- *
- * async function myWorkflow(params: MyWorkflowParams) {
- *   const config = createAgentConfig(params, (msg) => console.log(msg));
- *   const architect = AgentFactory.createArchitect();
- *
- *   const result = await architect.execute({
- *     task: "Analyze system architecture",
- *     files: params.files
- *   }, config);
- * }
- * ```
- */
-export function createAgentConfig(
-  params: BaseWorkflowParams,
-  onProgress?: ProgressCallback
-): import("../agents/types.js").AgentConfig {
-  const level = params.autonomyLevel || getDefaultAutonomyLevel();
-
-  return {
-    autonomyLevel: level,
-    onProgress,
-    timeout: 300000 // 5 minutes default timeout
-  };
+export interface RunLogEntry {
+  ts: string;
+  workflow: string;
+  phases: Array<{
+    name: string;
+    backend: string;
+    durationMs: number;
+    success: boolean;
+    error?: string;
+  }>;
+  totalDurationMs: number;
+  success: boolean;
 }
 
-/**
- * Formatta i risultati di un agent per la visualizzazione
- *
- * Converte l'output strutturato di un agent in un formato leggibile
- * per l'utente, includendo metadata e gestione degli errori.
- *
- * @param result - Risultato dell'esecuzione di un agent
- * @param agentName - Nome dell'agent (per il titolo)
- * @returns Stringa formattata pronta per la visualizzazione
- *
- * @example
- * ```typescript
- * const result = await architect.execute(input, config);
- * const formatted = formatAgentResults(result, "ArchitectAgent");
- * console.log(formatted);
- * ```
- */
-export function formatAgentResults<T>(
-  result: import("../agents/types.js").AgentResult<T>,
-  agentName: string
+export function appendRunLog(entry: RunLogEntry): void {
+  const logPath = path.join(os.homedir(), '.unitai', 'run-log.jsonl');
+  const dir = path.dirname(logPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  // Append the new entry
+  fs.appendFileSync(logPath, JSON.stringify(entry) + '\n', 'utf8');
+
+  // Cap at 500 lines by trimming from top
+  try {
+    const content = fs.readFileSync(logPath, 'utf8');
+    const lines = content.split('\n').filter(l => l.trim());
+    if (lines.length > 500) {
+      const trimmed = lines.slice(lines.length - 500).join('\n') + '\n';
+      fs.writeFileSync(logPath, trimmed, 'utf8');
+    }
+  } catch {
+    // ignore trim errors
+  }
+}
+
+export function formatScorecard(
+  phases: Array<{ name: string; backend: string; durationMs: number; success: boolean }>,
+  totalMs: number
 ): string {
-  let output = `# ${agentName} Results\n\n`;
+  const rows = phases.map(p => {
+    const dur = p.durationMs < 1000
+      ? `${p.durationMs}ms`
+      : `${Math.round(p.durationMs / 1000)}s`;
+    const status = p.success ? '✅' : '❌';
+    return `| ${p.name} | ${p.backend} | ${dur} | ${status} |`;
+  });
 
-  // Status badge
-  const statusBadge = result.success ? "✅ SUCCESS" : "❌ FAILED";
-  output += `**Status:** ${statusBadge}\n\n`;
+  const totalDur = totalMs < 1000
+    ? `${totalMs}ms`
+    : `${Math.round(totalMs / 1000)}s`;
+  const allSuccess = phases.every(p => p.success);
+  rows.push(`| **Total** | | ${totalDur} | ${allSuccess ? '✅' : '❌'} |`);
 
-  // Metadata
-  if (result.metadata) {
-    output += "## Metadata\n\n";
-    output += `- **Backend:** ${result.metadata.backend}\n`;
-    output += `- **Execution Time:** ${result.metadata.executionTime}ms\n`;
-    output += `- **Autonomy Level:** ${result.metadata.autonomyLevel}\n`;
-
-    // Add any additional metadata
-    Object.entries(result.metadata).forEach(([key, value]) => {
-      if (!["backend", "executionTime", "autonomyLevel"].includes(key)) {
-        output += `- **${key}:** ${JSON.stringify(value)}\n`;
-      }
-    });
-    output += "\n";
-  }
-
-  // Error handling
-  if (!result.success && result.error) {
-    output += "## Error\n\n";
-    output += `\`\`\`\n${result.error}\n\`\`\`\n\n`;
-  }
-
-  // Output (serialize as JSON for complex types)
-  output += "## Output\n\n";
-  if (typeof result.output === "string") {
-    output += result.output;
-  } else {
-    output += "```json\n";
-    output += JSON.stringify(result.output, null, 2);
-    output += "\n```\n";
-  }
-
-  return output;
+  return [
+    '## Run Scorecard',
+    '| Phase | Backend | Duration | Status |',
+    '|---|---|---|---|',
+    ...rows,
+  ].join('\n');
 }

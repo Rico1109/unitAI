@@ -1,6 +1,6 @@
 import { CommandResult } from './commands/types';
 import { executeAIClient, AIExecutionOptions, BACKENDS } from '../../src/utils/aiExecutor.js';
-import { getRecentCommitsWithDiffs } from '../../src/utils/gitHelper.js';
+import { getRecentCommitsWithDiffs } from '../../src/utils/cli/gitHelper.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
