@@ -12,6 +12,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
+    McpError,
+    ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
 import { MCP_CONFIG } from "./constants.js";
 import { logger } from "./utils/logger.js";
@@ -60,8 +62,7 @@ export class UnitAIServer {
 
             if (!toolExists(toolName)) {
                 logger.error(`Tool not found: ${toolName} [requestId: ${requestId}, correlationId: ${correlationId}]`);
-                throw new Error(`Tool '${toolName}' not found`);
-                // Note: SDK handles errors and returns isError: true
+                throw new McpError(ErrorCode.MethodNotFound, `Tool '${toolName}' not found`);
             }
 
             // Progress callback with requestId and correlationId

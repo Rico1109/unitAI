@@ -4,7 +4,7 @@ import { getRoleBackend } from "../config/config.js";
 import { selectOptimalBackend, createTaskCharacteristics } from "./model-selector.js";
 import { getDependencies } from '../dependencies.js';
 import { formatWorkflowOutput } from "./utils.js";
-import { AutonomyLevel } from "../utils/security/permissionManager.js";
+import { AutonomyLevel, OperationType, assertPermission } from "../utils/security/permissionManager.js";
 import type { WorkflowDefinition, ProgressCallback, BaseWorkflowParams } from "../domain/workflows/types.js";
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
 import { join, dirname, resolve } from "path";
@@ -44,6 +44,11 @@ export async function executeOverthinker(
     outputFile = "overthinking.md",
     modelOverride
   } = params;
+
+  // autonomyLevel is resolved to a concrete AutonomyLevel by the registry before
+  // this function is called. Assert write permission since we write files to .unitai/
+  const level = (params.autonomyLevel as AutonomyLevel) ?? AutonomyLevel.LOW;
+  assertPermission(level, OperationType.WRITE_FILE, 'overthinker writes output files to .unitai/');
 
   onProgress?.(`🧠 Starting Overthinker workflow for: "${initialPrompt.slice(0, 50)}"...`);
 

@@ -39,32 +39,44 @@ export async function initializeDependencies(): Promise<AppDependencies> {
         fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    // --- Initialize Databases ---
-    // We create both sync and async versions where needed for gradual migration.
+    // --- Initialize Databases with rollback on partial failure ---
+    // We open databases sequentially and track each one so that if a later
+    // open fails, any already-opened handles are closed before rethrowing.
+    const openedDbs: AsyncDatabase[] = [];
 
-    // Initialize Activity Database
-    const activityDbPath = path.join(dataDir, 'activity.sqlite');
-    logger.debug(`Opening Activity DB at ${activityDbPath}`);
-    const activityDb = new AsyncDatabase(activityDbPath);
-    await activityDb.execAsync('PRAGMA journal_mode = WAL;');
+    const openDb = async (dbPath: string): Promise<AsyncDatabase> => {
+        const db = new AsyncDatabase(dbPath);
+        await db.execAsync('PRAGMA journal_mode = WAL;');
+        openedDbs.push(db);
+        return db;
+    };
 
-    // Initialize Audit Database
-    const auditDbPath = path.join(dataDir, 'audit.sqlite');
-    logger.debug(`Opening Audit DB at ${auditDbPath}`);
-    const auditDb = new AsyncDatabase(auditDbPath);
-    await auditDb.execAsync('PRAGMA journal_mode = WAL;');
+    let activityDb: AsyncDatabase;
+    let auditDb: AsyncDatabase;
+    let tokenDb: AsyncDatabase;
+    let metricsDb: AsyncDatabase;
 
-    // Initialize Token Metrics Database
-    const tokenDbPath = path.join(dataDir, 'token-metrics.sqlite');
-    logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
-    const tokenDb = new AsyncDatabase(tokenDbPath);
-    await tokenDb.execAsync('PRAGMA journal_mode = WAL;');
+    try {
+        const activityDbPath = path.join(dataDir, 'activity.sqlite');
+        logger.debug(`Opening Activity DB at ${activityDbPath}`);
+        activityDb = await openDb(activityDbPath);
 
-    // Initialize RED Metrics Database
-    const metricsDbPath = path.join(dataDir, 'red-metrics.sqlite');
-    logger.debug(`Opening RED Metrics DB at ${metricsDbPath}`);
-    const metricsDb = new AsyncDatabase(metricsDbPath);
-    await metricsDb.execAsync('PRAGMA journal_mode = WAL;');
+        const auditDbPath = path.join(dataDir, 'audit.sqlite');
+        logger.debug(`Opening Audit DB at ${auditDbPath}`);
+        auditDb = await openDb(auditDbPath);
+
+        const tokenDbPath = path.join(dataDir, 'token-metrics.sqlite');
+        logger.debug(`Opening Token Metrics DB at ${tokenDbPath}`);
+        tokenDb = await openDb(tokenDbPath);
+
+        const metricsDbPath = path.join(dataDir, 'red-metrics.sqlite');
+        logger.debug(`Opening RED Metrics DB at ${metricsDbPath}`);
+        metricsDb = await openDb(metricsDbPath);
+    } catch (error) {
+        // Close any databases that were successfully opened before the failure
+        await Promise.all(openedDbs.map(db => db.closeAsync().catch(() => {})));
+        throw error;
+    }
 
     // --- Initialize Repositories and Services ---
 
