@@ -43,3 +43,7 @@ backups/
 *.bak
 
 PRfolder/
+
+# Environment
+.env
+.env.local
