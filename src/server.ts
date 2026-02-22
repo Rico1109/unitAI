@@ -109,15 +109,20 @@ export class UnitAIServer {
      * Setup graceful shutdown handlers for SIGINT and SIGTERM
      */
     private setupShutdownHandlers(): void {
+        let isShuttingDown = false;
+
         const shutdown = async (signal: string) => {
+            if (isShuttingDown) return;
+            isShuttingDown = true;
+
             logger.info(`Received ${signal}, initiating graceful shutdown...`);
-            
+
             // Set a timeout to force exit if graceful shutdown takes too long
             const forceExitTimeout = setTimeout(() => {
                 logger.warn("Graceful shutdown grace period expired, forcing exit");
                 process.exit(1);
             }, 10000); // 10 second grace period
-            
+
             try {
                 await this.stop();
                 clearTimeout(forceExitTimeout);
@@ -128,9 +133,18 @@ export class UnitAIServer {
                 process.exit(1);
             }
         };
-        
+
         process.on('SIGINT', () => shutdown('SIGINT'));
         process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+        // When the MCP host closes the stdio transport (stdin EOF), trigger
+        // graceful cleanup. This prevents "Database is locked" errors when the
+        // user restarts their AI client without the process receiving a signal.
+        // Guarded for non-TTY so it only fires in MCP pipe context, not during
+        // interactive dev sessions where stdin is a terminal.
+        if (!process.stdin.isTTY) {
+            process.stdin.on('close', () => shutdown('stdin-close'));
+        }
     }
 
     /**
